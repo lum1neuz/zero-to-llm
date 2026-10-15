@@ -25,7 +25,7 @@ The adaptation phases use **Mongolian** as the case study: a language that gener
 
 - **Learn** (phone): 5–8 short cards per lesson, with sliders, fill-in-the-blank, predict-the-output, reorder, calculations and a quiz. Missed questions come back after 1, 3 and 7 days.
 - **Build** (laptop): a short narrated setup types only the stub, then you write the code. **Run tests** runs real Python in your browser (Pyodide). When a test fails, it explains *your* mistake ("your scale comes from 1.0, not −3.0, which weight has the largest magnitude?"). Hints unlock one rung at a time, and the solution is never typed for you.
-- **Read**: each lesson and its papers at four depths, from a one-line gist to full notes.
+- **Read**: a plain-language **primer** to read before the cards, plus each lesson and its papers at four depths, from a one-line gist to full notes.
 - Steps that need a GPU come with a recorded run to compare against. The recordings in this repo are **illustrative samples**, not real measurements. Run it yourself and record your own metrics.
 
 Everything runs on your device: no account and no server. Progress moves between phone and laptop as a JSON file.
@@ -125,7 +125,9 @@ A lesson is Markdown with YAML frontmatter. Stubs have frontmatter only. A ready
 
 **Done when** has 2–4 checkboxes: `- [ ] Text {#id}` or `{#id auto=challenge:<id>}`, `auto=metrics` or `auto=learn`. Learn plus every box completes the lesson.
 
-### Reading: the fold reader and paper notes
+### Reading: primers, the fold reader and paper notes
+
+- **Primers** are optional `primer.md` files in a lesson folder: a plain-language reading to do before the cards, for someone meeting the ideas for the first time. They need frontmatter with a one-sentence `gist` and optional `minutes`, then `## Section {#id}` sections, each with a `> key sentence` and the explanation. They open fully unfolded on the Read page, and the lesson sheet and the first Learn card link to them. Keep code lines under about 40 characters so they fit a phone. See `content/lessons/0.0-python-bridge-and-environment/primer.md`.
 
 `/read/<id>/` shows a lesson's reading at four depths: **Gist** (one line) → **Map** (section titles) → **Keys** (one key sentence per section) → **Full**. Tapping a section or its key unfolds just that section, so every key leads back to the text it summarises.
 

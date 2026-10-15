@@ -3,7 +3,7 @@
 import { parse as parseYaml } from "yaml";
 import type { z } from "zod";
 import { fewestBitsUnder } from "../src/lib/quant.ts";
-import { lessonFold, parsePaperNotes } from "./fold.ts";
+import { lessonFold, parsePaperNotes, parsePrimer } from "./fold.ts";
 import { extractFences, parseDoneWhen, splitFrontmatter, splitHeadings, testNamesFrom } from "./parse.ts";
 import {
   CardSrc, ChallengeSrc, CourseOut, CourseSrc, Frontmatter, MetricsStepSrc, ReplayLine, ReplaySrc,
@@ -283,7 +283,13 @@ function compileLesson(p: Parsed, files: Record<string, string>, { err, warn }: 
       base.doneWhen.push({ id: it.id, text: it.text, auto: it.auto });
     }
   }
-  // ---------- reading: the lesson fold, then authored paper notes ----------
+  // ---------- reading: the primer, the lesson fold, then authored paper notes ----------
+  const primerFile = p.dir + "primer.md";
+  if (files[primerFile] !== undefined) {
+    const { doc, issues } = parsePrimer(files[primerFile], base.title);
+    issues.forEach((x) => err(primerFile, x.message, x.line));
+    if (doc) base.reading.push(doc);
+  }
   base.reading.push(lessonFold(base));
   for (const nf of Object.keys(files).filter((k) => k.startsWith(p.dir + "papers/") && k.endsWith(".md")).sort()) {
     const name = nf.slice((p.dir + "papers/").length, -3);

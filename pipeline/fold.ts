@@ -67,9 +67,47 @@ export function parsePaperNotes(src: string, name: string, papers: Lesson["paper
   if (!paper) issues.push({ line: 1, message: `paper: "${String(fm.paper ?? "")}" must match the title of one of the lesson's papers (${papers.map((p) => p.title).join("; ") || "none listed"})` });
   if (typeof fm.gist !== "string" || !fm.gist.trim()) issues.push({ line: 1, message: "gist: one sentence is required" });
 
+  const out = parseSections(split, "Paper notes", issues);
+  if (issues.length) return { issues };
+  return {
+    doc: {
+      id: `paper-${name}`, kind: "paper", title: paper!.title, gist: String(fm.gist).trim(), sections: out,
+      source: { citation: [paper!.authors, paper!.year].filter(Boolean).join(", "), url: paper!.url },
+    },
+    issues,
+  };
+}
+
+/**
+ * Primer format (content/lessons/<id>-<slug>/primer.md): a gentle reading to do before the cards.
+ *   ---
+ *   gist: One sentence on what this lesson is about, in plain words.
+ *   minutes: 12                # optional reading time
+ *   ---
+ *   ## Section title {#id}
+ *   > The key sentence for this section.
+ *
+ *   The explanation, as long as it needs: examples, small worked numbers, code.
+ */
+export function parsePrimer(src: string, lessonTitle: string): { doc?: FoldDoc; issues: NoteIssue[] } {
+  const issues: NoteIssue[] = [];
+  const split = splitFrontmatter(src);
+  if (!split) return { issues: [{ line: 1, message: "A primer starts with a --- frontmatter block (gist, minutes)" }] };
+  let fm: Record<string, unknown> = {};
+  try { fm = (parseYaml(split.fm) ?? {}) as Record<string, unknown>; } catch (e) { issues.push({ line: 1, message: `YAML: ${(e as Error).message.split("\n")[0]}` }); }
+  for (const k of Object.keys(fm)) if (!["gist", "minutes"].includes(k)) issues.push({ line: 1, message: `Unknown key "${k}" (a primer takes gist and minutes)` });
+  if (typeof fm.gist !== "string" || !fm.gist.trim()) issues.push({ line: 1, message: "gist: one sentence is required" });
+  if (fm.minutes !== undefined && !(Number.isInteger(fm.minutes) && (fm.minutes as number) > 0)) issues.push({ line: 1, message: "minutes: a whole number of minutes" });
+  const out = parseSections(split, "A primer", issues);
+  if (issues.length) return { issues };
+  return { doc: { id: "primer", kind: "primer", title: lessonTitle, gist: String(fm.gist).trim(), minutes: fm.minutes as number | undefined, sections: out }, issues };
+}
+
+/** `## Title {#id ref="…"}` sections, each with a `> key` line and a body. */
+function parseSections(split: { body: string; bodyLine: number }, what: string, issues: NoteIssue[]): FoldSection[] {
   const { preamble, sections } = splitHeadings(split.body.split("\n"), split.bodyLine, 2);
-  if (preamble.join("").trim()) issues.push({ line: split.bodyLine, message: "Put notes under ## section headings" });
-  if (!sections.length) issues.push({ line: split.bodyLine, message: "Paper notes need at least one ## section" });
+  if (preamble.join("").trim()) issues.push({ line: split.bodyLine, message: "Put the text under ## section headings" });
+  if (!sections.length) issues.push({ line: split.bodyLine, message: `${what} needs at least one ## section` });
   const out: FoldSection[] = [];
   const ids = new Set<string>();
   for (const s of sections) {
@@ -91,12 +129,5 @@ export function parsePaperNotes(src: string, name: string, papers: Lesson["paper
     if (!body) issues.push({ line: s.line, message: `Section "${title}" needs notes under its key sentence` });
     out.push({ id, title, ref, key: key || undefined, body: body || undefined });
   }
-  if (issues.length) return { issues };
-  return {
-    doc: {
-      id: `paper-${name}`, kind: "paper", title: paper!.title, gist: String(fm.gist).trim(), sections: out,
-      source: { citation: [paper!.authors, paper!.year].filter(Boolean).join(", "), url: paper!.url },
-    },
-    issues,
-  };
+  return out;
 }

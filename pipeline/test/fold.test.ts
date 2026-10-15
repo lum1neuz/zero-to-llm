@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { describe, test } from "node:test";
 import { fileURLToPath } from "node:url";
-import { lessonFold, parsePaperNotes } from "../fold.ts";
+import { lessonFold, parsePaperNotes, parsePrimer } from "../fold.ts";
 import type { Lesson } from "../schema.ts";
 
 const PAPERS: Lesson["papers"] = [{ title: "LLM.int8()", authors: "Dettmers et al.", year: 2022, url: "https://arxiv.org/abs/2208.07339" }];
@@ -56,6 +56,40 @@ describe("paper notes", () => {
     const { doc, issues } = parsePaperNotes(src, "llm-int8", PAPERS);
     assert.deepEqual(issues, []);
     assert.ok(doc!.sections.length >= 5);
+  });
+});
+
+describe("primers", () => {
+  const PRIMER = `---
+gist: What this lesson is about.
+minutes: 12
+---
+
+## Why {#why}
+> Key sentence.
+
+The explanation.
+`;
+  test("parse into a primer document", () => {
+    const { doc, issues } = parsePrimer(PRIMER, "Lesson title");
+    assert.deepEqual(issues, []);
+    assert.equal(doc!.kind, "primer");
+    assert.equal(doc!.id, "primer");
+    assert.equal(doc!.title, "Lesson title");
+    assert.equal(doc!.minutes, 12);
+    assert.deepEqual(doc!.sections.map((s) => [s.id, s.key, s.body]), [["why", "Key sentence.", "The explanation."]]);
+  });
+  test("need a gist, whole minutes and known keys", () => {
+    const msgs = parsePrimer(PRIMER.replace("gist: What this lesson is about.", "paper: X").replace("minutes: 12", "minutes: 1.5"), "T").issues.map((i) => i.message).join("\n");
+    assert.match(msgs, /gist: one sentence is required/);
+    assert.match(msgs, /minutes: a whole number/);
+    assert.match(msgs, /Unknown key "paper"/);
+  });
+  test("0.0's primer parses cleanly", () => {
+    const src = readFileSync(fileURLToPath(new URL("../../content/lessons/0.0-python-bridge-and-environment/primer.md", import.meta.url)), "utf8");
+    const { doc, issues } = parsePrimer(src, "Python bridge and environment");
+    assert.deepEqual(issues, []);
+    assert.ok(doc!.sections.length >= 8);
   });
 });
 

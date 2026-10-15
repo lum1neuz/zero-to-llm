@@ -215,7 +215,7 @@ export const FoldSectionOut = z.object({
   locked: z.literal("learn").optional(),
 });
 export const FoldDocOut = z.object({
-  id: z.string(), kind: z.enum(["lesson", "paper"]), title: z.string(), gist: z.string(),
+  id: z.string(), kind: z.enum(["primer", "lesson", "paper"]), title: z.string(), gist: z.string(), minutes: z.int().optional(),
   source: z.object({ citation: z.string(), url: z.string().optional() }).optional(),
   sections: z.array(FoldSectionOut),
 });

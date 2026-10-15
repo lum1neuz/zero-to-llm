@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import type { Card, Lesson } from "../../lib/course.ts";
 import { lessonRec, scheduleMiss, streak, touchDay, update, useProgress, XP } from "../../lib/progress.ts";
 import { quantStats } from "../../lib/quant.ts";
-import { hl, inlineMd } from "../../lib/text.ts";
+import { blockMd, hl, inlineMd } from "../../lib/text.ts";
 import { Html, I } from "../ui.tsx";
 import { QuantGrid } from "./QuantGrid.tsx";
 
@@ -145,6 +145,11 @@ export default function Player({ lesson }: { lesson: Lesson }) {
         <span className="pill">{ci + 1}/{cards.length}</span>
       </div>
       <div className="scroll card-body">
+        {ci === 0 && !saved && !fb && lesson.reading.some((d) => d.kind === "primer") && (
+          <a className="primer-nudge" href={`/read/${lesson.id}/#primer`}>
+            <b>New to this?</b> Read the primer first: the ideas in plain words, with worked examples. {lesson.reading.find((d) => d.kind === "primer")!.minutes ?? 10} min.
+          </a>
+        )}
         <CardView card={c} a={a} setA={setA} locked={!!fb} quizLabel={c.type === "quiz" ? `Quiz · ${quizN.indexOf(c) + 1} of ${quizN.length}` : undefined} />
         {a.hint && hasHint && <div className="hintbox">{I.bulb}<Html html={inlineMd((c as { hint: string }).hint)} /></div>}
       </div>
@@ -194,7 +199,7 @@ function CardView({ card: c, a, setA, locked, quizLabel }: { card: Card; a: Answ
               ))}
             </div>
           )}
-          <Html as="div" className="md" html={inlineMd(c.body).split(/\n{2,}/).map((x) => `<p>${x}</p>`).join("")} />
+          <Html as="div" className="md" html={blockMd(c.body)} />
         </>
       );
     }

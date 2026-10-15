@@ -31,7 +31,7 @@ export default function ReadView({ lesson, reading }: Props) {
             <div className="read-tabs" role="tablist" aria-label="Documents">
               {reading.map((d, i) => (
                 <button key={d.id} role="tab" aria-selected={i === tab} className={i === tab ? "on" : ""} onClick={() => pick(i)}>
-                  {d.kind === "lesson" ? "The lesson" : d.title}
+                  {d.kind === "primer" ? "Primer" : d.kind === "lesson" ? "The lesson" : d.title}
                 </button>
               ))}
             </div>

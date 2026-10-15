@@ -6,14 +6,15 @@ export type { Card, Course, Lesson };
 export const course = courseJson as unknown as Course;
 
 /** Everything the home tabs need: no card bodies, challenge sources or runtime. */
-export type LiteLesson = Omit<Lesson, "learn" | "build" | "goal" | "hints" | "reading"> & { cards: number; steps: number; stepTitles: string[]; paperNotes: number };
+export type LiteLesson = Omit<Lesson, "learn" | "build" | "goal" | "hints" | "reading"> & { cards: number; steps: number; stepTitles: string[]; paperNotes: number; primer: { minutes: number } | null };
 export interface LiteCourse { title: string; weeks: number; phases: Course["phases"]; cutOrder: string[]; totals: Course["totals"]; lessons: LiteLesson[] }
 
 /** Quiz questions are only needed by Review; other pages leave them out to stay small. */
 export function lite(c: Course = course, opts: { quiz?: boolean } = {}): LiteCourse {
   return {
     title: c.title, weeks: c.weeks, phases: c.phases, cutOrder: c.cutOrder, totals: c.totals,
-    lessons: c.lessons.map(({ learn, build, goal, hints, reading, ...l }) => ({ ...l, quiz: opts.quiz ? l.quiz : [], cards: learn.length, steps: build.length, stepTitles: build.map((s) => s.title), paperNotes: reading.filter((d) => d.kind === "paper").length })),
+    lessons: c.lessons.map(({ learn, build, goal, hints, reading, ...l }) => ({ ...l, quiz: opts.quiz ? l.quiz : [], cards: learn.length, steps: build.length, stepTitles: build.map((s) => s.title), paperNotes: reading.filter((d) => d.kind === "paper").length,
+      primer: reading.some((d) => d.kind === "primer") ? { minutes: reading.find((d) => d.kind === "primer")!.minutes ?? 10 } : null })),
   };
 }
 

@@ -18,9 +18,10 @@ function readLevel(key: string, fallback: Level): Level {
 
 export function FoldReader({ doc, scope, learnDone, learnHref }: { doc: FoldDoc; scope: string; learnDone: boolean; learnHref: string }) {
   const key = storeKey(scope, doc.id);
-  const [level, setLevelState] = useState<Level>(() => readLevel(key, 1));
+  const startLevel: Level = doc.kind === "primer" ? 3 : 1;
+  const [level, setLevelState] = useState<Level>(() => readLevel(key, startLevel));
   const [open, setOpen] = useState<Record<string, Level>>({});
-  useEffect(() => { setLevelState(readLevel(key, 1)); setOpen({}); }, [key]);
+  useEffect(() => { setLevelState(readLevel(key, startLevel)); setOpen({}); }, [key, startLevel]);
 
   const setLevel = (l: Level) => {
     setLevelState(l);
@@ -42,7 +43,7 @@ export function FoldReader({ doc, scope, learnDone, learnHref }: { doc: FoldDoc;
   return (
     <article className="fold" aria-label={doc.title}>
       <header className="fold-h">
-        <div className="eyebrow" style={{ margin: 0 }}>{doc.kind === "paper" ? "Paper notes" : "Lesson at a glance"}</div>
+        <div className="eyebrow" style={{ margin: 0 }}>{doc.kind === "paper" ? "Paper notes" : doc.kind === "primer" ? `Primer${doc.minutes ? ` · about ${doc.minutes} min` : ""}` : "Lesson at a glance"}</div>
         <h2>{doc.title}</h2>
         {doc.source && (
           <p className="fine" style={{ margin: 0 }}>
