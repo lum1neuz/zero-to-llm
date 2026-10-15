@@ -13,7 +13,7 @@ const phase = course.phases.find((p) => p.id === lesson.phase)!;
   <div class="shell">
     <header class="appbar"><div class="appbar-in"><a class="brand" href="/"><b>Zero to LLM</b><span>Read</span></a></div></header>
     <main class="page">
-      <ReadView client:only="react" lesson={{ id: lesson.id, title: lesson.title, status: lesson.status, crumb: phaseLabel(phase) }} reading={lesson.reading} />
+      <ReadView client:only="react" lesson={{ id: lesson.id, title: lesson.title, status: lesson.status, crumb: phaseLabel(phase), hasBuild: lesson.build.length > 0 }} reading={lesson.reading} />
     </main>
   </div>
 </Base>

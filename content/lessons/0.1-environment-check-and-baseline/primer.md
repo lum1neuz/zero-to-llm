@@ -1,237 +1,289 @@
 ---
-gist: Before you train anything, check two numbers. How fast your GPU multiplies matrices tells you it's really doing the work, and the loss of a model that knows nothing, ln 27 ≈ 3.30, is the bar every later model has to beat.
-minutes: 14
+gist: Before you train anything, you check two numbers. One tells you your graphics card is really doing the work. The other is the score of a model that knows nothing, about 3.30, which every later model has to beat.
+minutes: 20
 ---
 
-## What this lesson is for {#why}
-> Two checks before any training: your GPU really does the arithmetic, and you know what score "knowing nothing" gets.
+## Start here {#why}
+> This lesson does two checks before any training: is your graphics card doing the work, and what score does "knowing nothing" get?
 
-In 0.0 you installed Python and PyTorch and ran `torch.cuda.is_available()`. This lesson goes one step further.
+Before a long run, a runner checks two things. Are my shoes on properly? And how fast is walking pace, so I know whether I'm really running?
 
-1. **Is the GPU doing the work, and how fast?** You'll time one big matrix multiplication on the CPU and on the GPU, in a few number formats. Every model in this course spends most of its time on exactly that operation, so this one number predicts how long your training runs will take.
-2. **What does a useless model score?** Makemore, which you build in 0.3, predicts the next letter of a name. Before it learns anything, a fair guess gives every one of the 27 symbols the same chance. You'll compute the score of that guess, called the **baseline**. Later models are judged by how far below it they get.
+This lesson does the same for training models.
 
-The browser challenge is the second check, with a few names. The first check needs your GPU, so you run a short script on your own machine, and the lesson shows an illustrative example of its output.
+**Check 1: is the graphics card doing the work?** Training a model means doing a huge amount of arithmetic. A graphics card does that arithmetic much faster than the computer's main chip. You'll time one big calculation and see how fast your card is.
+
+**Check 2: what's "walking pace" for a model?** In 0.3 you'll build a model that guesses the next letter of a name. Before it learns anything, the fairest guess is to give every letter the same chance. You'll work out the score of that fair guess. It's called the **baseline**. A model that has learned something must score better than it.
+
+The browser challenge does check 2 with a few names. Check 1 needs your own graphics card, so you run a short script on your computer. The lesson shows example output so you know what to expect.
 
 ## What you need from before {#before}
-> Tensors, shapes and dtypes from 0.0, plus one habit: averaging over a dimension with `.mean()`.
+> You need lists, tensors and `.mean()` from 0.0, and probabilities and logs from Start here.
 
-- A **tensor** is a grid of numbers with one **shape** (like `[3, 4]`) and one **dtype** (like `float32`).
-- Python floats become `float32` tensors. Integer tensors can't be averaged until you call `.float()`.
-- Methods like `.sum()` and `.mean()` with no `dim` use every number in the tensor and return a single number, a tensor of shape `[]`. `.item()` turns that into a plain Python float.
+From the Start here lessons and 0.0:
+
+| Idea | Reminder |
+|---|---|
+| Probability | how likely something is, from 0 (never) to 1 (always). 0.25 means 25%. |
+| Logarithm | from W4. You'll meet the natural log, ln, again below. |
+| Tensor | a grid of numbers, like a list of lists, with one shape. |
+| `.mean()` | the average of all the numbers in a tensor. |
+| `.item()` | turns a one-number tensor into a plain Python number. |
+
+A quick reminder of `.mean()` and `.item()`:
 
 ```python
 p = torch.tensor([0.5, 0.25])
-p.mean()         # tensor(0.3750)
-p.mean().item()  # 0.375
+avg = p.mean()
+print(avg)
+print(avg.item())
 ```
 
-## Why a GPU {#gpu}
-> A CPU has a few fast cores; a GPU has thousands of simple ones. Matrix multiplication splits into thousands of independent pieces, so the GPU wins by a wide margin.
+| Line | What it does |
+|---|---|
+| `p = torch.tensor(...)` | makes a tensor holding 0.5 and 0.25 |
+| `avg = p.mean()` | averages them: (0.5 + 0.25) / 2 |
+| `print(avg)` | prints `tensor(0.3750)` |
+| `print(avg.item())` | prints the plain number `0.375` |
 
-A **matrix multiplication** (matmul), written `a @ b` in PyTorch, combines two grids. Each cell of the result is a **dot product**: take a row of `a` and a column of `b`, multiply them position by position, and add up the products.
+## Two kinds of chip {#gpu}
+> The computer's main chip (CPU) has a few fast workers. A graphics card (GPU) has thousands of simple ones, which is perfect for the arithmetic models need.
 
-```
-a = [[1, 2],    b = [[5, 6],
-     [3, 4]]         [7, 8]]
+Your computer has a main chip, the **CPU**. It's very good at doing one complicated thing after another.
 
-(a @ b)[0, 0] = 1·5 + 2·7 = 19
-(a @ b)[0, 1] = 1·6 + 2·8 = 22
-(a @ b)[1, 0] = 3·5 + 4·7 = 43
-(a @ b)[1, 1] = 3·6 + 4·8 = 50
-```
+Many computers also have a graphics card, the **GPU**. It was built to colour millions of screen pixels at once. So it has thousands of small, simple workers that all work at the same time.
 
-No cell needs any other cell's answer, so all of them can be computed at the same time. That's the kind of work a GPU is built for. A rough analogy from the web: a CPU is one very fast server thread; a GPU is a farm of thousands of slow workers that all get one small job each.
+Think of marking 10,000 multiple-choice tests. One expert marks them one after another. A hall of 2,000 students, each marking five tests, finishes far sooner, even though each student is slower than the expert.
 
-Neural networks are mostly matmuls, millions of them. Lesson 0.3's model is one matmul, and a transformer is dozens per layer.
+Models are like the stack of tests: lots of small, separate pieces of arithmetic. That's why the GPU wins.
 
-## Counting the work: FLOPs {#flops}
-> An n×n matmul does about 2·n³ floating-point operations, so a 4096×4096 one is about 1.37 × 10¹¹ of them.
+**CUDA** is the software that lets programs use NVIDIA graphics cards. PyTorch needs a version built with CUDA to use your card. In 0.0 you checked this with `torch.cuda.is_available()`.
 
-A **FLOP** is one floating-point operation: one multiply or one add. Count them for an n×n matmul:
+## Multiplying two grids {#matmul}
+> To multiply two grids, each cell of the answer comes from one row of the first grid and one column of the second: multiply the pairs, then add.
 
-- Each output cell is a dot product of length n: n multiplies and about n adds, so about **2n** operations.
-- There are n × n = **n²** output cells.
-- In total: 2n × n² = **2n³** operations.
+Most of a model's work is one operation: **matrix multiplication**, or **matmul** for short. A matrix is a grid of numbers. In PyTorch you write it with `@`.
 
-For the 2×2 example above that's 2 · 2³ = 16 (8 multiplies, plus 4 adds that the formula rounds up to 8). For the benchmark size n = 4096:
+Here's how one cell of the answer is made. Take a row from the first grid and a column from the second. Multiply them in pairs and add the results. This is called a **dot product**.
 
 ```
-2 · 4096³ = 137,438,953,472
-          ≈ 1.374 × 10¹¹ FLOPs
+a = [[1, 2],     b = [[5, 6],
+     [3, 4]]          [7, 8]]
 ```
 
-Speed is **FLOP/s**, operations per second. The numbers are huge, so they're quoted in **TFLOP/s**: tera, 10¹², a million million per second.
+| Answer cell | Row of a | Column of b | Arithmetic | Result |
+|---|---|---|---|---|
+| top left | 1, 2 | 5, 7 | 1·5 + 2·7 | 19 |
+| top right | 1, 2 | 6, 8 | 1·6 + 2·8 | 22 |
+| bottom left | 3, 4 | 5, 7 | 3·5 + 4·7 | 43 |
+| bottom right | 3, 4 | 6, 8 | 3·6 + 4·8 | 50 |
+
+In code:
+
+```python
+a = torch.tensor([[1, 2], [3, 4]])
+b = torch.tensor([[5, 6], [7, 8]])
+print(a @ b)
+```
+
+This prints `[[19, 22], [43, 50]]`. Notice that no cell needs another cell's answer. All four could be worked out at the same moment, by four different workers. That's exactly the kind of job a GPU is good at.
+
+## Counting the work {#flops}
+> Multiplying two n-by-n grids takes about 2 × n × n × n steps of arithmetic. For the big test grid that's about 137 billion.
+
+One multiply or one add is called a **FLOP**, short for "floating-point operation". (A floating-point number is just a number with a decimal point.)
+
+Let's count the FLOPs for multiplying two square grids that are n numbers wide.
+
+1. **One answer cell** multiplies n pairs and adds them up. That's about n multiplies and n adds: **2 × n** FLOPs.
+2. **The answer** has n rows and n columns: **n × n** cells.
+3. **In total**: 2 × n × n × n FLOPs. In short, 2n³.
+
+Check it on the 2 × 2 example. Each cell had 2 multiplies and 1 add. The rule says 2 × 2 × 2 × 2 = 16, and the real count is 12. The rule rounds the adds up slightly, which doesn't matter for big grids.
+
+The lesson's test uses grids 4096 numbers wide:
 
 ```
-TFLOP/s = FLOPs / seconds / 10¹²
+2 × 4096 × 4096 × 4096
+  = 137,438,953,472
+  ≈ 137 billion FLOPs
 ```
 
-Worked example from the lesson's cards: one fp16 matmul takes 2.01 ms = 0.00201 s.
+Speed is FLOPs per second. The numbers are huge, so we count in **trillions per second**, written **TFLOP/s**. (Tera means a trillion.)
+
+To get it, divide the FLOPs by the seconds taken, then by a trillion. Say one multiplication took 2.01 milliseconds. A millisecond is a thousandth of a second, so that's 0.00201 seconds.
 
 ```
-1.374 × 10¹¹ / 0.00201
-  ≈ 6.84 × 10¹³ FLOP/s
+137 billion / 0.00201 seconds
+  ≈ 68.4 trillion per second
   = 68.4 TFLOP/s
 ```
 
-The step that trips people up is the milliseconds: divide by 0.00201, not by 2.01.
+The easy mistake is the milliseconds. Divide by 0.00201, not by 2.01.
 
-## Number formats on the GPU {#dtypes}
-> fp32 uses 4 bytes per number; fp16 and bf16 use 2 and run on the GPU's tensor cores, which makes them several times faster.
+## Shorter numbers are faster {#dtypes}
+> Numbers can be stored with 4 bytes or with 2. The 2-byte formats keep fewer digits, but the graphics card has special parts that make them about three times faster.
 
-You met `float32` (fp32) in 0.0. GPUs also do arithmetic in two 16-bit formats:
+A computer stores each number in a fixed amount of memory. A **byte** is a small unit of memory.
 
-| Format | Bytes | Roughly | Used for |
+| Format | Bytes per number | Keeps about | Used for |
 |---|---|---|---|
-| `float32` (fp32) | 4 | 7 significant digits, huge range | the default; safe everywhere |
-| `float16` (fp16) | 2 | 3 digits, small range (max 65,504) | fast inference; training needs care |
-| `bfloat16` (bf16) | 2 | 2–3 digits, fp32's range | fast training on recent GPUs |
+| `float32` (fp32) | 4 | 7 digits | the normal choice; safe everywhere |
+| `float16` (fp16) | 2 | 3 digits, and only numbers up to 65,504 | fast, but needs care |
+| `bfloat16` (bf16) | 2 | 2–3 digits, but huge numbers are fine | fast training on newer cards |
 
-Recent NVIDIA GPUs have **tensor cores**, circuits built for small matmuls in 16-bit formats. On those, fp16 and bf16 run around three times faster than fp32. The lesson's illustrative numbers for an RTX 3090:
+Newer NVIDIA cards have **tensor cores**: parts of the chip built only for multiplying grids of 2-byte numbers. With them, fp16 and bf16 run about three times faster than fp32.
 
-| Where | Format | Time per 4096² matmul | TFLOP/s |
+Here are example timings for one 4096-wide multiplication. They're illustrative numbers for an RTX 3090 card, written for the course:
+
+| Where | Format | Time | TFLOP/s |
 |---|---|---|---|
 | CPU | fp32 | 182.40 ms | 0.8 |
 | GPU | fp32 | 6.21 ms | 22.1 |
 | GPU | fp16 | 2.01 ms | 68.4 |
 | GPU | bf16 | 2.03 ms | 67.7 |
 
-Your card's numbers will differ. What matters is the pattern: the GPU is tens of times faster than the CPU, and 16-bit is a few times faster than fp32. Older cards, such as the T4 on free Colab, have no bf16 tensor cores; use fp16 there.
+Your card will give different numbers. Look for the pattern instead: the GPU is many times faster than the CPU, and the 2-byte formats are a few times faster than fp32. Older cards, like the T4 on free Google Colab, have no bf16 tensor cores. Use fp16 there.
 
-## Timing GPU code honestly {#timing}
-> GPU calls return before the work is done, so you must wait for the GPU before reading the clock, and skip the slow first run.
+## Timing a graphics card fairly {#timing}
+> The graphics card works in the background, so you must wait for it to finish before you stop the clock. And the first run is slow, so you skip it.
 
-When Python runs `b = a @ a` on a GPU tensor, it puts the job in a queue and moves on at once. It's like calling `fetch()` in JavaScript: you get control back immediately, and the answer arrives later. Timing that line alone measures how long it took to *queue* the work, which is why the cards show a "result" of 40 µs, an impossible 3,400 TFLOP/s.
+When Python tells the GPU "multiply these", it doesn't wait for the answer. It hands over the job and moves straight on.
 
-Two rules fix it:
+It's like ordering at a restaurant. The waiter takes your order and walks away at once. Your food isn't ready yet. If you timed "ordering", you'd think the kitchen cooks in one second.
 
-1. **Wait for the GPU.** `torch.cuda.synchronize()` blocks until every queued job has finished, like `await`. Call it before starting the clock and again before stopping it.
-2. **Warm up first.** The first CUDA call in a program loads code onto the GPU and picks algorithms, which is slow. Run the matmul a few times untimed, then time the average of many runs.
+The cards show this trap: a timing of 0.00004 seconds. That would mean 3,400 TFLOP/s, which is impossible.
 
-## The environment check {#env-check}
-> You run one short script on your machine: it prints your PyTorch and CUDA versions, your GPU's name, a timing table, and the baseline loss over all of names.txt.
+Two rules make the timing fair:
 
-The script is in the lesson's "Check your GPU" step, under "Run it yourself". It needs `names.txt`, a list of 32,033 real names (download link in the script). It does three things:
+1. **Wait for the food.** `torch.cuda.synchronize()` waits until the GPU has finished everything it was given. Call it before you start the clock and again before you stop it.
+2. **Let the kitchen warm up.** The very first GPU job in a program is slow, because the card is getting set up. Run the multiplication a few times without timing it. Then time many runs and take the average.
 
-1. Prints `torch.__version__`, `torch.version.cuda` and the GPU's name, and stops with a clear message if no GPU is visible.
-2. Times a 4096×4096 matmul on the CPU once, then on the GPU in fp32, fp16 and bf16, and prints milliseconds and TFLOP/s for each.
-3. Computes the uniform baseline over every name in the file.
+## The check you run on your computer {#env-check}
+> You run one short script. It prints your versions, your card's name, a table of timings, and the baseline score over all the names.
 
-The lesson plays an **illustrative** example of this output. It was written for the course to show what healthy looks like; it is not a recording of a real run.
+The script is in the lesson's "Check your GPU" step, under "Run it yourself". It needs a file called `names.txt`: 32,033 real first names. The script has the download link.
 
-Healthy output: a GPU name, every GPU row in single-digit milliseconds, fp16/bf16 a few times faster than fp32, and a final baseline of 3.2958. Unhealthy output and what it means:
+It does three things:
 
-| You see | Likely cause |
+1. Prints your PyTorch and CUDA versions and your card's name. If PyTorch can't see a card, it stops and says so.
+2. Times the 4096-wide multiplication: once on the CPU, then on the GPU in fp32, fp16 and bf16.
+3. Works out the baseline score over every name in the file.
+
+The lesson plays an **illustrative** example of the output. It was written for the course to show what healthy output looks like. It isn't a recording of a real run.
+
+Healthy output shows your card's name, a few milliseconds per GPU row, fp16 and bf16 a few times faster than fp32, and a baseline of 3.2958.
+
+| If you see | It probably means |
 |---|---|
-| "No GPU" error | CPU-only PyTorch: `torch.version.cuda` prints `None`. Reinstall with the CUDA command from pytorch.org. |
-| GPU rows close to the CPU row | The work isn't on the GPU, or the timing skips `synchronize()`. |
-| Numbers that jump between runs | A laptop GPU heating up and slowing down. Run more repetitions. |
+| "No GPU" | You installed the CPU-only PyTorch. `torch.version.cuda` prints `None`. Reinstall using the command from pytorch.org. |
+| GPU rows as slow as the CPU row | The work isn't really on the GPU, or the timing skips `synchronize()`. |
+| Numbers that jump around | A laptop card heating up and slowing down. Run more repeats. |
 
-You record your best fp16 or bf16 TFLOP/s as the lesson's systems metric. Anything above 5 passes: a CPU manages about 1.
+You'll record your best fp16 or bf16 speed. Anything above 5 TFLOP/s passes. A CPU manages about 1.
 
-## What a language model predicts {#predict}
-> At each step the model gives a probability to every possible next character. The one number we care about is the probability it gave to the character that actually came next.
+## Scoring one guess {#surprise}
+> For each letter, the model gives every possible next letter a chance. We look at the chance it gave the right one, and turn that into a "surprise" score with the log.
 
-A **probability** is a number from 0 to 1 that says how likely something is. The probabilities of all possible outcomes add up to 1. Makemore has 27 possible next characters (a–z and "."), so at every step it produces 27 probabilities that sum to 1.
+Makemore's model can choose from 27 symbols: the letters a to z, plus "." which marks the start and end of a name. Each time, it gives all 27 a chance, and the chances add up to 1.
 
-Take the name `emma`. Wrapped in "." markers it is `.emma.`, which asks the model for five predictions:
+The name `emma`, written with its markers as `.emma.`, asks for five guesses:
 
-```
-after "."  → should say "e"
-after "e"  → should say "m"
-after "m"  → should say "m"
-after "m"  → should say "a"
-after "a"  → should say "."
-```
+| After | The right answer is |
+|---|---|
+| "." | e |
+| e | m |
+| m | m |
+| m | a |
+| a | "." |
 
-So a name of length L gives L + 1 predictions. For each prediction you look up the probability the model gave to the right answer. A good model gives the right answers high probabilities. The loss turns all of those into one score.
+So a name with 4 letters gives 5 guesses. For each guess, we only care about one number: the chance the model gave to the right answer.
 
-## Logarithms, gently {#logs}
-> The natural log, ln, turns "how likely" into "how surprised": ln 1 = 0, and the smaller the probability, the more negative its log.
+Next we turn that chance into a **surprise** score. W4 introduced logarithms. Here we use the **natural log**, written **ln**, and we flip its sign:
 
-The **natural logarithm** `ln(x)` answers "e to what power gives x?", where e ≈ 2.718. You won't need that definition. You need how it behaves on probabilities:
-
-| p | ln p | −ln p |
+| Chance of the right answer | ln | Surprise, −ln |
 |---|---|---|
-| 1 | 0 | 0 |
+| 1 (certain) | 0 | 0 |
 | 0.9 | −0.105 | 0.105 |
 | 0.5 | −0.693 | 0.693 |
 | 0.25 | −1.386 | 1.386 |
-| 1/27 ≈ 0.037 | −3.296 | 3.296 |
+| 1/27 (about 0.037) | −3.296 | 3.296 |
 | 0.001 | −6.908 | 6.908 |
-| 0 | −∞ | ∞ |
+| 0 (impossible) | minus infinity | infinity |
 
-Read the last column as **surprise**. A right answer predicted with certainty costs 0. Halving the probability adds 0.693 every time. A probability of 0 costs infinity: the model said the right answer was impossible.
+Read the last column like this. Being sure and right costs nothing. Every time the chance halves, the surprise goes up by 0.693. And saying the right answer was impossible costs infinity.
 
-Two more properties make logs the right tool. The log of a product is the sum of the logs, so the probability of a whole name (a product of small numbers) becomes a sum, which computers handle without underflowing to 0. And confident mistakes cost a lot: one prediction at 0.001 costs as much as ten at 0.5.
+That's why logs are used: a confident wrong guess is punished hard. One guess at 0.001 costs as much as ten guesses at 0.5.
 
-In PyTorch, `torch.log(t)` or `t.log()` takes the natural log of every number in a tensor.
+In PyTorch, `t.log()` takes the natural log of every number in a tensor.
 
-## The loss: average negative log-likelihood {#nll}
-> Take the log of the probability given to each right answer, average them, and flip the sign. Lower is better, and 0 would mean perfect certainty every time.
+## The loss: the average surprise {#nll}
+> The loss is the average surprise over all the guesses. Lower is better. Its full name is the negative log-likelihood.
 
-This score is the **negative log-likelihood** (NLL), and it's the loss for every model in this course:
+Here's the recipe in words:
 
-1. For each prediction, take **ln of the probability** given to the right answer. Every one is 0 or negative.
-2. **Average** them.
-3. **Flip the sign**, so the result is positive and smaller means better.
+1. For each guess, take the **ln** of the chance given to the right answer.
+2. **Average** those numbers.
+3. **Flip the sign**, so the result is positive.
 
-Worked example with two predictions, at 0.5 and 0.25:
+This is the **loss** every model in this course uses. Its proper name is the **negative log-likelihood**, or **NLL**. "Likelihood" just means the chances given to what really happened.
 
-```
-ln 0.5  = −0.693
-ln 0.25 = −1.386
-average = −1.040
-loss    =  1.040 nats
-```
+A worked example with two guesses. The model gave the right answers chances 0.5 and 0.25:
 
-The unit is **nats**, short for "natural units", because the log is the natural log. With log base 2 you'd get bits instead, a different number for the same model, so the course always uses ln.
+| Step | Value |
+|---|---|
+| ln 0.5 | −0.693 |
+| ln 0.25 | −1.386 |
+| average | −1.040 |
+| flip the sign | **1.040** |
 
-The challenge's tests catch the classic mistakes:
+The unit is called **nats**, because we used the natural log. With log base 2 you'd get a different number for the same model, so the course always uses ln.
+
+The challenge's tests catch these common mistakes:
 
 | Mistake | What goes wrong |
 |---|---|
-| Sum instead of average | The loss grows with the amount of data, so twice the names looks twice as bad. |
-| Forgetting the minus sign | The loss comes out negative, and "lower is better" breaks. |
-| `log2` or `log10` | Bits or another unit; numbers don't match the course's. |
-| Log of the average probability | For 0.5 and 0.25: −ln 0.375 = 0.981, not 1.040. One confident miss hides behind the good guesses. |
+| Adding up instead of averaging | Twice as many names would look twice as bad. |
+| Forgetting to flip the sign | The loss is negative, and "lower is better" breaks. |
+| Using `log2` or `log10` | A different unit, so the numbers don't match the course. |
+| Averaging the chances first, then taking the log | For 0.5 and 0.25 you'd get 0.981, not 1.040. One bad guess hides behind the good ones. |
 
-## The uniform baseline: ln 27 {#baseline}
-> A model that gives all 27 symbols probability 1/27 scores exactly ln 27 ≈ 3.2958 nats, whatever the data. Every real model must get below that.
+## The baseline: about 3.30 {#baseline}
+> A model that gives all 27 symbols the same chance, 1/27, always scores ln 27, about 3.2958. Every real model has to beat that.
 
-If every prediction gives the right answer probability 1/27, every term in the average is the same:
+Imagine a model that knows nothing. To be fair, it gives every symbol the same chance: 1 in 27.
 
-```
-−ln(1/27) = ln 27 ≈ 3.2958
-```
+Then every guess has the same surprise: −ln(1/27), which is ln 27, about 3.2958. And the average of numbers that are all the same is just that number. So this model scores 3.2958, whether you test it on 5 names or 32,033.
 
-The average of identical numbers is that number, so the loss is 3.2958 for 5 names or 32,033. That makes it a clean reference point:
+That makes it a good yardstick:
 
-| Loss | What it tells you |
+| Loss | Meaning |
 |---|---|
-| far above 3.30 | The model is confidently wrong. A fresh network often starts like this; 0.4's cards show 27.9, and 0.4 fixes it. |
-| about 3.30 | The model knows nothing, but is honest about it. A well-initialised network starts here. |
-| below 3.30 | The model has learned something. The bigram in 0.3 gets to about 2.45. |
+| far above 3.30 | The model is confidently wrong. A new model often starts like this. Lesson 0.4 shows a start of 27.9 and fixes it. |
+| about 3.30 | The model knows nothing, but admits it. A well-prepared model starts here. |
+| below 3.30 | The model has learned something. In 0.3 the letter-pair model reaches about 2.45. |
 
-Your quality metric for this lesson is the baseline computed over all of names.txt on your own machine. It must come out between 3.29 and 3.30. If it does, your data loading and your loss both work.
+Your score for this lesson is the baseline worked out over all of `names.txt` on your own computer. It should land between 3.29 and 3.30. If it does, you've loaded the names and computed the loss correctly.
 
 ## Words you'll see {#glossary}
-> A short dictionary of the terms in this lesson's cards, challenge and metrics.
+> A short list of the new words in this lesson's cards, challenge and scores.
 
-- **GPU**: a processor with thousands of simple cores, built for the parallel arithmetic that neural networks need.
-- **CUDA**: NVIDIA's software layer for running code on its GPUs. A "CUDA build" of PyTorch can use the GPU.
-- **Matmul**: matrix multiplication, `a @ b`. Each output cell is a dot product of a row and a column.
-- **FLOP, FLOP/s, TFLOP/s**: one floating-point operation; operations per second; 10¹² operations per second.
-- **fp32, fp16, bf16**: 32-bit floats, and two 16-bit formats. bf16 keeps fp32's range with fewer digits.
-- **Tensor cores**: GPU circuits for fast 16-bit matmuls.
-- **Asynchronous**: the call returns before the work is done. `torch.cuda.synchronize()` waits for it.
-- **Warm-up**: untimed runs before timing, so one-off start-up costs don't count.
-- **Probability**: a number from 0 to 1. The probabilities of all outcomes sum to 1.
-- **ln (natural log)**: turns a probability into a log-probability: 0 for certainty, more negative for less likely.
-- **Negative log-likelihood (NLL)**: the average of −ln p over the right answers. The loss for every model in the course.
-- **Nats**: the unit of a loss computed with the natural log. Bits use log base 2.
-- **Baseline**: the score of a simple reference model. Here, the uniform model's ln 27 ≈ 3.2958.
-- **Uniform model**: gives every symbol the same probability, 1/27.
-- **names.txt**: Karpathy's list of 32,033 names, 228,146 predictions in total, used through phase 0.
-- **Illustrative replay**: example output written for the course to show what healthy looks like. Not a recording.
+- **CPU**: the computer's main chip. A few fast workers.
+- **GPU (graphics card)**: a chip with thousands of simple workers, great for the arithmetic models need.
+- **CUDA**: NVIDIA's software that lets programs use its graphics cards.
+- **Matmul (matrix multiplication)**: multiplying two grids with `@`. Each answer cell is a row times a column.
+- **Dot product**: multiply two lists in pairs, then add up the results.
+- **FLOP**: one multiply or one add.
+- **TFLOP/s**: trillions of FLOPs per second.
+- **fp32, fp16, bf16**: ways of storing numbers in 4 bytes or 2 bytes.
+- **Tensor cores**: parts of newer graphics cards built for fast 2-byte grid multiplications.
+- **Synchronize**: wait until the graphics card has finished its work.
+- **Warm-up**: a few untimed runs first, so setup time doesn't count.
+- **Probability (chance)**: how likely something is, from 0 to 1.
+- **ln (natural log)**: the log used for scores in this course.
+- **Surprise**: −ln of the chance given to the right answer. 0 for a sure right guess.
+- **Loss**: one number that says how bad a model's guesses are. Lower is better.
+- **Negative log-likelihood (NLL)**: the average surprise. The loss used in this course.
+- **Nats**: the unit of a loss worked out with ln.
+- **Baseline**: the score of a simple model to compare against. Here, a model that gives every symbol a 1-in-27 chance: 3.2958.
+- **names.txt**: a list of 32,033 first names, used throughout phase 0.
+- **Illustrative**: example output written for the course to show what healthy looks like. Not a recording.

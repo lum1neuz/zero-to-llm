@@ -72,7 +72,7 @@ Make the makemore MLP train well from step 0. A fresh network with plain `randn`
 type: concept
 id: confidently_wrong
 eyebrow: Step 0
-title: A fresh network shouldn't do worse than guessing.
+title: A new network shouldn't be sure of itself.
 visual:
   kind: bars
   max: 28
@@ -81,9 +81,11 @@ visual:
     - { label: Plain randn, value: 27.9, text: "27.9" }
     - { label: Output × 0.01, value: 3.32, text: "3.32" }
 body: |
-  Loss at step 0 on 27 symbols. Big random weights give big logits, and big logits mean the model is *sure* of its random answers. The first thousands of steps go on unlearning that confidence. Scale the last layer down and the loss starts at about ln 27, the cost of an honest "I don't know".
+  The bars show the loss at the very first step, before any training. A model that knows nothing, and admits it, scores about 3.30 (ln 27).
 
-  The same thing happens in the hidden layer: large pre-activations push tanh to ±1, where its slope, 1 − tanh², is about 0 and no gradient gets through.
+  With plain random starting weights, the scores the model gives each letter come out huge. Huge scores make it almost certain of random answers, so it starts at 27.9, far worse than knowing nothing. Training then wastes its first thousands of steps unlearning that false confidence.
+
+  Making the last layer's starting weights tiny fixes it: the loss starts at 3.32. A similar problem inside the network, and two ways to fix it, are the rest of this lesson.
 ```
 
 ```card

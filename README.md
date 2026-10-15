@@ -6,10 +6,11 @@
 
 **▶ Take the course: [zero-to-llm.lum1neuz.workers.dev](https://zero-to-llm.lum1neuz.workers.dev)** · It runs in your browser and works offline after the first visit. No sign-up.
 
-A free, hands-on course that takes you from autograd by hand to a quantized, fine-tuned, served LLM. It has 35 core lessons and 2 sidequests, about 197 hours over 20 weeks. You write every piece yourself, and tests check your code in the browser.
+A free, hands-on course that takes you from autograd by hand to a quantized, fine-tuned, served LLM. It has 39 core lessons and 2 sidequests, about 203 hours over 20 weeks. It starts from zero: no programming or math background needed. You write every piece yourself, and tests check your code in the browser.
 
 | Phase | What you build |
 |---|---|
+| Start here | What a language model is, Python from zero, numbers in grids, and just enough math (chances, logs, loss) |
 | 0 · Foundations | Python and tensor basics, micrograd, makemore, BatchNorm and manual backprop |
 | 1 · Build a transformer | Self-attention, a full GPT block, training dynamics, a TinyStories 30M run, BPE, a tokenizer audit |
 | 2 · Inference internals | Generation loops, the KV cache, sampling, batching, profiling and SDPA |

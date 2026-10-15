@@ -67,11 +67,13 @@ Build makemore's first model, a **bigram**: predict each character from the one 
 type: concept
 id: bigram_idea
 eyebrow: The model
-title: A bigram predicts the next character from the current one, and nothing else.
+title: Guess the next letter from the letter before it.
 body: |
-  Wrap every name in ".": `.emma.` gives the pairs `.e`, `em`, `mm`, `ma`, `a.`. Count all the pairs into a 27×27 table N. Row i of N is everything that ever followed character i.
+  Put a "." at the start and end of every name. Then `.emma.` gives five pairs of neighbours: `.e`, `em`, `mm`, `ma` and `a.`.
 
-  Divide each row by its total and you have P, one probability distribution per current character. To **generate**, start at ".", draw the next character from P's row, and repeat until you draw "." again. To **score** the model, average −log P over every pair in the data: the loss from 0.1.
+  Count every pair in all the names into a 27 by 27 table. Row "e" holds how often each letter came right after "e". Divide each row by its total, and the counts become chances.
+
+  To make up a name, start at ".", pick the next letter at random using that row's chances, and repeat until you pick "." again. To score the model, use the loss from 0.1: the average surprise at each right answer.
 ```
 
 ```card

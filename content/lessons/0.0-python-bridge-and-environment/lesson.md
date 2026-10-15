@@ -8,7 +8,7 @@ type: build
 status: ready
 protected: false
 cut: null
-prerequisites: []
+prerequisites: ["W4"]
 papers: []
 quality_metric:
   id: exercises_passed
@@ -62,14 +62,15 @@ Get comfortable enough with Python and tensors that the code in the next five le
 ```card
 type: concept
 id: python_for_programmers
-eyebrow: Python, fast
-title: Five things that read differently from other languages.
+eyebrow: New tools
+title: Four Python tools you'll meet in this lesson.
 body: |
-  - **Blocks are indentation.** No braces. Four spaces per level, and a `:` opens the block.
-  - **Lists and dicts are built in.** `[0, 5, 13]` is a list, `{"a": 1, "b": 2}` a dict. `d["a"]` reads a key.
-  - **Comprehensions replace most loops.** `[stoi[ch] for ch in word]` builds a list in one line.
-  - **Slices are half-open.** `s[1:3]` takes items 1 and 2, `s[-1]` is the last item, `s[1:]` drops the first.
-  - **`zip` walks two sequences together.** `zip(chs, chs[1:])` gives every neighbouring pair, which is exactly what a bigram model counts.
+  - **A dictionary is a lookup table.** `stoi = {"a": 1, "b": 2}` maps letters to numbers, and `stoi["a"]` gives back `1`.
+  - **A one-line loop builds a list.** `[stoi[ch] for ch in "ab"]` means "for each letter, look up its number". It gives `[1, 2]`.
+  - **A slice copies part of a word.** `"emma"[1:3]` is `"mm"`: it starts at position 1 and stops *just before* 3.
+  - **`zip` pairs things up.** `zip("emma", "mma")` pairs each letter with the one after it: e–m, m–m, m–a.
+
+  The primer explains each one slowly, with examples.
 ```
 
 ```card

@@ -18,7 +18,7 @@ const { lesson } = Astro.props as { lesson: Lesson };
         <div class="build stub-box">
           <div class="crumbs">Lesson {lesson.id}</div>
           <h1 style="font-size:28px">{lesson.title}</h1>
-          <p class="fine">This lesson's Build steps aren't written yet. Its metrics are on the path. Mark it done there when you've finished it on your own.</p>
+          <p class="fine">{lesson.type === "intro" ? "This is a starter lesson with no Build part. Its Learn cards and primer are the whole lesson." : "This lesson's Build steps aren't written yet. Its metrics are on the path. Mark it done there when you've finished it on your own."}</p>
           <a class="btn" href="/">Back to path</a>
         </div>
       )}

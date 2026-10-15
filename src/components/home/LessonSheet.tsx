@@ -48,7 +48,7 @@ export function LessonSheet({ course, lesson: l, onClose }: { course: LiteCourse
           {l.status === "ready" ? (
             <>
               <div><span>Learn · phone</span><b>{l.cards} cards · ~{learnMinutes(l.cards)} min {rec?.learn?.done ? "✓" : ""}</b></div>
-              <div><span>Build · laptop</span><b>{plural(l.steps, "step")} · ~{l.hours} h</b></div>
+              {l.steps > 0 && <div><span>Build · laptop</span><b>{plural(l.steps, "step")} · ~{l.hours} h</b></div>}
             </>
           ) : (
             <div><span>Time</span><b>~{l.hours} h · {l.type}</b></div>
@@ -65,7 +65,7 @@ export function LessonSheet({ course, lesson: l, onClose }: { course: LiteCourse
               <a className="btn block" href={`/read/${l.id}/#primer`}>New to this? Read the primer first · {l.primer.minutes} min</a>
             )}
             <a className="btn primary block" href={`/learn/${l.id}/`}>{learnLabel}</a>
-            <a className="btn block" href={`/build/${l.id}/`}>Open Build</a>
+            {l.steps > 0 && <a className="btn block" href={`/build/${l.id}/`}>Open Build</a>}
             <a className="btn block" href={`/read/${l.id}/`}>Skim the lesson{l.paperNotes ? ` · ${l.paperNotes === 1 ? "paper notes" : `${l.paperNotes} papers`}` : ""}</a>
             {st !== "done" && <button className="linkbtn" onClick={toggleDone}>I've already done this. Mark it done</button>}
             {rec?.markedDone?.v && <button className="linkbtn" onClick={toggleDone}>Unmark done</button>}

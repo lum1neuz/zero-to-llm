@@ -3,7 +3,7 @@ import type { FoldDoc } from "../../../pipeline/schema.ts";
 import { useProgress } from "../../lib/progress.ts";
 import { FoldReader } from "./FoldReader.tsx";
 
-interface Props { lesson: { id: string; title: string; status: string; crumb: string }; reading: FoldDoc[] }
+interface Props { lesson: { id: string; title: string; status: string; crumb: string; hasBuild: boolean }; reading: FoldDoc[] }
 
 export default function ReadView({ lesson, reading }: Props) {
   const p = useProgress();
@@ -39,7 +39,7 @@ export default function ReadView({ lesson, reading }: Props) {
           <FoldReader doc={doc} scope={lesson.id} learnDone={learnDone} learnHref={`/learn/${lesson.id}/`} />
           <div className="row-gap" style={{ marginTop: 18 }}>
             {lesson.status === "ready" && <a className="btn" href={`/learn/${lesson.id}/`}>Learn cards</a>}
-            {lesson.status === "ready" && <a className="btn" href={`/build/${lesson.id}/`}>Open Build</a>}
+            {lesson.status === "ready" && lesson.hasBuild && <a className="btn" href={`/build/${lesson.id}/`}>Open Build</a>}
           </div>
         </>
       )}

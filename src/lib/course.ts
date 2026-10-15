@@ -20,5 +20,7 @@ export function lite(c: Course = course, opts: { quiz?: boolean } = {}): LiteCou
 
 export const isOptionalPhase = (c: Pick<LiteCourse, "phases">, phaseId: string) => !!c.phases.find((p) => p.id === phaseId)?.optional;
 export const phaseOf = (c: Pick<LiteCourse, "phases">, phaseId: string) => c.phases.find((p) => p.id === phaseId)!;
-export const phaseLabel = (p: { id: string; title: string; optional?: boolean }) => (p.optional ? p.title : `Phase ${p.id} · ${p.title}`);
+export const phaseLabel = (p: { id: string; title: string; optional?: boolean }) => (p.optional || !/^\d/.test(p.id) ? p.title : `Phase ${p.id} · ${p.title}`);
+export const weeksLabel = (w: [number, number] | null, short = false) =>
+  !w ? (short ? "any time" : "Any time") : w[0] === w[1] ? `${short ? "wk" : "Week"} ${w[0]}` : `${short ? "wk" : "Weeks"} ${w[0]}–${w[1]}`;
 export const learnMinutes = (cards: number) => Math.max(3, Math.round(cards * 0.75));

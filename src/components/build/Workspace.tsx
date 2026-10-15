@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { Lesson } from "../../lib/course.ts";
+import { phaseLabel } from "../../lib/course.ts";
 import type { Runtime } from "../../lib/pyclient.ts";
 import type { LiteCourse } from "../../lib/course.ts";
 import { checkValue, lessonRec, lessonState, prereqsMet, touchDay, update, useProgress } from "../../lib/progress.ts";
@@ -65,7 +66,7 @@ export default function Workspace({ lesson, course, runtime }: { lesson: Lesson;
     <div className="build">
       <header className="bh">
         <div>
-          <div className="crumbs"><a href="/">{phase.optional ? phase.title : `Phase ${phase.id} · ${phase.title}`}</a> › {lesson.id}</div>
+          <div className="crumbs"><a href="/">{phaseLabel(phase)}</a> › {lesson.id}</div>
           <h1>{lesson.title}</h1>
           <div className="chips">
             <span className="chip">{lesson.hours} h</span>

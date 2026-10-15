@@ -1,4 +1,5 @@
 import type { LiteCourse } from "../../lib/course.ts";
+import { phaseLabel, weeksLabel } from "../../lib/course.ts";
 import { courseWeek, currentLesson, cutIds, lessonState, update, useProgress } from "../../lib/progress.ts";
 import { I } from "../ui.tsx";
 
@@ -42,8 +43,8 @@ export function ScheduleView({ course }: { course: LiteCourse }) {
         return (
           <div className="ph-block" key={ph.id}>
             <div className={`ph-row ${now ? "now" : ""}`}>
-              <b>{ph.optional ? ph.title : `Phase ${ph.id} · ${ph.title}`}</b>
-              <span>{ph.weeks ? `wk ${ph.weeks[0]}–${ph.weeks[1]}${now ? " · now" : ""}` : "any time"}</span>
+              <b>{phaseLabel(ph)}</b>
+              <span>{weeksLabel(ph.weeks, true)}{now ? " · now" : ""}</span>
             </div>
             {course.lessons.filter((l) => l.phase === ph.id).map((l) => {
               const isCut = cut.includes(l.id);

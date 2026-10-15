@@ -67,7 +67,7 @@ export function compileCourse(files: Record<string, string>, opts: CompileOption
     const { fm, file } = p;
     const phase = phaseById.get(fm.phase);
     if (!phase) { err(file, `Unknown phase "${fm.phase}". Phases: ${phaseIds.join(", ")}`); continue; }
-    const expectedPhase = fm.id.startsWith("S") ? "S" : fm.id.split(".")[0];
+    const expectedPhase = /^[SW]/.test(fm.id) ? fm.id[0] : fm.id.split(".")[0];
     if (expectedPhase !== fm.phase) err(file, `Lesson ${fm.id} belongs in phase ${expectedPhase}, not ${fm.phase}`);
     if (phase.protected && !fm.protected) err(file, `Phase ${phase.id} is protected, so lesson ${fm.id} must be protected: true`);
     if (fm.protected && fm.cut !== null) err(file, `Protected lessons are never cut, but ${fm.id} has cut: ${fm.cut}`);
@@ -119,7 +119,7 @@ export function compileCourse(files: Record<string, string>, opts: CompileOption
   if (issues.some((i) => i.level === "error")) return { issues };
 
   // order lessons: phase order, then numeric
-  const key = (id: string) => (id.startsWith("S") ? Number(id.slice(1)) : Number(id.split(".")[1]));
+  const key = (id: string) => (/^[SW]/.test(id) ? Number(id.slice(1)) : Number(id.split(".")[1]));
   lessons.sort((a, b) => phaseIds.indexOf(a.phase) - phaseIds.indexOf(b.phase) || key(a.id) - key(b.id));
   lessons.forEach((l, i) => (l.order = i));
 
@@ -181,7 +181,7 @@ function compileLesson(p: Parsed, files: Record<string, string>, { err, warn }: 
     q.options.forEach((o, j) => { if (!o.why.trim()) err(file, `quiz "${q.id}" option ${j}: every option needs an explanation`, 1); });
   });
 
-  if (fm.status === "ready") {
+  if (fm.status === "ready" && fm.type !== "intro") {
     for (const [name, m] of [["quality_metric", fm.quality_metric], ["systems_metric", fm.systems_metric]] as const) {
       if (!m.inputs || !m.compute || m.reference === undefined || !m.pass || (m.pass.max === undefined && m.pass.min === undefined)) {
         err(file, `${name}: a ready lesson needs inputs, compute, reference and pass (max or min)`, 1);
@@ -206,7 +206,7 @@ function compileLesson(p: Parsed, files: Record<string, string>, { err, warn }: 
     else if (sec.has(s.title)) err(file, `Section "## ${s.title}" appears twice`, s.line);
     else sec.set(s.title, s);
   }
-  for (const need of ["Goal", "Learn", "Build steps", "Done when"]) if (!sec.has(need)) err(file, `A ready lesson needs a "## ${need}" section`);
+  for (const need of fm.type === "intro" ? ["Goal", "Learn", "Done when"] : ["Goal", "Learn", "Build steps", "Done when"]) if (!sec.has(need)) err(file, `A ready lesson needs a "## ${need}" section`);
   const md = (t: string) => (sec.get(t)?.lines.join("\n").trim() || undefined);
   base.goal = md("Goal");
   base.hints = md("Hints");
@@ -267,7 +267,8 @@ function compileLesson(p: Parsed, files: Record<string, string>, { err, warn }: 
   if (doneSec) {
     const { items, errors } = parseDoneWhen(doneSec.lines, doneSec.startLine);
     errors.forEach((e) => err(file, e.message, e.line));
-    if (items.length < 2 || items.length > 4) err(file, `Done when needs 2–4 checkboxes, found ${items.length}`, doneSec.line);
+    const minDone = fm.type === "intro" ? 1 : 2;
+    if (items.length < minDone || items.length > 4) err(file, `Done when needs ${minDone}–4 checkboxes, found ${items.length}`, doneSec.line);
     const seen = new Set<string>();
     for (const it of items) {
       if (seen.has(it.id)) err(file, `Duplicate Done-when id "${it.id}"`, it.line);

@@ -2,12 +2,13 @@
 // Source keys are snake_case (what authors type); course.json keys are camelCase (what clients read).
 import { z } from "zod";
 
-export const LESSON_ID = /^(?:[0-5]|4A|4B)\.\d+$|^S\d+$/;
-export const LessonId = z.string().regex(LESSON_ID, "Lesson ids look like 3.1, 4A.2 or S1");
+export const LESSON_ID = /^(?:[0-5]|4A|4B)\.\d+$|^[SW]\d+$/;
+export const LessonId = z.string().regex(LESSON_ID, "Lesson ids look like 3.1, 4A.2, W1 or S1");
 const Slug = z.string().regex(/^[a-z][a-z0-9_]*$/, "Use lower_snake_case");
 const Md = z.string().min(1);
 
-export const LESSON_TYPES = ["build", "run", "research", "sidequest"] as const;
+/** intro: a gentle starter lesson. Build steps and metric targets are optional. */
+export const LESSON_TYPES = ["intro", "build", "run", "research", "sidequest"] as const;
 
 // ---------- course.yaml ----------
 export const PhaseSrc = z.strictObject({

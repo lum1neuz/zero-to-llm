@@ -64,7 +64,7 @@ Two numbers before you train anything. First, how fast your GPU multiplies matri
 type: concept
 id: two_numbers
 eyebrow: Why check
-title: The same 4096×4096 matmul, four ways.
+title: Two numbers to check before you train.
 visual:
   kind: bars
   max: 70
@@ -74,9 +74,11 @@ visual:
     - { label: GPU fp16, value: 68.4, text: "68.4" }
     - { label: GPU bf16, value: 67.7, text: "67.7" }
 body: |
-  Illustrative numbers for an RTX 3090. If your "GPU" row looks like the CPU row, PyTorch isn't using the GPU, and every later lesson will crawl. fp16 and bf16 run on tensor cores, which is why later lessons train in bf16.
+  The bars time the same big grid multiplication on your computer's main chip (CPU) and on its graphics card (GPU), in three number formats. Taller is faster. The numbers are illustrative, for an RTX 3090.
 
-  The other number is the **baseline**. A model that gives all 27 symbols the same chance has loss ln 27 ≈ 3.30 nats. Anything a model learns shows up as loss below that.
+  If your GPU bar looks like the CPU bar, your graphics card isn't doing the work, and later lessons will crawl.
+
+  The second number is the **baseline**: the score of a model that knows nothing and gives all 27 symbols the same chance. It's about 3.30. A model that has learned something scores lower.
 ```
 
 ```card

@@ -132,14 +132,20 @@ export default function Player({ lesson }: { lesson: Lesson }) {
       <div className="learn-col">
         <div className="scroll"><div className="done-screen">
           <div className="xp-ring"><div>+{finished.gained}<small>XP</small></div></div>
-          <h2 style={{ fontSize: 24 }}>Learn done. Now build it.</h2>
+          <h2 style={{ fontSize: 24 }}>{lesson.build.length > 0 ? "Learn done. Now build it." : "Nicely done."}</h2>
           <div className="stats">
             <div><b>{streak(p)}</b>day streak</div>
             <div><b>{finished.correct}/{exercises}</b>correct</div>
             <div><b>{finished.missed}</b>to review</div>
           </div>
-          <div className="handoff"><strong>Build is next, on your laptop.</strong><br />{lesson.build.length} steps, about {lesson.hours} hours. {lesson.goal ? lesson.goal.replace(/\*\*/g, "").split(". ")[0] + "." : ""}</div>
-          <a className="btn primary block" href={`/build/${lesson.id}/`}>Open Build</a>
+          {lesson.build.length > 0 ? (
+            <>
+              <div className="handoff"><strong>Build is next, on your laptop.</strong><br />{lesson.build.length} steps, about {lesson.hours} hours. {lesson.goal ? lesson.goal.replace(/\*\*/g, "").split(". ")[0] + "." : ""}</div>
+              <a className="btn primary block" href={`/build/${lesson.id}/`}>Open Build</a>
+            </>
+          ) : (
+            <div className="handoff"><strong>That's this lesson done.</strong><br />There's no Build part here. Head back to your path for the next lesson.</div>
+          )}
           {lesson.reading.length > 0 && <a className="btn block" href={`/read/${lesson.id}/`}>Skim the lesson{lesson.reading.length > 1 ? " and paper notes" : ""}</a>}
           <a className="btn block" href="/">Back to path</a>
         </div></div>

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { LiteCourse, LiteLesson } from "../../lib/course.ts";
+import { phaseLabel, weeksLabel } from "../../lib/course.ts";
 import { currentLesson, cutIds, lessonState, prereqsMet, useProgress } from "../../lib/progress.ts";
 import { I } from "../ui.tsx";
 import { LessonSheet } from "./LessonSheet.tsx";
@@ -46,7 +47,7 @@ export function PathView({ course }: { course: LiteCourse }) {
     <>
       {doneLead > 0 && (
         <button className="done-strip" onClick={() => setOpen({ ...open, __done: !showDone })} aria-expanded={!!showDone}>
-          {I.check} {doneLead === 1 ? `Phase ${core[0].id}` : `Phases ${core[0].id}–${core[doneLead - 1].id}`} done · {doneCount} lessons
+          {I.check} {doneLead === 1 ? phaseLabel(core[0]) : `${phaseLabel(core[0])} to ${phaseLabel(core[doneLead - 1])}`} done · {doneCount} lessons
           <span style={{ marginLeft: "auto", fontWeight: 400, fontSize: 13 }}>{showDone ? "Hide" : "Show"}</span>
         </button>
       )}
@@ -61,10 +62,10 @@ export function PathView({ course }: { course: LiteCourse }) {
         return (
           <section className="phase" key={ph.id} aria-label={ph.title}>
             <button className="phase-h" onClick={() => setOpen({ ...open, [ph.id]: !expanded })} aria-expanded={expanded}>
-              <h3>{ph.optional ? ph.title : `Phase ${ph.id} · ${ph.title}`}</h3>
+              <h3>{phaseLabel(ph)}</h3>
               {ph.protected ? <span className="chip prot">{I.shield} protected</span> : ph.optional ? <span className="chip">optional</span> : <span className="chip">{done}/{ls.length}</span>}
             </button>
-            <p className="phase-sub">{ph.weeks ? `Weeks ${ph.weeks[0]}–${ph.weeks[1]}` : "Any time"} · {hrs} h · {ph.blurb}</p>
+            <p className="phase-sub">{weeksLabel(ph.weeks)} · {hrs} h · {ph.blurb}</p>
             {expanded ? (
               <div className="path">{ls.map(node)}</div>
             ) : (

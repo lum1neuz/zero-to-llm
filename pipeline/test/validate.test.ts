@@ -34,11 +34,11 @@ describe("real content", () => {
     assert.ok(course);
     assert.ok(CourseOut.safeParse(course).success);
   });
-  test("has 35 core lessons, 197 core hours, 2 sidequests and the agreed cut order", () => {
+  test("has 39 core lessons, 203 core hours, 2 sidequests and the agreed cut order", () => {
     const { course } = compile();
-    assert.equal(course!.totals.coreLessons, 35);
-    assert.equal(course!.totals.coreHours, 197);
-    assert.equal(course!.lessons.length, 37);
+    assert.equal(course!.totals.coreLessons, 39);
+    assert.equal(course!.totals.coreHours, 203);
+    assert.equal(course!.lessons.length, 41);
     assert.deepEqual(course!.cutOrder, ["5.3", "2.4", "1.4", "5.1"]);
   });
   test("lesson 3.1 is ready with 8 cards, 4 build steps and 3 Done-when items", () => {

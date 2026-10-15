@@ -2,6 +2,10 @@ title: Zero to LLM
 subtitle: Build, shrink, adapt and serve a language model, one runnable lesson at a time
 weeks: 20
 phases:
+  - id: W
+    title: Start here
+    weeks: [1, 1]
+    blurb: "A gentle start: what a language model is, Python from zero, numbers in grids, and just enough math"
   - id: "0"
     title: Foundations
     weeks: [1, 2]

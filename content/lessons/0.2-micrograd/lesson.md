@@ -64,13 +64,13 @@ Write micrograd, Karpathy's autograd engine for single numbers, one piece at a t
 type: concept
 id: nudge_and_chain
 eyebrow: The whole idea
-title: A gradient answers "if I nudge this, how much does the output move?"
+title: A gradient says which way to turn each knob, and how hard.
 body: |
-  For `c = a * b`, nudging `a` by a tiny `h` moves `c` by `b·h`. So the **local derivative** of c with respect to a is `b`.
+  Nudge an input up a tiny bit and watch the output. With `c = a * b`, a = 2 and b = −3, nudging a up by 0.001 moves c by −0.003: three times the nudge, the other way. That number, −3, is the **gradient** of c with respect to a. For a product it's always the other input, b.
 
-  The **chain rule** links local derivatives. If the loss L depends on c, and c on a, then `dL/da = dL/dc · dc/da`. In micrograd, `out.grad` holds `dL/dc`. Each operation's `_backward` multiplies it by its local derivative and adds the result to its inputs' grads.
+  When steps form a chain, the nudges multiply. If c changes 3 for every unit a changes, and the loss changes 2 for every unit c changes, the loss changes 2 × 3 = 6 for every unit a changes. That's the **chain rule**.
 
-  `backward()` sets the output's grad to 1, then runs every `_backward` from the output back towards the inputs.
+  micrograd keeps each number's gradient in `.grad`. `backward()` starts at the output with a gradient of 1 and passes gradients back, step by step, to every input.
 ```
 
 ```card

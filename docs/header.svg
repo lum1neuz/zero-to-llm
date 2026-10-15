@@ -27,7 +27,7 @@
 
   <!-- title -->
   <g font-family="'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif">
-    <text x="72" y="120" font-size="15" font-weight="700" letter-spacing="3" fill="#5C96EC">AN INTERACTIVE COURSE · 37 LESSONS · OPEN SOURCE</text>
+    <text x="72" y="120" font-size="15" font-weight="700" letter-spacing="3" fill="#5C96EC">AN INTERACTIVE COURSE · 41 LESSONS · OPEN SOURCE</text>
     <text x="68" y="196" font-size="78" font-weight="800" letter-spacing="-2" fill="#E5EBF5">Zero to LLM</text>
     <text x="72" y="240" font-size="23" fill="#B9C4D8">Build, shrink, adapt and serve a language model,</text>
     <text x="72" y="270" font-size="23" fill="#B9C4D8">one runnable lesson at a time.</text>
