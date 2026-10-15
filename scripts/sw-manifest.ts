@@ -17,7 +17,7 @@ const walk = (d: string) => {
 walk(dist);
 const precache = files
   // Build pages are large and desktop-only; the service worker caches each one when it's first opened.
-  .filter((f) => !f.startsWith("pyodide/") && !f.startsWith("build/") && f !== "sw.js")
+  .filter((f) => !f.startsWith("pyodide/") && !f.startsWith("build/") && f !== "sw.js" && f !== "_headers")
   .map((f) => "/" + f.replace(/(^|\/)index\.html$/, "$1"));
 const hash = createHash("sha256");
 for (const f of files.filter((x) => !x.startsWith("pyodide/")).sort()) hash.update(f).update(readFileSync(join(dist, f)));

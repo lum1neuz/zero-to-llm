@@ -1,0 +1,20 @@
+# Cloudflare static-assets headers.
+# The service worker must always be re-checked, or updates never reach learners.
+/sw.js
+  Cache-Control: no-cache
+
+/manifest.webmanifest
+  Cache-Control: no-cache
+
+/course.json
+  Cache-Control: no-cache
+
+# Versioned or content-hashed paths never change under the same URL.
+/_astro/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/pyodide/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/runtime/*
+  Cache-Control: public, max-age=31536000, immutable

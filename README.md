@@ -1,6 +1,10 @@
+<p align="center"><img src="docs/header.svg" alt="Zero to LLM: build, shrink, adapt and serve a language model, one runnable lesson at a time" width="100%"></p>
+
 # Zero to LLM
 
 **Build, shrink, adapt and serve a language model, one runnable lesson at a time.**
+
+**▶ Take the course: [zero-to-llm.lum1neuz.workers.dev](https://zero-to-llm.lum1neuz.workers.dev)** · It runs in your browser and works offline after the first visit. No sign-up.
 
 A free, hands-on course that takes you from autograd by hand to a quantized, fine-tuned, served LLM. It has 35 core lessons and 2 sidequests, about 197 hours over 20 weeks. You write every piece yourself, and tests check your code in the browser.
 
@@ -54,6 +58,7 @@ One content source (lesson Markdown) → a validator → `course.json` → this 
 | `npm test` | Validator and mini-torch tests (`node --test`) |
 | `npm run typecheck` | TypeScript |
 | `npm run build` | Production build into `dist/` with a precaching service worker |
+| `npm run deploy` | Build and deploy to Cloudflare (static assets, `wrangler.jsonc`). Needs `npx wrangler login` once |
 
 Requires Node ≥ 22.18 (TypeScript runs natively, no build step for scripts). No Python install is needed. Pyodide runs Python in both Node and the browser.
 

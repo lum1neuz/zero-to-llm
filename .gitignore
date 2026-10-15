@@ -7,3 +7,4 @@ public/runtime/
 *.log
 public/pyodide/
 .claude/
+.wrangler/

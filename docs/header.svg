@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 420" width="1280" height="420" role="img" aria-labelledby="t d">
+  <title id="t">Zero to LLM</title>
+  <desc id="d">Build, shrink, adapt and serve a language model, one runnable lesson at a time. A path of lessons runs from micrograd through attention, the KV cache, int4 quantization and LoRA to serving.</desc>
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0B101B"/>
+      <stop offset="0.55" stop-color="#101C33"/>
+      <stop offset="1" stop-color="#1C3E78"/>
+    </linearGradient>
+    <radialGradient id="sun" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#F0C36B" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#F0C36B" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M32 0H0V32" fill="none" stroke="#5C96EC" stroke-opacity="0.07" stroke-width="1"/>
+    </pattern>
+  </defs>
+
+  <rect width="1280" height="420" fill="url(#sky)"/>
+  <rect width="1280" height="420" fill="url(#grid)"/>
+  <circle cx="1190" cy="84" r="130" fill="url(#sun)"/>
+  <circle cx="1190" cy="84" r="28" fill="#F0C36B"/>
+
+  <!-- steppe horizon -->
+  <path d="M0 345 C160 318 300 352 470 334 S780 300 950 326 S1170 344 1280 318 L1280 420 L0 420 Z" fill="#1A2B4A"/>
+  <path d="M0 378 C200 360 380 392 560 376 S900 350 1080 372 S1220 384 1280 368 L1280 420 L0 420 Z" fill="#14213A"/>
+
+  <!-- title -->
+  <g font-family="'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif">
+    <text x="72" y="120" font-size="15" font-weight="700" letter-spacing="3" fill="#5C96EC">AN INTERACTIVE COURSE · 37 LESSONS · OPEN SOURCE</text>
+    <text x="68" y="196" font-size="78" font-weight="800" letter-spacing="-2" fill="#E5EBF5">Zero to LLM</text>
+    <text x="72" y="240" font-size="23" fill="#B9C4D8">Build, shrink, adapt and serve a language model,</text>
+    <text x="72" y="270" font-size="23" fill="#B9C4D8">one runnable lesson at a time.</text>
+  </g>
+  <g font-family="'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace" font-size="15">
+    <rect x="72" y="292" width="356" height="34" rx="9" fill="#090E18" stroke="#2A3550"/>
+    <text x="88" y="314" fill="#DAE3F2"><tspan fill="#E3A6EE">scale</tspan> = w.<tspan fill="#E3A6EE">abs</tspan>().<tspan fill="#E3A6EE">max</tspan>() / <tspan fill="#F0C36B">127</tspan></text>
+  </g>
+
+  <!-- the path: lesson nodes from micrograd to serving -->
+  <g fill="none" stroke="#5C96EC" stroke-width="3" stroke-dasharray="2 9" stroke-linecap="round" stroke-opacity="0.75">
+    <path d="M560 300 C600 240 640 230 680 236 S760 190 800 168 S880 200 920 222 S1000 190 1040 150 S1110 196 1150 248"/>
+  </g>
+  <g font-family="'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="700" text-anchor="middle">
+    <g transform="translate(560 300)"><circle r="21" fill="#1E8456"/><circle r="21" fill="none" stroke="#46BF89" stroke-width="3"/><path d="M-8 1l5 5 11-11" stroke="#E5EBF5" stroke-width="3.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><text y="44" fill="#9AA6BE">micrograd</text></g>
+    <g transform="translate(680 236)"><circle r="21" fill="#1E8456"/><circle r="21" fill="none" stroke="#46BF89" stroke-width="3"/><path d="M-8 1l5 5 11-11" stroke="#E5EBF5" stroke-width="3.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><text y="44" fill="#9AA6BE">attention</text></g>
+    <g transform="translate(800 168)"><circle r="21" fill="#1C5AB6"/><circle r="21" fill="none" stroke="#5C96EC" stroke-width="3"/><text y="5" fill="#E5EBF5" font-size="14">2.2</text><text y="44" fill="#9AA6BE">KV cache</text></g>
+    <g transform="translate(920 222)"><circle r="27" fill="#5C96EC"/><circle r="36" fill="none" stroke="#5C96EC" stroke-width="3" stroke-opacity="0.35"/><text y="6" fill="#07101F" font-size="16">3.2</text><text y="56" fill="#E5EBF5">int4</text></g>
+    <g transform="translate(1040 150)"><circle r="21" fill="#1C2538"/><circle r="21" fill="none" stroke="#2A3550" stroke-width="3"/><text y="5" fill="#9AA6BE" font-size="14">4A.1</text><text y="44" fill="#9AA6BE">LoRA</text></g>
+    <g transform="translate(1150 248)"><circle r="21" fill="#1C2538"/><circle r="21" fill="none" stroke="#F0C36B" stroke-width="3"/><text y="5" fill="#F0C36B" font-size="14">5.4</text><text y="44" fill="#9AA6BE">serve</text></g>
+  </g>
+</svg>

@@ -1,0 +1,12 @@
+// Zero to LLM is a fully static PWA, deployed as a Cloudflare Worker with static assets only
+// (no Worker script). `npm run deploy` builds dist/ and uploads it.
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "zero-to-llm",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./dist",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page"
+  }
+}
