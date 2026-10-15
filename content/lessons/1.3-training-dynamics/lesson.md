@@ -70,17 +70,19 @@ type: concept
 id: schedule_shape
 eyebrow: The schedule
 title: Warm up, then glide down.
-visual:
-  kind: bars
-  max: 10
-  bars:
-    - { label: step 0, value: 0.1, text: "1e-5" }
-    - { label: step 50, value: 5.1, text: "5e-4" }
-    - { label: step 100, value: 10, text: "1e-3" }
-    - { label: step 2500, value: 5.6, text: "5.6e-4" }
-    - { label: step 5000, value: 1, text: "1e-4" }
 body: |
-  A constant learning rate is a compromise: too big for the start, when the model is fragile, and too big for the end, when it needs small steps to settle. **Warmup** climbs from nearly 0 to the peak over the first ~100 steps. **Cosine decay** then glides down, slowly at first, steeply in the middle, slowly again near a floor of a tenth of the peak. The bars show 1.2's run with this schedule.
+  A constant learning rate is a compromise: too big for the start, when the model is fragile, and too big for the end, when it needs small steps to settle. **Warmup** climbs from nearly 0 to the peak over the first ~100 steps. **Cosine decay** then glides down, slowly at first, steeply in the middle, slowly again near a floor of a tenth of the peak. The chart shows 1.2's run with this schedule.
+
+  ```chart
+  kind: line
+  title: Learning rate in 1.2's run
+  x: { label: step, values: [0, 50, 100, 250, 500, 750, 1000, 1250, 1500, 1750, 2000, 2250, 2500, 2750, 3000, 3250, 3500, 3750, 4000, 4250, 4500, 4750, 5000] }
+  y: { label: learning rate, min: 0, max: 0.001 }
+  series:
+    - { name: learning rate, values: [0.00001, 0.00051, 0.001, 0.000998, 0.000985, 0.000961, 0.000927, 0.000883, 0.000831, 0.000771, 0.000705, 0.000636, 0.000564, 0.000492, 0.000422, 0.000355, 0.000293, 0.000237, 0.000189, 0.000151, 0.000123, 0.000106, 0.0001] }
+  highlight: { x: 100, label: "peak, 1e−3" }
+  caption: A steep climb over 100 steps, then a slow, fast, slow glide down to the 1e−4 floor.
+  ```
 ```
 
 ```card

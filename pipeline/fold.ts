@@ -7,11 +7,12 @@
 //    ## Hints (general tips) are included; challenge hint ladders and reference solutions never are;
 //  - paper notes, authored as content/lessons/<id>-<slug>/papers/<name>.md.
 import { parse as parseYaml } from "yaml";
+import { extractCharts } from "./chart.ts";
 import { splitFrontmatter, splitHeadings } from "./parse.ts";
 import type { FoldDoc, FoldSection, Lesson } from "./schema.ts";
 
 const firstSentence = (md: string) => {
-  const flat = md.replace(/```[\s\S]*?```/g, " ").replace(/\s+/g, " ").trim();
+  const flat = md.replace(/```[\s\S]*?```/g, " ").replace(/<!-- chart:\d+ -->/g, " ").replace(/\s+/g, " ").trim();
   const m = /^(.+?[.!?])(\s|$)/.exec(flat);
   return (m ? m[1] : flat).trim();
 };
@@ -26,7 +27,7 @@ export function lessonFold(l: Lesson): FoldDoc {
       const right = c.options[c.answer];
       sections.push({ id: `card-${c.id}`, title: "Check yourself", key: c.q, body: right ? `**${right.text}.** ${right.why}` : undefined, locked: "learn" });
     } else if (c.type === "concept") {
-      sections.push({ id: `card-${c.id}`, title: c.title ?? c.eyebrow ?? "Concept", key: firstSentence(c.body), body: c.body });
+      sections.push({ id: `card-${c.id}`, title: c.title ?? c.eyebrow ?? "Concept", key: firstSentence(c.body), body: c.body, ...(c.charts ? { charts: c.charts } : {}) });
     } else {
       // Exercises: the question is the key; the explanation gives the answer away, so it waits for Learn.
       sections.push({ id: `card-${c.id}`, title: c.title ?? c.eyebrow ?? "Exercise", body: "whyOk" in c ? c.whyOk : undefined, locked: "learn" });
@@ -120,14 +121,17 @@ function parseSections(split: { body: string; bodyLine: number }, what: string, 
     if (ids.has(id)) issues.push({ line: s.line, message: `Duplicate section id "${id}"` });
     ids.add(id);
     const lines = [...s.lines];
-    while (lines.length && !lines[0].trim()) lines.shift();
+    let bodyLine = s.startLine;
+    while (lines.length && !lines[0].trim()) { lines.shift(); bodyLine++; }
     const keyLines: string[] = [];
-    while (lines.length && lines[0].startsWith(">")) keyLines.push(lines.shift()!.replace(/^>\s?/, ""));
+    while (lines.length && lines[0].startsWith(">")) { keyLines.push(lines.shift()!.replace(/^>\s?/, "")); bodyLine++; }
     const key = keyLines.join(" ").trim();
-    const body = lines.join("\n").trim();
+    const { body: md, charts, issues: chartIssues } = extractCharts(lines.join("\n"), bodyLine);
+    issues.push(...chartIssues);
+    const body = md.trim();
     if (!key) issues.push({ line: s.line, message: `Section "${title}" needs a key sentence: a "> " line right under the heading` });
     if (!body) issues.push({ line: s.line, message: `Section "${title}" needs notes under its key sentence` });
-    out.push({ id, title, ref, key: key || undefined, body: body || undefined });
+    out.push({ id, title, ref, key: key || undefined, body: body || undefined, ...(charts.length ? { charts } : {}) });
   }
   return out;
 }

@@ -196,6 +196,16 @@ On the lesson's 16-weight row, mean error at int4 for different group sizes:
 | 8 | 2 | 0.047 | 6 |
 | 4 | 4 | 0.026 | 8 |
 
+```chart
+kind: bar
+title: Mean int4 error against group size
+x: { label: group size g, values: [16 (row), "8", "4"] }
+y: { label: mean error, min: 0, max: 0.1 }
+series:
+  - { name: mean error, values: [0.086, 0.047, 0.026] }
+caption: On the lesson's 16-weight row, each halving of the group size cuts the mean error roughly in half.
+```
+
 (The bits column is so high only because the row is tiny. In a real 2048-wide row these become 4.008, 4.06 and 4.125 bits for g = 2048, 256 and 128.)
 
 The pattern holds in real models: halve the group size and the error drops, but the scale overhead doubles. Things to weigh:

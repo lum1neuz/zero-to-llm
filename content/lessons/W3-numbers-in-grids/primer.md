@@ -99,6 +99,26 @@ Say the row `[5, 3, 2]` counts what came after "good": "morning" 5 times, "night
 | 3 | 0.3 | 30 | 30% |
 | 2 | 0.2 | 20 | 20% |
 
+```chart
+kind: bar
+title: What came after "good", counted
+x: { label: next word, values: [morning, night, luck] }
+y: { label: times seen, min: 0, max: 10 }
+series:
+  - { name: count, values: [5, 3, 2] }
+caption: The raw counts out of a total of 10.
+```
+
+```chart
+kind: bar
+title: The same row as percentages
+x: { label: next word, values: [morning, night, luck] }
+y: { label: percent, min: 0, max: 100 }
+series:
+  - { name: percent, values: [50, 30, 20] }
+caption: "Same shape, new scale: each count divided by the total of 10, times 100, so the bars add up to 100%."
+```
+
 Two things to notice:
 
 - **Divide by the total of the row**, not by 100 and not by how many numbers there are.

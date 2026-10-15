@@ -150,6 +150,17 @@ Llama 3.1 8B's config says 32 layers, 32 attention heads, 8 key/value heads and 
 
 A batch of 16 sequences at 8k needs 16 GiB, about as much as the fp16 weights. At Llama 3.1's full context of 131,072 tokens, one sequence needs 16 GiB on its own.
 
+```chart
+kind: line
+title: KV cache for one Llama 3.1 8B sequence (fp16)
+x: { label: context length (tokens), values: [8192, 16384, 32768, 65536, 131072] }
+y: { label: cache size (GiB), min: 0, max: 16 }
+series:
+  - { name: cache size (GiB), values: [1, 2, 4, 8, 16] }
+highlight: { x: 131072, label: "full context, 16 GiB" }
+caption: Context is one factor in the product, so the cache grows in a straight line, from 1 GiB at 8k tokens to 16 GiB at 131,072.
+```
+
 ## kv_heads, not heads {#gqa}
 > Llama 3.1 uses grouped-query attention: 4 query heads share each key/value head, so the cache holds 8 heads per layer, not 32. Counting query heads gives 4 GiB, which is wrong.
 

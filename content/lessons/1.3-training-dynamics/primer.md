@@ -59,6 +59,18 @@ cos(π·p) runs from 1 down to −1 over half a turn. Adding 1 gives 2 → 0, an
 
 Compared with a straight line, the cosine spends longer near the peak, where learning is fast, and longer near the floor, where the model settles.
 
+```chart
+kind: line
+title: The challenge's schedule, cosine against a straight line
+x: { label: step, values: [0, 4, 9, 20, 30, 40, 50] }
+y: { label: learning rate, min: 0, max: 0.0007 }
+series:
+  - { name: cosine, values: [0.00006, 0.0003, 0.0006, 0.000519, 0.00033, 0.000141, 0.00006] }
+  - { name: straight line, values: [0.00006, 0.0003, 0.0006, 0.000465, 0.00033, 0.000195, 0.00006] }
+highlight: { x: 30, label: "halfway, 3.3e−4" }
+caption: Both warm up to the 6e−4 peak by step 9 and meet at step 30, but the cosine stays nearer the peak early on and nearer the 6e−5 floor late.
+```
+
 ## The floor {#floor}
 > The decay ends at a minimum learning rate, here a tenth of the peak, and holds there after max_steps.
 
@@ -134,6 +146,18 @@ The recording is **illustrative**: sample data written for the course to show wh
 - **Step 0 and 250**: the model is still near random and the norms are large. Clipping keeps those early steps tame.
 - **Step 2,750**: one bad batch spikes the norm to 3.41. It gets clipped to 1.0 and the loss barely notices.
 - **The rest**: norms settle around 0.3, well under the limit, so clipping does nothing.
+
+```chart
+kind: line
+title: Training loss in the recording
+x: { label: step, values: [0, 250, 500, 750, 1000, 1250, 1500, 1750, 2000, 2250, 2500, 2750, 3000, 3250, 3500, 3750, 4000, 4250, 4500, 4750, 5000] }
+y: { label: training loss, min: 0, max: 4.5 }
+series:
+  - { name: training loss, values: [4.29, 2.31, 1.98, 1.72, 1.60, 1.52, 1.46, 1.42, 1.38, 1.35, 1.32, 1.31, 1.28, 1.26, 1.24, 1.23, 1.21, 1.20, 1.19, 1.18, 1.18] }
+highlight: { x: 2750, label: "clipped spike, loss barely moves" }
+illustrative: true
+caption: The loss falls fast while the model is near random, then flattens as the learning rate glides down to its floor.
+```
 
 Throughput is printed with each eval. Each step processes 64 × 256 = 16,384 tokens, and at about 53 ms per step that's roughly 310,000 tokens per second on an RTX 3090. A laptop CPU manages a few thousand.
 

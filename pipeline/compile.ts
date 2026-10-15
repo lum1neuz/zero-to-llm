@@ -3,6 +3,7 @@
 import { parse as parseYaml } from "yaml";
 import type { z } from "zod";
 import { fewestBitsUnder } from "../src/lib/quant.ts";
+import { extractCharts } from "./chart.ts";
 import { lessonFold, parsePaperNotes, parsePrimer } from "./fold.ts";
 import { extractFences, parseDoneWhen, splitFrontmatter, splitHeadings, testNamesFrom } from "./parse.ts";
 import {
@@ -305,8 +306,11 @@ function compileLesson(p: Parsed, files: Record<string, string>, { err, warn }: 
 function checkCard(c: Exclude<z.infer<typeof CardSrc>, { type: "quiz" }>, at: (m: string) => void): Card | null {
   const common = { id: c.id, eyebrow: c.eyebrow, title: c.title };
   switch (c.type) {
-    case "concept":
-      return { ...common, type: "concept", body: c.body, visual: c.visual };
+    case "concept": {
+      const { body, charts, issues } = extractCharts(c.body);
+      issues.forEach((x) => at(x.message));
+      return { ...common, type: "concept", body, ...(charts.length ? { charts } : {}), visual: c.visual };
+    }
     case "slider_viz": {
       const p = c.params;
       if (!(p.min_bits <= p.start_bits && p.start_bits <= p.max_bits)) at("params need min_bits ≤ start_bits ≤ max_bits");

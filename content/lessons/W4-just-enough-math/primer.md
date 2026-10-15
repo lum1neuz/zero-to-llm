@@ -118,7 +118,18 @@ Say the model guessed the next letter, and the real next letter was "a". Look at
 | 0.1 | 2.30 |
 | 0.01 | 4.61 |
 
-Read the table as a story:
+```chart
+kind: line
+title: Surprise against the chance given to "a"
+x: { label: chance the model gave "a", values: [0.01, 0.1, 0.25, 0.5, 1.0] }
+y: { label: surprise, min: 0, max: 5 }
+series:
+  - { name: surprise, values: [4.61, 2.30, 1.39, 0.69, 0.00] }
+highlight: { x: 0.5, label: "half a chance, 0.69" }
+caption: Surprise is 0 when the model was certain and shoots up as the chance it gave the right answer falls toward 0.
+```
+
+Read the table and the chart as a story:
 
 - The model was **certain** and right: no surprise at all.
 - It gave the right answer **half** a chance: a little surprise.

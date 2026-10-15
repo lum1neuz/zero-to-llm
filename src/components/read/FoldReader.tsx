@@ -3,7 +3,8 @@
 // so a key always leads back to the text it summarises.
 import { useEffect, useState } from "react";
 import type { FoldDoc, FoldSection } from "../../../pipeline/schema.ts";
-import { blockMd, inlineMd } from "../../lib/text.ts";
+import { inlineMd } from "../../lib/text.ts";
+import { MdCharts } from "../Chart.tsx";
 import { Html, I } from "../ui.tsx";
 
 export const LEVELS = ["Gist", "Map", "Keys", "Full"] as const;
@@ -87,7 +88,7 @@ export function FoldReader({ doc, scope, learnDone, learnHref }: { doc: FoldDoc;
                 {d >= 3 && (locked ? (
                   <p className="fold-locked">{I.lock} The explanation gives the answer away. It opens after you finish <a href={learnHref}>Learn</a>.</p>
                 ) : s.body ? (
-                  <Html as="div" className="fold-body md" html={blockMd(s.body)} />
+                  <MdCharts className="fold-body md" md={s.body} charts={s.charts} />
                 ) : null)}
               </li>
             );

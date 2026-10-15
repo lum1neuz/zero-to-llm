@@ -173,9 +173,20 @@ const QuizOut = z.object({
   id: z.string(), q: z.string(), answer: z.int(),
   options: z.array(z.object({ text: z.string(), why: z.string() })),
 });
+/** A chart from a ```chart fence (see pipeline/chart.ts). The Markdown keeps a `<!-- chart:N -->` line where it goes. */
+export const ChartOut = z.object({
+  kind: z.enum(["bar", "line", "scatter"]), title: z.string(),
+  x: z.object({ label: z.string(), values: z.union([z.array(z.number()), z.array(z.string())]) }),
+  y: z.object({ label: z.string().optional(), min: z.number().optional(), max: z.number().optional() }).optional(),
+  series: z.array(z.object({ name: z.string(), values: z.array(z.number()) })),
+  highlight: z.object({ x: z.union([z.number(), z.string()]), series: z.string().optional(), label: z.string() }).optional(),
+  threshold: z.object({ y: z.number(), label: z.string() }).optional(),
+  illustrative: z.boolean(), caption: z.string(),
+});
+export type Chart = z.infer<typeof ChartOut>;
 const CardCommon = { id: z.string(), eyebrow: z.string().optional(), title: z.string().optional(), hint: z.string().optional() };
 export const CardOut = z.discriminatedUnion("type", [
-  z.object({ ...CardCommon, type: z.literal("concept"), body: z.string(), visual: z.object({
+  z.object({ ...CardCommon, type: z.literal("concept"), body: z.string(), charts: z.array(ChartOut).optional(), visual: z.object({
     kind: z.literal("bars"), max: z.number(), bars: z.array(z.object({ label: z.string(), value: z.number(), text: z.string().optional() })),
     limit: z.object({ value: z.number(), label: z.string() }).optional() }).optional() }),
   z.object({ ...CardCommon, type: z.literal("slider_viz"), viz: z.literal("quant_grid"), params: z.object({
@@ -212,6 +223,7 @@ export const StepOut = z.discriminatedUnion("kind", [
 ]);
 export const FoldSectionOut = z.object({
   id: z.string(), title: z.string(), ref: z.string().optional(), key: z.string().optional(), body: z.string().optional(),
+  charts: z.array(ChartOut).optional(),
   /** "learn": the body gives answers away, so readers show it only after Learn is done. */
   locked: z.literal("learn").optional(),
 });

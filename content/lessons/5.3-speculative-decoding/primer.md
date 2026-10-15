@@ -137,6 +137,18 @@ With α = 0.75 and c = 0.15:
 | 4 | 3.05 | 1.60 | 1.91× |
 | 8 | 3.70 | 2.20 | 1.68× |
 
+```chart
+kind: line
+title: Speedup against draft length k (α = 0.75, c = 0.15)
+x: { label: draft length k, values: [1, 2, 4, 8] }
+y: { label: speedup (×), min: 0, max: 2 }
+series:
+  - { name: speedup, values: [1.52, 1.78, 1.91, 1.68] }
+highlight: { x: 4, label: "best k, 1.91×" }
+threshold: { y: 1, label: "plain decoding, 1×" }
+caption: Speedup climbs while extra guesses still pay for themselves, peaks at k = 4, then falls as each guess costs more than it earns.
+```
+
 Past the best k, each extra guess costs more than it is likely to earn. A poor draft can even be slower than no draft: with α = 0.1 and k = 1 a round yields 1.1 tokens for a cost of 1.15. The output stays exact either way. Only the speed changes.
 
 ## Choosing a draft {#draft}

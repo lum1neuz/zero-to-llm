@@ -167,6 +167,17 @@ With b bits, symmetric absmax uses levels from −(2ᵇ⁻¹ − 1) to +(2ᵇ⁻
 | 6 | 31 | 0.0677 | 0.034 |
 | 4 | 7 | 0.3000 | 0.150 |
 
+```chart
+kind: bar
+title: Worst rounding error against bit width
+x: { label: bits per weight, values: [8 bits, 6 bits, 4 bits] }
+y: { label: worst error, min: 0, max: 0.16 }
+series:
+  - { name: worst error, values: [0.008, 0.034, 0.150] }
+highlight: { x: 4 bits, label: "0.150" }
+caption: For a row whose biggest weight is 2.10, every two bits you remove make the worst error about four times bigger.
+```
+
 The slider card lets you drag the bit width and watch the error. At 4 bits a step of 0.3 is bigger than many weights themselves. That's why 3.2 has to do something smarter than one scale per row.
 
 ## The way back: dequantize {#dequantize}

@@ -110,7 +110,7 @@ A lesson is Markdown with YAML frontmatter. Stubs have frontmatter only. A ready
 
 | `type` | Fields |
 |---|---|
-| `concept` | `body`, `visual?` (`kind: bars`, `max`, `bars[]`, `limit?`) |
+| `concept` | `body` (may hold ` ```chart ` blocks, see Charts), `visual?` (`kind: bars`, `max`, `bars[]`, `limit?`) |
 | `slider_viz` | `viz: quant_grid`, `params { weights, min_bits, max_bits, start_bits, error_limit }`, `goal: fewest_bits_under_limit`, `answer` (recomputed by the validator) |
 | `fill_blank` | `code` with `[[0]]`, `[[1]]` slots, `tokens`, `answer[]`, `tips { token: why }`, `why_ok`, `why_wrong` |
 | `predict` | `code`, `options[] { text, correct?, why }` (exactly one correct) |
@@ -148,6 +148,25 @@ Notes in Markdown, as long as they need to be.
 ```
 
 Every section needs an `{#id}`, a `> ` key sentence and notes. `ref` (optional) points readers at the paper's own section. See `content/lessons/3.1-int8-absmax/papers/llm-int8.md`.
+
+### Charts
+
+Primers, paper notes and concept card bodies can hold a ` ```chart ` block of YAML. Add one where a picture teaches better than a table: a curve, a trend, a peak, a straight-line growth.
+
+```yaml
+kind: line                    # bar | line | scatter
+title: Speedup against draft length k
+x: { label: draft length k, values: [1, 2, 4, 8] }       # numbers, or text labels (bar, line)
+y: { label: speedup (×), min: 0, max: 2 }               # optional: label, min, max
+series:                                                 # 1–3 series, each with one value per x
+  - { name: speedup, values: [1.52, 1.78, 1.91, 1.68] }
+highlight: { x: 4, label: "best k, 1.91×" }             # optional point (series: defaults to the first)
+threshold: { y: 1, label: "plain decoding, 1×" }        # optional horizontal line, like a pass limit
+illustrative: true                                      # optional: made-up numbers that show a shape
+caption: Speedup peaks at k = 4, then falls as each guess costs more than it earns.
+```
+
+Use only numbers the lesson already has, and mark sample data `illustrative: true`. Quote labels that contain a comma or a colon. The validator checks that every series matches x in length, values are finite and inside `y.min`/`y.max`, a line's numeric x goes up, a scatter's x is numeric, bars start at 0, the highlight names a real x and series, the threshold is in range, and the caption is one sentence. In `course.json` the chart is data, not a drawing: the Markdown keeps a `<!-- chart:N -->` line where it was, and the section or card gets a `charts` array. The web app draws it as an SVG sized to the screen, with a hover readout and a "Show the numbers" table; colours come from the `--viz-1…3` tokens in `global.css`.
 
 ### Challenge tests
 

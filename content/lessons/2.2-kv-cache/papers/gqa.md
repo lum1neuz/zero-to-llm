@@ -28,6 +28,16 @@ On their encoder-decoder (T5) experiments, multi-query attention was clearly fas
 
 Query heads are cheap at decode time: only the newest token's queries are computed, and they're never cached. Keys and values are stored for every past position. Cutting key/value heads from 32 to 8 cuts the cache 4×, which means 4× longer contexts or 4× bigger batches in the same memory. Counting query heads instead of key/value heads is the mistake the `kv_bytes` challenge catches.
 
+```chart
+kind: bar
+title: Llama 3.1 8B's KV cache at 8k context (fp16)
+x: { label: key/value heads per layer, values: [32 (one per query head), 8 (grouped)] }
+y: { label: cache size (GiB), min: 0, max: 4 }
+series:
+  - { name: cache size (GiB), values: [4, 1] }
+caption: Sharing each key/value head among 4 query heads cuts the cache from 4 GiB to 1 GiB per sequence.
+```
+
 ## How the course uses it {#course}
 > 2.2's cache-size formula uses kv_heads because of this paper; phase 5's serving systems are built around the same memory budget.
 

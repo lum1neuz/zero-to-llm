@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import type { Card, Lesson } from "../../lib/course.ts";
 import { lessonRec, scheduleMiss, streak, touchDay, update, useProgress, XP } from "../../lib/progress.ts";
 import { quantStats } from "../../lib/quant.ts";
-import { blockMd, hl, inlineMd } from "../../lib/text.ts";
+import { hl, inlineMd } from "../../lib/text.ts";
 import { Html, I } from "../ui.tsx";
+import { MdCharts } from "../Chart.tsx";
 import { QuantGrid } from "./QuantGrid.tsx";
 
 interface Answer { slots: (string | null)[]; bits: number; pick: number | null; order: number[]; val: string; hint: boolean }
@@ -220,7 +221,7 @@ function CardView({ card: c, a, setA, locked, quizLabel }: { card: Card; a: Answ
               ))}
             </div>
           )}
-          <Html as="div" className="md" html={blockMd(c.body)} />
+          <MdCharts className="md" md={c.body} charts={c.charts} />
         </>
       );
     }

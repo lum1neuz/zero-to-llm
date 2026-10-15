@@ -123,12 +123,16 @@ title: "Surprise = −log(chance). Unlikely things are more surprising."
 body: |
   When a model guesses, we look at the chance it gave to what *actually* happened. Then we take **minus its log**. That's the **surprise**:
 
-  | Chance given to the right answer | Surprise |
-  |---|---|
-  | 1.0 (certain) | 0.00 |
-  | 0.5 | 0.69 |
-  | 0.25 | 1.39 |
-  | 0.1 | 2.30 |
+  ```chart
+  kind: line
+  title: Surprise against chance
+  x: { label: chance given to the right answer, values: [0.1, 0.25, 0.5, 1.0] }
+  y: { label: surprise, min: 0, max: 2.5 }
+  series:
+    - { name: surprise, values: [2.30, 1.39, 0.69, 0.00] }
+  highlight: { x: 0.1, label: "unlikely, 2.30" }
+  caption: The lower the chance the model gave the right answer, the bigger the surprise.
+  ```
 
   A confident right guess costs nothing. A right answer the model thought unlikely costs a lot.
 
