@@ -1,0 +1,14 @@
+{"c":"hi","t":"$ python spec_decode.py --target runs/mn-8b-4a --draft meta-llama/Llama-3.2-1B-Instruct --k 1,2,3,4,6 --prompts mn_eval.jsonl --n 50 --max-tokens 128"}
+{"c":"dim","t":"target runs/mn-8b-4a (Llama 3.1 8B, your 4A.5 fine-tune) · draft Llama 3.2 1B · same 128,256-token vocabulary"}
+{"c":"dim","t":"draft pass costs c = 0.21 of a target pass (measured over 200 single-token steps)"}
+{"c":"dim","t":"baseline: target alone, greedy, 1 user …"}
+{"c":"","t":"  target alone           46.8 tok/s"}
+{"c":"dim","t":"  k   acceptance α   tokens/round   tok/s    speedup"}
+{"c":"","t":"  1   0.62           1.62           62.7     1.34×","delay":500}
+{"c":"ok","t":"  2   0.62           2.00           66.0     1.41×   ← best","delay":500}
+{"c":"","t":"  3   0.61           2.21           63.4     1.36×","delay":500}
+{"c":"","t":"  4   0.61           2.35           59.7     1.28×","delay":500}
+{"c":"bad","t":"  6   0.60           2.43           50.6     1.08×   ← drafting costs more than it saves","delay":500}
+{"c":"dim","t":"greedy check: 50 prompts × 128 tokens, k = 2 vs the target alone …"}
+{"c":"ok","t":"identical on 50 / 50 prompts (100%)"}
+{"c":"dim","t":"same run on 50 English prompts: α 0.81 · best k = 4 · 1.86×   (the 1B draft knows English far better than Mongolian)"}

@@ -1,0 +1,24 @@
+---
+import Base from "../../layouts/Base.astro";
+import Player from "../../components/learn/Player.tsx";
+import { course, type Lesson } from "../../lib/course.ts";
+
+export function getStaticPaths() {
+  return course.lessons.map((lesson) => ({ params: { id: lesson.id }, props: { lesson } }));
+}
+const { lesson } = Astro.props as { lesson: Lesson };
+---
+<Base title={`Learn ${lesson.id} · ${lesson.title}`}>
+  <div class="learn-page">
+    {lesson.learn.length ? (
+      <Player client:only="react" lesson={lesson} />
+    ) : (
+      <div class="learn-col"><div class="scroll stub-box">
+        <div class="eyebrow">Lesson {lesson.id}</div>
+        <h2>{lesson.title}</h2>
+        <p class="fine">This lesson's Learn cards aren't written yet. Its frontmatter is on the path and in the schedule.</p>
+        <a class="btn" href="/">Back to path</a>
+      </div></div>
+    )}
+  </div>
+</Base>

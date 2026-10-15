@@ -1,0 +1,38 @@
+title: Zero to LLM
+subtitle: Build, shrink, adapt and serve a language model, one runnable lesson at a time
+weeks: 20
+phases:
+  - id: "0"
+    title: Foundations
+    weeks: [1, 2]
+    blurb: Python, autograd by hand, and Karpathy's makemore
+  - id: "1"
+    title: Build a transformer
+    weeks: [3, 5]
+    blurb: Attention to a full GPT, a TinyStories run, BPE and a Mongolian tokenizer audit
+  - id: "2"
+    title: Inference internals
+    weeks: [6, 7]
+    blurb: Generation loops, KV cache, sampling, batching and profiling
+  - id: "3"
+    title: Quantization
+    weeks: [8, 10]
+    protected: true
+    blurb: int8 by hand to GPTQ, AWQ, NF4 and k-quants
+  - id: 4A
+    title: Adaptation
+    weeks: [11, 13]
+    blurb: LoRA, QLoRA, a Mongolian corpus and a control run
+  - id: 4B
+    title: Vocabulary research
+    weeks: [14, 18]
+    blurb: A Mongolian tokenizer, vocab extension, continued pretraining and a four-way comparison
+  - id: "5"
+    title: Serving
+    weeks: [19, 20]
+    blurb: vLLM, PagedAttention, speculative decoding and continuous batching
+  - id: S
+    title: Sidequests
+    weeks: null
+    optional: true
+    blurb: Optional detours, any time

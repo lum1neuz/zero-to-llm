@@ -1,0 +1,31 @@
+{"c":"hi","t":"$ python train_gpt.py --config shakespeare_char --max-iters 5000 --lr 1e-3 --min-lr 1e-4 --warmup 100 --clip 1.0"}
+{"c":"dim","t":"model: 6 blocks × 384 · 10.77M params · 64 × 256 = 16,384 tokens per step"}
+{"c":"dim","t":"schedule: linear warmup 0 → 1e-3 over 100 steps, cosine to 1e-4 at step 5000 · clip global grad norm at 1.0"}
+{"c":"","t":"step    0  loss 4.2900  lr 1.00e-5  grad norm 4.82  → clipped to 1.00","layer":0,"label":"step 0","value":4.82,"delay":180}
+{"c":"","t":"step  250  loss 2.3100  lr 9.98e-4  grad norm 1.94  → clipped to 1.00","layer":1,"label":"step 250","value":1.94,"delay":180}
+{"c":"","t":"step  500  loss 1.9800  lr 9.85e-4  grad norm 0.71","layer":2,"label":"step 500","value":0.71,"delay":180}
+{"c":"","t":"step  750  loss 1.7200  lr 9.61e-4  grad norm 0.52","layer":3,"label":"step 750","value":0.52,"delay":180}
+{"c":"","t":"step 1000  loss 1.6000  lr 9.27e-4  grad norm 0.44","layer":4,"label":"step 1000","value":0.44,"delay":180}
+{"c":"dim","t":"  eval  val 1.7100  ·  310,412 tok/s"}
+{"c":"","t":"step 1250  loss 1.5200  lr 8.83e-4  grad norm 0.41","layer":5,"label":"step 1250","value":0.41,"delay":180}
+{"c":"","t":"step 1500  loss 1.4600  lr 8.31e-4  grad norm 0.38","layer":6,"label":"step 1500","value":0.38,"delay":180}
+{"c":"","t":"step 1750  loss 1.4200  lr 7.71e-4  grad norm 0.36","layer":7,"label":"step 1750","value":0.36,"delay":180}
+{"c":"","t":"step 2000  loss 1.3800  lr 7.05e-4  grad norm 0.35","layer":8,"label":"step 2000","value":0.35,"delay":180}
+{"c":"dim","t":"  eval  val 1.5600  ·  310,412 tok/s"}
+{"c":"","t":"step 2250  loss 1.3500  lr 6.36e-4  grad norm 0.33","layer":9,"label":"step 2250","value":0.33,"delay":180}
+{"c":"","t":"step 2500  loss 1.3200  lr 5.64e-4  grad norm 0.32","layer":10,"label":"step 2500","value":0.32,"delay":180}
+{"c":"bad","t":"step 2750  loss 1.3100  lr 4.92e-4  grad norm 3.41  → clipped to 1.00   ← one bad batch","layer":11,"label":"step 2750","value":3.41,"delay":180}
+{"c":"","t":"step 3000  loss 1.2800  lr 4.22e-4  grad norm 0.31","layer":12,"label":"step 3000","value":0.31,"delay":180}
+{"c":"dim","t":"  eval  val 1.5000  ·  310,412 tok/s"}
+{"c":"","t":"step 3250  loss 1.2600  lr 3.55e-4  grad norm 0.30","layer":13,"label":"step 3250","value":0.3,"delay":180}
+{"c":"","t":"step 3500  loss 1.2400  lr 2.93e-4  grad norm 0.29","layer":14,"label":"step 3500","value":0.29,"delay":180}
+{"c":"","t":"step 3750  loss 1.2300  lr 2.37e-4  grad norm 0.28","layer":15,"label":"step 3750","value":0.28,"delay":180}
+{"c":"","t":"step 4000  loss 1.2100  lr 1.89e-4  grad norm 0.28","layer":16,"label":"step 4000","value":0.28,"delay":180}
+{"c":"dim","t":"  eval  val 1.4800  ·  310,412 tok/s"}
+{"c":"","t":"step 4250  loss 1.2000  lr 1.51e-4  grad norm 0.27","layer":17,"label":"step 4250","value":0.27,"delay":180}
+{"c":"","t":"step 4500  loss 1.1900  lr 1.23e-4  grad norm 0.27","layer":18,"label":"step 4500","value":0.27,"delay":180}
+{"c":"","t":"step 4750  loss 1.1800  lr 1.06e-4  grad norm 0.26","layer":19,"label":"step 4750","value":0.26,"delay":180}
+{"c":"","t":"step 5000  loss 1.1800  lr 1.00e-4  grad norm 0.26","layer":20,"label":"step 5000","value":0.26,"delay":180}
+{"c":"dim","t":"  eval  val 1.4700  ·  310,412 tok/s"}
+{"c":"ok","t":"done in 4 min 31 s · val loss 1.47 (constant lr in 1.2: 1.52, −3.3%) · 310k tok/s"}
+{"c":"","t":"sample  DUKE VINCENTIO: / Come hither, Isabel; your brother is not dead, / But lives to thank the hand that set him free."}

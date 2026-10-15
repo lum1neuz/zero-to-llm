@@ -1,0 +1,25 @@
+{"c":"hi","t":"$ python train_tokenizer.py --corpus data/mn-clean/train.jsonl --heldout data/mn-clean/heldout.jsonl --base meta-llama/Llama-3.1-8B --vocab-size 16000 --add 8000"}
+{"c":"dim","t":"loading base tokenizer … Llama 3.1, 128,256 tokens, byte-level BPE"}
+{"c":"dim","t":"reading train split … 698,212 documents · 61.6M words · 0.9 GB of Cyrillic text"}
+{"c":"dim","t":"pre-tokenizing with Llama 3.1's split regex (byte-level, like Llama's) …"}
+{"c":"dim","t":"training BPE, vocab 16,000 … 16 threads","delay":1400}
+{"c":"","t":"  merges  2,000   top new: байна · болон · байгаа · монгол · хүмүүс"}
+{"c":"","t":"  merges  8,000   top new: шийдвэр · сургууль · байгууллага · хөгжүүлэх"}
+{"c":"","t":"  merges 16,000   done in 6m 41s"}
+{"c":"dim","t":"held-out split: 2,000 documents · 177,400 words"}
+{"c":"","t":"  Llama 3.1 alone          3.38 tok/word"}
+{"c":"","t":"  Mongolian BPE 16k alone  1.41 tok/word   (can't use it with Llama's weights)"}
+{"c":"dim","t":"candidates: 16,000 Mongolian tokens − 2,914 Llama already has = 13,086"}
+{"c":"dim","t":"ranking by base tokens saved = count × (Llama pieces − 1) …"}
+{"c":"bad","layer":0,"label":"Llama 3.1","value":3.38,"delay":600,"t":"  + 0        3.38 tok/word"}
+{"c":"bad","layer":1,"label":"+ 1,000","value":2.21,"delay":600,"t":"  + 1,000    2.21 tok/word"}
+{"c":"","layer":2,"label":"+ 2,000","value":1.98,"delay":600,"t":"  + 2,000    1.98 tok/word"}
+{"c":"","layer":3,"label":"+ 4,000","value":1.78,"delay":600,"t":"  + 4,000    1.78 tok/word"}
+{"c":"ok","layer":4,"label":"+ 8,000","value":1.62,"delay":600,"t":"  + 8,000    1.62 tok/word   ← chosen"}
+{"c":"","layer":5,"label":"+ 12,000","value":1.57,"delay":600,"t":"  + 12,000   1.57 tok/word   (last 4,000 seen < 400 times each)"}
+{"c":"","layer":6,"label":"+ 13,086","value":1.55,"delay":600,"t":"  + 13,086   1.55 tok/word"}
+{"c":"dim","t":"merging 8,000 tokens into the BPE model (vocab + merges) …"}
+{"c":"ok","t":"vocab 128,256 → 136,256 (a multiple of 64)"}
+{"c":"ok","t":"round trip: decode(encode(x)) == x on all 2,000 held-out documents"}
+{"c":"","t":"\"Хүүхдүүд өглөө бүр сургуульдаа явдаг.\"  Llama 3.1: 17 tokens  →  extended: 7 tokens"}
+{"c":"ok","t":"saved tokenizers/llama31-mn-8k/  (tokenizer.json, new_tokens.txt)"}

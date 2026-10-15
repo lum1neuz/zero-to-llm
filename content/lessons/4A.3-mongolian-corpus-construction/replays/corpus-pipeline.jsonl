@@ -1,0 +1,20 @@
+{"c":"hi","t":"$ python build_corpus.py --sources data/raw/mn/*.jsonl.gz --out data/mn-clean --shingle 3 --num-perm 128 --threshold 0.7 --heldout 2000"}
+{"c":"dim","t":"reading 3 sources: web crawl (mn), news sites, Wikipedia (mn)"}
+{"c":"","layer":0,"label":"scraped","value":1204,"delay":400,"t":"scraped           1,204,331 docs"}
+{"c":"dim","t":"normalize: NFC, whitespace, look-alikes · changed 31.2% of docs (Latin look-alikes in 2.8%, letters in pieces in 0.9%)"}
+{"c":"","layer":1,"label":"normalized","value":1204,"delay":400,"t":"normalized        1,204,331 docs"}
+{"c":"dim","t":"language: 71,402 Russian (no ө/ү) · 9,118 Kazakh (ә ғ қ ң ұ һ і) · 44,870 under 80% Cyrillic"}
+{"c":"","layer":2,"label":"language","value":1079,"delay":400,"t":"after language    1,078,941 docs"}
+{"c":"dim","t":"quality: 58,206 under 6 words · 22,914 mostly digits and symbols"}
+{"c":"","layer":3,"label":"quality","value":998,"delay":400,"t":"after quality       997,821 docs"}
+{"c":"dim","t":"exact dedup on a hash of the normalized text: 111,640 copies"}
+{"c":"","layer":4,"label":"exact dedup","value":886,"delay":400,"t":"after exact dedup   886,181 docs"}
+{"c":"dim","t":"MinHash: 3-word shingles · 128 seeds · LSH 16 bands × 8 rows · Jaccard ≥ 0.7 … 2 h 41 min"}
+{"c":"","layer":5,"label":"near dedup","value":700,"delay":400,"t":"after near dedup    700,212 docs   (removed 185,969, 21.0%)"}
+{"c":"dim","t":"largest duplicate cluster: 412 copies of one exchange-rate notice"}
+{"c":"","layer":6,"label":"train","value":698,"delay":400,"t":"train split         698,212 docs · held out 2,000 docs (made after dedup)"}
+{"c":"dim","t":"tokenizing with meta-llama/Llama-3.1-8B, untouched …"}
+{"c":"","t":"words 61.6M · tokens 191.2M · 3.1 tokens per word"}
+{"c":"","t":"held out: 2,000 docs · 0.55M tokens"}
+{"c":"hi","t":"20 random rejects per rule written to data/mn-clean/rejects/ · read them before you trust a threshold"}
+{"c":"ok","t":"saved data/mn-clean/train.jsonl, heldout.jsonl, report.json"}

@@ -1,0 +1,8 @@
+---
+import Base from "../layouts/Base.astro";
+import Home from "../components/home/Home.tsx";
+import { lite } from "../lib/course.ts";
+---
+<Base title="Review">
+  <Home client:only="react" course={lite(undefined, { quiz: true })} tab="review" />
+</Base>

@@ -1,0 +1,14 @@
+{"c":"hi","t":"$ python generate.py --ckpt runs/tinystories-30m/best.pt --prompt \"Once upon a time\" --new-tokens 512 --temperature 0 --no-cache"}
+{"c":"dim","t":"loading checkpoint … 30.2M params · fp32 · cuda:0"}
+{"c":"dim","t":"prompt 5 tokens · greedy · every step re-runs the model on the whole sequence"}
+{"c":"","layer":0,"label":"1–64","value":3.1,"delay":220,"t":"  tokens   1– 64   3.1 ms/token   positions processed so far      2,336"}
+{"c":"","layer":1,"label":"65–128","value":3.3,"delay":220,"t":"  tokens  65–128   3.3 ms/token   positions processed so far      8,768"}
+{"c":"","layer":2,"label":"129–192","value":3.6,"delay":220,"t":"  tokens 129–192   3.6 ms/token   positions processed so far     19,296"}
+{"c":"","layer":3,"label":"193–256","value":4.0,"delay":220,"t":"  tokens 193–256   4.0 ms/token   positions processed so far     33,920"}
+{"c":"","layer":4,"label":"257–320","value":4.6,"delay":220,"t":"  tokens 257–320   4.6 ms/token   positions processed so far     52,640"}
+{"c":"","layer":5,"label":"321–384","value":5.3,"delay":220,"t":"  tokens 321–384   5.3 ms/token   positions processed so far     75,456"}
+{"c":"bad","layer":6,"label":"385–448","value":6.1,"delay":220,"t":"  tokens 385–448   6.1 ms/token   positions processed so far    102,368"}
+{"c":"bad","layer":7,"label":"449–512","value":7.0,"delay":220,"t":"  tokens 449–512   7.0 ms/token   positions processed so far    133,376"}
+{"c":"ok","t":"512 tokens in 2.37 s  →  216 tok/s   (positions processed: 133,376 for 512 new tokens)"}
+{"c":"ok","t":"greedy match vs reference generate(): 512 / 512 tokens (100%)"}
+{"c":"","t":"sample \"Once upon a time, there was a little girl named Lily. She loved to play outside in the park. One day, she saw a big…\""}

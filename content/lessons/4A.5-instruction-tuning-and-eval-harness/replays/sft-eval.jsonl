@@ -1,0 +1,23 @@
+{"c":"hi","t":"$ python sft.py --base meta-llama/Llama-3.1-8B --adapter runs/control --data data/mn-instruct.jsonl --epochs 2 --mask-prompt"}
+{"c":"dim","t":"data: 9,800 Mongolian instruction pairs before decontamination (6,100 translated and checked by hand, 3,700 written from scratch)"}
+{"c":"bad","t":"decontamination: 23 examples share a 13-word run with an eval question. Removed, 9,777 pairs left."}
+{"c":"","t":"1.9M tokens · 31% of them are assistant tokens, the only ones the loss scores"}
+{"c":"dim","t":"chat template: Llama 3.1 · labels -100 outside the assistant's turns · <|eot_id|> scored"}
+{"c":"dim","t":"continuing the control's adapter (r=32) · lr 1e-4 · batch 16 · 2 epochs · 1,222 steps"}
+{"c":"","t":"  epoch 1  step  200   loss 1.42"}
+{"c":"","t":"  epoch 1  step  400   loss 1.21"}
+{"c":"","t":"  epoch 1  step  611   loss 1.13   val 1.15"}
+{"c":"","t":"  epoch 2  step  800   loss 1.02"}
+{"c":"","t":"  epoch 2  step 1000   loss 0.98"}
+{"c":"","t":"  epoch 2  step 1222   loss 0.96   val 1.08"}
+{"c":"ok","t":"done in 1 h 48 min · saved runs/sft/adapter_model.safetensors"}
+{"c":"hi","t":"$ python eval_mn.py --models base,runs/control,runs/sft --tasks mn_qa,mn_mc"}
+{"c":"dim","t":"mn_qa: 150 short-answer questions · greedy, up to 32 new tokens · exact match after normalizing"}
+{"c":"dim","t":"mn_mc: 200 four-option questions · log-probability per character (raw sums in brackets)"}
+{"c":"","t":"  base Llama 3.1 8B     mn_qa 14.0%   mn_mc 47.0% (raw 41.5%)   score 30.5%"}
+{"c":"","t":"  control (4A.4)        mn_qa 21.3%   mn_mc 52.5% (raw 46.0%)   score 36.9%"}
+{"c":"ok","t":"  control + SFT         mn_qa 48.7%   mn_mc 74.0% (raw 68.0%)   score 61.4%"}
+{"c":"dim","t":"  Q: Морин хуур хэдэн утастай вэ?   gold: хоёр   SFT: Хоёр.   ✓ after normalizing"}
+{"c":"dim","t":"  Q: Монголын хамгийн урт гол аль вэ?   gold: Орхон   SFT: Орхон гол   ✗ exact match is strict"}
+{"c":"","t":"eval time for the SFT model: 18 min (mn_qa generation 13 min, mn_mc 5 min)"}
+{"c":"ok","t":"saved runs/eval/report.json · 4B.4 runs this same harness on every model"}

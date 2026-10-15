@@ -1,0 +1,18 @@
+{"c":"hi","t":"$ python train_gpt.py --config shakespeare_head --max-iters 5000"}
+{"c":"dim","t":"tiny shakespeare · 1,115,394 chars · vocab 65 · train 1,003,854 / val 111,540"}
+{"c":"dim","t":"baseline: the same script with no attention, a bigram table (65 × 65, 4,225 params) · val loss 2.49"}
+{"c":"dim","t":"model: token emb + position emb + 1 head (n_embd 32, head_size 32, block 8) + lm_head · 7,553 params"}
+{"c":"","t":"step    0  train 4.3200  val 4.3300","layer":0,"label":"step 0","value":4.33,"delay":220}
+{"c":"","t":"step  500  train 2.9000  val 2.9200","layer":1,"label":"step 500","value":2.92,"delay":220}
+{"c":"","t":"step 1000  train 2.6800  val 2.7100","layer":2,"label":"step 1000","value":2.71,"delay":220}
+{"c":"","t":"step 1500  train 2.5800  val 2.6200","layer":3,"label":"step 1500","value":2.62,"delay":220}
+{"c":"","t":"step 2000  train 2.5200  val 2.5600","layer":4,"label":"step 2000","value":2.56,"delay":220}
+{"c":"","t":"step 2500  train 2.4700  val 2.5200","layer":5,"label":"step 2500","value":2.52,"delay":220}
+{"c":"ok","t":"step 3000  train 2.4300  val 2.4800","layer":6,"label":"step 3000","value":2.48,"delay":220}
+{"c":"ok","t":"step 3500  train 2.4100  val 2.4600","layer":7,"label":"step 3500","value":2.46,"delay":220}
+{"c":"ok","t":"step 4000  train 2.3900  val 2.4400","layer":8,"label":"step 4000","value":2.44,"delay":220}
+{"c":"ok","t":"step 4500  train 2.3700  val 2.4200","layer":9,"label":"step 4500","value":2.42,"delay":220}
+{"c":"ok","t":"step 5000  train 2.3600  val 2.4000","layer":10,"label":"step 5000","value":2.4,"delay":220}
+{"c":"ok","t":"done in 94 s on CPU · val loss 2.49 → 2.40 with one attention head"}
+{"c":"","t":"sample  KING RICHARD: / What sould the forth, and his say the hand, / That mear thee, and thy lord to come."}
+{"c":"dim","t":"still gibberish, but it spells better: tokens now see up to 8 characters back, not just one"}

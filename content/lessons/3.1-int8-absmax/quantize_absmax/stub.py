@@ -1,0 +1,6 @@
+def quantize_absmax(w):
+    # TODO: pick scale so the largest |w| lands on 127
+    scale = ...
+    # TODO: divide, round, keep inside [-127, 127], store as int8
+    q = ...
+    return q, scale

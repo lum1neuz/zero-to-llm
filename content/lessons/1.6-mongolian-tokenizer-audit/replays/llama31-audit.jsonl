@@ -1,0 +1,15 @@
+{"c":"hi","t":"$ python audit_tokenizer.py --tokenizer meta-llama/Llama-3.1-8B --sample data/mn_sample.txt --compare data/en_sample.txt"}
+{"c":"dim","t":"tokenizer: byte-level BPE · 256 byte tokens + 127,744 merged tokens + 256 special"}
+{"c":"dim","t":"samples: 2,000 Mongolian sentences · 24,830 words | the same sentences in English · 26,115 words"}
+{"c":"","t":"scanning the vocab for Cyrillic …"}
+{"c":"","t":"  merged tokens with a Cyrillic letter   5,912 / 127,744   (4.6%)"}
+{"c":"","t":"  … with Ө, ө, Ү or ү                      211"}
+{"c":"","t":"fertility (tokens per word)"}
+{"c":"","t":"  English     1.31","layer":0,"label":"English","value":1.31,"delay":300}
+{"c":"bad","t":"  Mongolian   3.38   (2.58× English)","layer":1,"label":"Mongolian","value":3.38,"delay":300}
+{"c":"","t":"byte pieces: 6.1% of Mongolian tokens are part of a letter (English: 0.0%)"}
+{"c":"","t":"example splits (decoded per token):"}
+{"c":"","t":"  Өнөөдөр       → Ө | нө | өд | өр"}
+{"c":"","t":"  хүүхдүүд      → х | ү | ү | х | д | үүд"}
+{"c":"","t":"  Улаанбаатар   → Ул | аан | ба | атар"}
+{"c":"ok","t":"saved audit/llama31_mn.json · write down 10 common words and their splits for 4B.1"}

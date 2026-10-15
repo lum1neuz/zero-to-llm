@@ -1,0 +1,21 @@
+{"c":"hi","t":"$ python convert_hf_to_gguf.py ~/models/Llama-3.1-8B --outtype f16 --outfile llama-8b-f16.gguf"}
+{"c":"dim","t":"writing 291 tensors … llama-8b-f16.gguf · 16.07 GB · 8.03B params"}
+{"c":"hi","t":"$ ./llama-imatrix -m llama-8b-f16.gguf -f calibration.txt -o imatrix.dat -ngl 24"}
+{"c":"dim","t":"computing importance over 100 chunks of 512 tokens · 6 min"}
+{"c":"hi","t":"$ for t in Q8_0 Q6_K Q5_K_M Q4_K_M Q3_K_M Q2_K; do ./llama-quantize --imatrix imatrix.dat llama-8b-f16.gguf llama-8b-$t.gguf $t; done"}
+{"c":"dim","t":"Q4_K_M: attn_v and ffn_down → Q6_K in 16 of 32 layers, output.weight → Q6_K, everything else Q4_K"}
+{"c":"ok","t":"Q4_K_M: model size = 15317.0 MiB (16.00 BPW) → quant size = 4685.3 MiB (4.89 BPW) · 71 s"}
+{"c":"hi","t":"$ ./llama-perplexity -m <each file> -f wiki.test.raw -c 512 -ngl 99   (F16: -ngl 24)"}
+{"c":"","t":"  F16      16.07 GB   ppl 6.233   (baseline, 24 of 32 layers on the GPU)"}
+{"c":"","layer":0,"label":"Q8_0","value":6.236,"delay":500,"t":"  Q8_0     8.54 GB  8.50 bpw   ppl 6.236   (+0.05%)"}
+{"c":"","layer":1,"label":"Q6_K","value":6.253,"delay":500,"t":"  Q6_K     6.60 GB  6.56 bpw   ppl 6.253   (+0.3%)"}
+{"c":"","layer":2,"label":"Q5_K_M","value":6.297,"delay":500,"t":"  Q5_K_M   5.73 GB  5.70 bpw   ppl 6.297   (+1.0%)"}
+{"c":"","layer":3,"label":"Q4_K_M","value":6.407,"delay":500,"t":"  Q4_K_M   4.92 GB  4.89 bpw   ppl 6.407   (+2.8%)"}
+{"c":"bad","layer":4,"label":"Q3_K_M","value":6.889,"delay":500,"t":"  Q3_K_M   4.02 GB  4.00 bpw   ppl 6.889   (+10.5%)"}
+{"c":"bad","layer":5,"label":"Q2_K","value":9.751,"delay":500,"t":"  Q2_K     3.18 GB  3.17 bpw   ppl 9.751   (+56.4%)"}
+{"c":"hi","t":"$ ./llama-bench -m llama-8b-Q4_K_M.gguf -ngl 99"}
+{"c":"","t":"  | model          |     size | test  |            t/s |"}
+{"c":"","t":"  | llama 8B Q4_K_M | 4.58 GiB | pp512 | 1951.4 ± 6.2   |"}
+{"c":"ok","t":"  | llama 8B Q4_K_M | 4.58 GiB | tg128 |   57.3 ± 0.1   |"}
+{"c":"dim","t":"F16 for comparison (doesn’t fit, -ngl 24): tg128 8.1 t/s · Q8_0 37.9 · Q5_K_M 52.6 · Q3_K_M 62.0"}
+{"c":"","t":"sample \"In the morning the yurt was quiet. Bat-Erdene lit the stove and listened to the horses outside…\""}

@@ -1,0 +1,10 @@
+{"c":"hi","t":"$ python generate.py --ckpt runs/tinystories-30m/best.pt --prompts prompts/64-openings.txt --new-tokens 256 --temperature 0 --batch-sizes 1,4,16,64"}
+{"c":"dim","t":"loading checkpoint … 30.2M params · fp32 · KV cache on · cuda:0"}
+{"c":"dim","t":"64 prompts of 3–19 tokens · left-padded per batch · greedy · tokens/s counts real new tokens only"}
+{"c":"","layer":0,"label":"batch 1","value":480,"delay":500,"t":"  batch  1   480 tok/s     2.1 ms/step   KV cache  0.01 GiB"}
+{"c":"","layer":1,"label":"batch 4","value":1820,"delay":500,"t":"  batch  4   1,820 tok/s   2.2 ms/step   KV cache  0.03 GiB"}
+{"c":"","layer":2,"label":"batch 16","value":5380,"delay":500,"t":"  batch 16   5,380 tok/s   3.0 ms/step   KV cache  0.10 GiB   padding 31% of prefill"}
+{"c":"","layer":3,"label":"batch 64","value":11900,"delay":500,"t":"  batch 64   11,900 tok/s  5.4 ms/step   KV cache  0.40 GiB   padding 38% of prefill"}
+{"c":"ok","t":"throughput at batch 16: 5,380 / 480 = 11.2×"}
+{"c":"ok","t":"batched vs one-at-a-time greedy: 64 / 64 prompts identical (100%)"}
+{"c":"dim","t":"per-step time barely moves up to batch 16: each step reads all the weights once, whatever the batch size (lesson 2.5)"}

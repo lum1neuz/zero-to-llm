@@ -1,0 +1,33 @@
+{"c":"hi","t":"$ python quantize_model.py --ckpt runs/tinystories-30m/best.pt --scheme absmax-int4 --group-size 128"}
+{"c":"dim","t":"loading checkpoint … 30.2M params · fp16 · 60.4 MB"}
+{"c":"dim","t":"baseline first: per-row int4 (one scale per row, 15 levels) …"}
+{"c":"bad","t":"  per-row int4   val ppl 7.84 → 9.96   (+27.0%)"}
+{"c":"dim","t":"quantizing 24 nn.Linear layers (absmax int4, groups of 128, fp16 scales)"}
+{"c":"","layer":0,"label":"blocks.0.attn.c_attn","value":0.0118,"delay":160,"t":"  blocks.0.attn.c_attn   512×1536   max_err 0.0118"}
+{"c":"","layer":1,"label":"blocks.0.attn.c_proj","value":0.0142,"delay":160,"t":"  blocks.0.attn.c_proj   512×512    max_err 0.0142"}
+{"c":"","layer":2,"label":"blocks.0.mlp.c_fc","value":0.0167,"delay":160,"t":"  blocks.0.mlp.c_fc      512×2048   max_err 0.0167"}
+{"c":"","layer":3,"label":"blocks.0.mlp.c_proj","value":0.0129,"delay":160,"t":"  blocks.0.mlp.c_proj    2048×512   max_err 0.0129"}
+{"c":"","layer":4,"label":"blocks.1.attn.c_attn","value":0.0151,"delay":160,"t":"  blocks.1.attn.c_attn   512×1536   max_err 0.0151"}
+{"c":"","layer":5,"label":"blocks.1.attn.c_proj","value":0.0173,"delay":160,"t":"  blocks.1.attn.c_proj   512×512    max_err 0.0173"}
+{"c":"","layer":6,"label":"blocks.1.mlp.c_fc","value":0.0138,"delay":160,"t":"  blocks.1.mlp.c_fc      512×2048   max_err 0.0138"}
+{"c":"","layer":7,"label":"blocks.1.mlp.c_proj","value":0.0146,"delay":160,"t":"  blocks.1.mlp.c_proj    2048×512   max_err 0.0146"}
+{"c":"","layer":8,"label":"blocks.2.attn.c_attn","value":0.0161,"delay":160,"t":"  blocks.2.attn.c_attn   512×1536   max_err 0.0161"}
+{"c":"","layer":9,"label":"blocks.2.attn.c_proj","value":0.0124,"delay":160,"t":"  blocks.2.attn.c_proj   512×512    max_err 0.0124"}
+{"c":"","layer":10,"label":"blocks.2.mlp.c_fc","value":0.0158,"delay":160,"t":"  blocks.2.mlp.c_fc      512×2048   max_err 0.0158"}
+{"c":"","layer":11,"label":"blocks.2.mlp.c_proj","value":0.0119,"delay":160,"t":"  blocks.2.mlp.c_proj    2048×512   max_err 0.0119"}
+{"c":"","layer":12,"label":"blocks.3.attn.c_attn","value":0.0135,"delay":160,"t":"  blocks.3.attn.c_attn   512×1536   max_err 0.0135"}
+{"c":"","layer":13,"label":"blocks.3.attn.c_proj","value":0.0164,"delay":160,"t":"  blocks.3.attn.c_proj   512×512    max_err 0.0164"}
+{"c":"","layer":14,"label":"blocks.3.mlp.c_fc","value":0.0131,"delay":160,"t":"  blocks.3.mlp.c_fc      512×2048   max_err 0.0131"}
+{"c":"","layer":15,"label":"blocks.3.mlp.c_proj","value":0.0149,"delay":160,"t":"  blocks.3.mlp.c_proj    2048×512   max_err 0.0149"}
+{"c":"","layer":16,"label":"blocks.4.attn.c_attn","value":0.0157,"delay":160,"t":"  blocks.4.attn.c_attn   512×1536   max_err 0.0157"}
+{"c":"","layer":17,"label":"blocks.4.attn.c_proj","value":0.0127,"delay":160,"t":"  blocks.4.attn.c_proj   512×512    max_err 0.0127"}
+{"c":"","layer":18,"label":"blocks.4.mlp.c_fc","value":0.0162,"delay":160,"t":"  blocks.4.mlp.c_fc      512×2048   max_err 0.0162"}
+{"c":"bad","layer":19,"label":"blocks.4.mlp.c_proj","value":0.0583,"delay":160,"t":"  blocks.4.mlp.c_proj    2048×512   max_err 0.0583   ← outlier group (lesson 3.3)"}
+{"c":"","layer":20,"label":"blocks.5.attn.c_attn","value":0.0126,"delay":160,"t":"  blocks.5.attn.c_attn   512×1536   max_err 0.0126"}
+{"c":"","layer":21,"label":"blocks.5.attn.c_proj","value":0.0152,"delay":160,"t":"  blocks.5.attn.c_proj   512×512    max_err 0.0152"}
+{"c":"","layer":22,"label":"blocks.5.mlp.c_fc","value":0.0133,"delay":160,"t":"  blocks.5.mlp.c_fc      512×2048   max_err 0.0133"}
+{"c":"","layer":23,"label":"blocks.5.mlp.c_proj","value":0.0141,"delay":160,"t":"  blocks.5.mlp.c_proj    2048×512   max_err 0.0141"}
+{"c":"dim","t":"evaluating val perplexity on 2,000 TinyStories samples …"}
+{"c":"ok","t":"linears fp16 37.7 MB  →  int4 g128 9.7 MB (packed 2 per byte, scales 0.29 MB) · model 60.4 → 32.4 MB, embeddings stay fp16"}
+{"c":"ok","t":"ppl    fp16 7.84     →  int4 g128 8.12      (+3.6%)"}
+{"c":"","t":"sample \"Once upon a time, a little bird found a shiny button by the river. She carried it home to show her mom…\""}

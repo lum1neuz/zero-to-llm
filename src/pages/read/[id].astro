@@ -1,0 +1,19 @@
+---
+import Base from "../../layouts/Base.astro";
+import ReadView from "../../components/read/ReadView.tsx";
+import { course, phaseLabel, type Lesson } from "../../lib/course.ts";
+
+export function getStaticPaths() {
+  return course.lessons.map((lesson) => ({ params: { id: lesson.id }, props: { lesson } }));
+}
+const { lesson } = Astro.props as { lesson: Lesson };
+const phase = course.phases.find((p) => p.id === lesson.phase)!;
+---
+<Base title={`Read ${lesson.id} · ${lesson.title}`} description={`${lesson.title}: the lesson and its paper notes, folded from a one-line gist to full text.`}>
+  <div class="shell">
+    <header class="appbar"><div class="appbar-in"><a class="brand" href="/"><b>Zero to LLM</b><span>Read</span></a></div></header>
+    <main class="page">
+      <ReadView client:only="react" lesson={{ id: lesson.id, title: lesson.title, status: lesson.status, crumb: phaseLabel(phase) }} reading={lesson.reading} />
+    </main>
+  </div>
+</Base>

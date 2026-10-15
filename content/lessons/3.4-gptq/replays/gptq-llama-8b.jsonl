@@ -1,0 +1,44 @@
+{"c":"hi","t":"$ python gptq_quantize.py --model meta-llama/Llama-3.1-8B --bits 4 --group-size 128 --calib c4 --nsamples 128 --damp 0.01"}
+{"c":"dim","t":"loading Llama 3.1 8B into CPU memory … 8.03B params · fp16 · 16.1 GB (the GPU only ever holds one block)"}
+{"c":"dim","t":"calibration: 128 samples × 2,048 tokens from C4 · running them through the embeddings …"}
+{"c":"dim","t":"quantizing 32 blocks × 7 Linears (int4, groups of 128, fp16 scales, act-order, damp 0.01)"}
+{"c":"","layer":0,"label":"blocks.0","value":0.41,"delay":150,"t":"  blocks.0   output err   0.41   0:38"}
+{"c":"","layer":1,"label":"blocks.1","value":0.62,"delay":150,"t":"  blocks.1   output err   0.62   1:17"}
+{"c":"","layer":2,"label":"blocks.2","value":0.88,"delay":150,"t":"  blocks.2   output err   0.88   1:57"}
+{"c":"","layer":3,"label":"blocks.3","value":1.12,"delay":150,"t":"  blocks.3   output err   1.12   2:35"}
+{"c":"","layer":4,"label":"blocks.4","value":1.35,"delay":150,"t":"  blocks.4   output err   1.35   3:14"}
+{"c":"","layer":5,"label":"blocks.5","value":1.61,"delay":150,"t":"  blocks.5   output err   1.61   3:54"}
+{"c":"","layer":6,"label":"blocks.6","value":1.94,"delay":150,"t":"  blocks.6   output err   1.94   4:32"}
+{"c":"","layer":7,"label":"blocks.7","value":2.2,"delay":150,"t":"  blocks.7   output err   2.20   5:11"}
+{"c":"","layer":8,"label":"blocks.8","value":2.47,"delay":150,"t":"  blocks.8   output err   2.47   5:51"}
+{"c":"","layer":9,"label":"blocks.9","value":2.81,"delay":150,"t":"  blocks.9   output err   2.81   6:29"}
+{"c":"","layer":10,"label":"blocks.10","value":3.15,"delay":150,"t":"  blocks.10  output err   3.15   7:08"}
+{"c":"","layer":11,"label":"blocks.11","value":3.52,"delay":150,"t":"  blocks.11  output err   3.52   7:48"}
+{"c":"","layer":12,"label":"blocks.12","value":3.9,"delay":150,"t":"  blocks.12  output err   3.90   8:26"}
+{"c":"","layer":13,"label":"blocks.13","value":4.31,"delay":150,"t":"  blocks.13  output err   4.31   9:05"}
+{"c":"","layer":14,"label":"blocks.14","value":4.77,"delay":150,"t":"  blocks.14  output err   4.77   9:45"}
+{"c":"","layer":15,"label":"blocks.15","value":5.26,"delay":150,"t":"  blocks.15  output err   5.26   10:23"}
+{"c":"","layer":16,"label":"blocks.16","value":5.8,"delay":150,"t":"  blocks.16  output err   5.80   11:02"}
+{"c":"","layer":17,"label":"blocks.17","value":6.41,"delay":150,"t":"  blocks.17  output err   6.41   11:42"}
+{"c":"","layer":18,"label":"blocks.18","value":7.02,"delay":150,"t":"  blocks.18  output err   7.02   12:20"}
+{"c":"","layer":19,"label":"blocks.19","value":7.7,"delay":150,"t":"  blocks.19  output err   7.70   12:59"}
+{"c":"","layer":20,"label":"blocks.20","value":8.46,"delay":150,"t":"  blocks.20  output err   8.46   13:39"}
+{"c":"","layer":21,"label":"blocks.21","value":9.21,"delay":150,"t":"  blocks.21  output err   9.21   14:17"}
+{"c":"","layer":22,"label":"blocks.22","value":10,"delay":150,"t":"  blocks.22  output err  10.00   14:56"}
+{"c":"","layer":23,"label":"blocks.23","value":10.9,"delay":150,"t":"  blocks.23  output err  10.90   15:36"}
+{"c":"","layer":24,"label":"blocks.24","value":11.8,"delay":150,"t":"  blocks.24  output err  11.80   16:14"}
+{"c":"","layer":25,"label":"blocks.25","value":12.9,"delay":150,"t":"  blocks.25  output err  12.90   16:53"}
+{"c":"","layer":26,"label":"blocks.26","value":14.1,"delay":150,"t":"  blocks.26  output err  14.10   17:33"}
+{"c":"","layer":27,"label":"blocks.27","value":15.4,"delay":150,"t":"  blocks.27  output err  15.40   18:11"}
+{"c":"","layer":28,"label":"blocks.28","value":16.9,"delay":150,"t":"  blocks.28  output err  16.90   18:50"}
+{"c":"","layer":29,"label":"blocks.29","value":18.6,"delay":150,"t":"  blocks.29  output err  18.60   19:30"}
+{"c":"bad","layer":30,"label":"blocks.30","value":23.7,"delay":150,"t":"  blocks.30  output err  23.70   20:08"}
+{"c":"bad","layer":31,"label":"blocks.31","value":41.8,"delay":150,"t":"  blocks.31  output err  41.80   20:47   ← hardest block, as usual for Llama"}
+{"c":"ok","t":"saved out/llama-3.1-8b-gptq-g128 · 5.7 GB (Linears int4 g128 · embeddings and lm_head fp16)"}
+{"c":"ok","t":"quantize time 21.1 min · peak VRAM 6.8 GB"}
+{"c":"hi","t":"$ python eval_ppl.py --models fp16,rtn-g128,gptq-g128 --eval-samples 2000"}
+{"c":"dim","t":"fp16 baseline runs with CPU offload (16.1 GB > 12 GB VRAM) · 52 min …"}
+{"c":"","t":"  fp16            ppl 6.24"}
+{"c":"bad","t":"  RTN int4 g128   ppl 6.79   (+8.8%)"}
+{"c":"ok","t":"  GPTQ int4 g128  ppl 6.52   (+4.5%)"}
+{"c":"","t":"sample \"The steppe stretched out in every direction, and the herders moved their gers twice a year to follow the grass…\""}

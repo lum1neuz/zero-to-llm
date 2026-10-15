@@ -1,0 +1,18 @@
+{"c":"hi","t":"$ python continued_pretrain.py --model runs/llama31-mn-8k-init --tokenizer tokenizers/llama31-mn-8k --sample-ids runs/control/sample_ids.txt --rank 32 --alpha 64 --lr 1e-4 --warmup 50 --train-new-rows --new-rows-lr 5e-4"}
+{"c":"dim","t":"tokenizer: llama31-mn-8k (136,256 tokens) · old rows of embed_tokens and lm_head frozen, 8,000 new rows trainable"}
+{"c":"dim","t":"QLoRA: nf4 + double quant · LoRA r=32 on all 7 Linears in 32 blocks (same as the control)"}
+{"c":"","t":"trainable params: 83,886,080 LoRA + 65,536,000 new rows = 149,422,080 || all params: 8,179,683,328 || trainable%: 1.8268"}
+{"c":"dim","t":"sample: the control's 20.0M Llama tokens (runs/control/sample_ids.txt) = 9.59M extended tokens · 1,170 steps of 4 × 2048"}
+{"c":"bad","t":"  step     0                held-out ppl 46.20   bits/char 1.083","layer":0,"label":"step 0","value":1.083,"delay":400}
+{"c":"bad","t":"  step   250   train 3.25  held-out ppl 20.98   bits/char 0.860","layer":1,"label":"step 250","value":0.86,"delay":400}
+{"c":"bad","t":"  step   500   train 2.86  held-out ppl 14.73   bits/char 0.760","layer":2,"label":"step 500","value":0.76,"delay":400}
+{"c":"bad","t":"  step   750   train 2.63  held-out ppl 11.50   bits/char 0.690","layer":3,"label":"step 750","value":0.69,"delay":400}
+{"c":"","t":"  step  1000   train 2.51  held-out ppl 10.41   bits/char 0.662   ← below the control (0.67)","layer":4,"label":"step 1000","value":0.662,"delay":400}
+{"c":"ok","t":"  step  1170   train 2.43  held-out ppl  9.70   bits/char 0.642","layer":5,"label":"step 1170","value":0.642,"delay":400}
+{"c":"ok","t":"done: 3 h 30 min training + 3 min of evals = 3.6 GPU hours · 760 tokens/s · peak 11.4 GB reserved"}
+{"c":"","t":"held-out, same 2,000 docs:  control 0.670 bits/char · extended 0.642 bits/char (−4.2%)"}
+{"c":"dim","t":"per-token perplexity: control 3.12 · extended 9.70. Not comparable: an extended token covers 5.1 characters, a Llama token 2.4."}
+{"c":"","t":"English (WikiText sample) ppl 6.10 → 6.47 (+6.1%, control +5.1%)"}
+{"c":"hi","t":"prompt: Монгол Улсын нийслэл Улаанбаатар хот нь"}
+{"c":"","t":"extended: … Туул голын хөндийд оршдог бөгөөд улсын хүн амын бараг тал нь энд амьдардаг."}
+{"c":"ok","t":"saved runs/llama31-mn-8k-cpt/best (step 1,170) · eval_log.jsonl"}

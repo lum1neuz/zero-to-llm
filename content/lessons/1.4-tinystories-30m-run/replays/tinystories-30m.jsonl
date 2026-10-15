@@ -1,0 +1,28 @@
+{"c":"hi","t":"$ python prepare.py --dataset tinystories --tokenizer tok/tinystories-21k.json"}
+{"c":"dim","t":"2,119,719 stories · train 472.6M tokens · val 4.7M tokens · uint16 · 954 MB on disk"}
+{"c":"hi","t":"$ python train_gpt.py --config tinystories_30m"}
+{"c":"dim","t":"n_layer 6 · n_head 8 · n_embd 512 · block 512 · vocab 21,504 (tied) · 30,187,520 params"}
+{"c":"dim","t":"32 × 512 = 16,384 tokens/step · 15,000 steps = 245.8M tokens (0.52 epoch) · bf16 autocast"}
+{"c":"dim","t":"AdamW lr 6e-4 → 6e-5 cosine · warmup 500 · weight decay 0.1 · clip 1.0"}
+{"c":"dim","t":"budget: 4.45e16 FLOPs ≈ 0.58 h at 30% MFU"}
+{"c":"","t":"step     0  loss 10.0213  (ln 21,504 = 9.98: guessing uniformly)"}
+{"c":"","t":"step   100  loss 7.3184  grad norm 2.71"}
+{"c":"","t":"step   500  loss 4.6127  grad norm 0.93  · warmup done"}
+{"c":"","t":"step  1000  train 3.496  val 3.520  ppl 33.78  · 96.4k tok/s","layer":0,"label":"step 1000","value":33.78,"delay":260}
+{"c":"","t":"step  2000  train 2.832  val 2.860  ppl 17.46  · 96.4k tok/s","layer":1,"label":"step 2000","value":17.46,"delay":260}
+{"c":"","t":"step  3000  train 2.518  val 2.550  ppl 12.81  · 96.4k tok/s","layer":2,"label":"step 3000","value":12.81,"delay":260}
+{"c":"","t":"step  4000  train 2.354  val 2.390  ppl 10.91  · 96.4k tok/s","layer":3,"label":"step 4000","value":10.91,"delay":260}
+{"c":"ok","t":"step  5000  train 2.250  val 2.290  ppl  9.87  · 96.4k tok/s","layer":4,"label":"step 5000","value":9.87,"delay":260}
+{"c":"ok","t":"step  6000  train 2.186  val 2.230  ppl  9.30  · 96.4k tok/s","layer":5,"label":"step 6000","value":9.3,"delay":260}
+{"c":"ok","t":"step  7000  train 2.132  val 2.180  ppl  8.85  · 96.4k tok/s","layer":6,"label":"step 7000","value":8.85,"delay":260}
+{"c":"ok","t":"step  8000  train 2.098  val 2.150  ppl  8.58  · 96.4k tok/s","layer":7,"label":"step 8000","value":8.58,"delay":260}
+{"c":"ok","t":"step  9000  train 2.064  val 2.120  ppl  8.33  · 96.4k tok/s","layer":8,"label":"step 9000","value":8.33,"delay":260}
+{"c":"ok","t":"step 10000  train 2.040  val 2.100  ppl  8.17  · 96.4k tok/s","layer":9,"label":"step 10000","value":8.17,"delay":260}
+{"c":"ok","t":"step 11000  train 2.026  val 2.090  ppl  8.08  · 96.4k tok/s","layer":10,"label":"step 11000","value":8.08,"delay":260}
+{"c":"ok","t":"step 12000  train 2.012  val 2.080  ppl  8.00  · 96.4k tok/s","layer":11,"label":"step 12000","value":8,"delay":260}
+{"c":"ok","t":"step 13000  train 1.998  val 2.070  ppl  7.92  · 96.4k tok/s","layer":12,"label":"step 13000","value":7.92,"delay":260}
+{"c":"ok","t":"step 14000  train 1.989  val 2.065  ppl  7.89  · 96.4k tok/s","layer":13,"label":"step 14000","value":7.89,"delay":260}
+{"c":"ok","t":"step 15000  train 1.979  val 2.059  ppl  7.84  · 96.4k tok/s","layer":14,"label":"step 15000","value":7.84,"delay":260}
+{"c":"ok","t":"saved runs/tinystories-30m/best.pt · val loss 2.059 · ppl 7.84"}
+{"c":"ok","t":"wall clock 42 min 36 s = 0.71 GPU-h on an RTX 3090 · 17.4 TFLOPS achieved (24.5% MFU)"}
+{"c":"","t":"sample  Once upon a time, there was a little girl named Mia. She loved to play with her red ball in the garden. One day, the ball rolled under a big bush. Mia was sad, but her dog Max found it and gave it back. Mia hugged Max and said, \"Thank you!\""}

@@ -1,0 +1,18 @@
+{"c":"hi","t":"$ python train_gpt.py --config shakespeare_char --max-iters 5000 --lr 1e-3 --schedule constant"}
+{"c":"dim","t":"tiny shakespeare · vocab 65 · block_size 256 · batch 64"}
+{"c":"dim","t":"model: 6 blocks × (n_embd 384, 6 heads) · 10,770,816 params (10.77M)"}
+{"c":"dim","t":"  = wte 24,960 + wpe 98,304 + 6 × 1,774,464 + ln_f 768"}
+{"c":"","t":"step    0  train 4.2800  val 4.2900","layer":0,"label":"step 0","value":4.29,"delay":220}
+{"c":"","t":"step  500  train 1.9000  val 1.9800","layer":1,"label":"step 500","value":1.98,"delay":220}
+{"c":"","t":"step 1000  train 1.5500  val 1.7100","layer":2,"label":"step 1000","value":1.71,"delay":220}
+{"c":"","t":"step 1500  train 1.4300  val 1.6200","layer":3,"label":"step 1500","value":1.62,"delay":220}
+{"c":"","t":"step 2000  train 1.3700  val 1.5800","layer":4,"label":"step 2000","value":1.58,"delay":220}
+{"c":"","t":"step 2500  train 1.3300  val 1.5600","layer":5,"label":"step 2500","value":1.56,"delay":220}
+{"c":"","t":"step 3000  train 1.2900  val 1.5400","layer":6,"label":"step 3000","value":1.54,"delay":220}
+{"c":"","t":"step 3500  train 1.2600  val 1.5300","layer":7,"label":"step 3500","value":1.53,"delay":220}
+{"c":"","t":"step 4000  train 1.2400  val 1.5300","layer":8,"label":"step 4000","value":1.53,"delay":220}
+{"c":"","t":"step 4500  train 1.2100  val 1.5200","layer":9,"label":"step 4500","value":1.52,"delay":220}
+{"c":"","t":"step 5000  train 1.1900  val 1.5200","layer":10,"label":"step 5000","value":1.52,"delay":220}
+{"c":"dim","t":"train keeps falling while val flattens out after step 3500: the model starts memorising"}
+{"c":"ok","t":"done in 4 min 31 s · val loss 1.52 · 10.77M params"}
+{"c":"","t":"sample  ROMEO: / Why, what is the matter, my good lord? / What, is it not a thing that I may see / That all the world is but a sorrow?"}

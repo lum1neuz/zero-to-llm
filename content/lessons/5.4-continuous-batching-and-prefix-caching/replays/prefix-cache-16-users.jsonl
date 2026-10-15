@@ -1,0 +1,9 @@
+{"c":"hi","t":"$ python bench_prefix.py --model runs/mn-8b --system-prompt prompts/mn_system.txt --users 16 --requests 200"}
+{"c":"dim","t":"system prompt 1,214 tokens (instructions + 6 Mongolian examples) · user turns 40–180 tokens · 16 concurrent users"}
+{"c":"dim","t":"run 1: vLLM with prefix caching off …"}
+{"c":"bad","t":"  TTFT p50 471 ms   p90 690 ms   prefill tokens 271,400   throughput 548 tok/s"}
+{"c":"dim","t":"run 2: vLLM with prefix caching on …"}
+{"c":"","t":"  prefix cache: 75 of each request's blocks hit after the first request · block hit rate 87.9%"}
+{"c":"ok","t":"  TTFT p50 58 ms    p90 104 ms   prefill tokens 32,900    throughput 603 tok/s"}
+{"c":"dim","t":"batching check: 50 prompts, greedy, max_num_seqs 1 vs 16 …"}
+{"c":"ok","t":"  identical on 48 / 50 prompts (96%) · the 2 others split at a near-tie (top-2 logits within 0.03)"}

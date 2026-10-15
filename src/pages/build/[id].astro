@@ -1,0 +1,27 @@
+---
+import Base from "../../layouts/Base.astro";
+import Workspace from "../../components/build/Workspace.tsx";
+import { course, lite, type Lesson } from "../../lib/course.ts";
+
+export function getStaticPaths() {
+  return course.lessons.map((lesson) => ({ params: { id: lesson.id }, props: { lesson } }));
+}
+const { lesson } = Astro.props as { lesson: Lesson };
+---
+<Base title={`Build ${lesson.id} · ${lesson.title}`}>
+  <div class="shell">
+    <header class="appbar"><div class="appbar-in"><a class="brand" href="/"><b>Zero to LLM</b><span>Build · desktop</span></a></div></header>
+    <main class="page wide">
+      {lesson.build.length ? (
+        <Workspace client:only="react" lesson={lesson} course={lite()} runtime={{ pyodide: course.runtime.pyodide, hash: course.runtime.hash }} />
+      ) : (
+        <div class="build stub-box">
+          <div class="crumbs">Lesson {lesson.id}</div>
+          <h1 style="font-size:28px">{lesson.title}</h1>
+          <p class="fine">This lesson's Build steps aren't written yet. Its metrics are on the path. Mark it done there when you've finished it on your own.</p>
+          <a class="btn" href="/">Back to path</a>
+        </div>
+      )}
+    </main>
+  </div>
+</Base>

@@ -1,0 +1,21 @@
+{"c":"hi","t":"$ python train_c4.py --generations 12 --games-per-gen 500 --sims 200 --workers 8"}
+{"c":"dim","t":"net: 2 input planes (mover's pieces, opponent's pieces) · 4 residual blocks × 64 channels · policy (7) + value (1) · 0.60M params"}
+{"c":"dim","t":"MCTS: PUCT c=1.5, 200 sims per move, Dirichlet noise at the root, temperature 1 for the first 8 moves"}
+{"c":"dim","t":"data: last 4 generations in the replay buffer, every position also mirrored left-right"}
+{"c":"dim","t":"eval: 100 games vs the depth-4 minimax bot, 50 as X and 50 as O, temperature 0"}
+{"c":"bad","layer":0,"label":"gen 0","value":92,"delay":520,"t":"gen  0      0 games   untrained net · uniform policy, value 0     vs minimax-4: W  6  D 2  L 92"}
+{"c":"bad","layer":1,"label":"gen 1","value":83,"delay":520,"t":"gen  1    500 games   policy loss 1.71   value loss 0.88   vs minimax-4: W 14  D 3  L 83"}
+{"c":"bad","layer":2,"label":"gen 2","value":74,"delay":520,"t":"gen  2   1000 games   policy loss 1.52   value loss 0.79   vs minimax-4: W 22  D 4  L 74"}
+{"c":"bad","layer":3,"label":"gen 3","value":60,"delay":520,"t":"gen  3   1500 games   policy loss 1.39   value loss 0.71   vs minimax-4: W 35  D 5  L 60"}
+{"c":"bad","layer":4,"label":"gen 4","value":48,"delay":520,"t":"gen  4   2000 games   policy loss 1.29   value loss 0.66   vs minimax-4: W 47  D 5  L 48"}
+{"c":"","layer":5,"label":"gen 5","value":38,"delay":520,"t":"gen  5   2500 games   policy loss 1.21   value loss 0.61   vs minimax-4: W 58  D 4  L 38"}
+{"c":"","layer":6,"label":"gen 6","value":30,"delay":520,"t":"gen  6   3000 games   policy loss 1.15   value loss 0.58   vs minimax-4: W 66  D 4  L 30"}
+{"c":"","layer":7,"label":"gen 7","value":24,"delay":520,"t":"gen  7   3500 games   policy loss 1.10   value loss 0.55   vs minimax-4: W 72  D 4  L 24"}
+{"c":"","layer":8,"label":"gen 8","value":19,"delay":520,"t":"gen  8   4000 games   policy loss 1.06   value loss 0.53   vs minimax-4: W 78  D 3  L 19"}
+{"c":"","layer":9,"label":"gen 9","value":15,"delay":520,"t":"gen  9   4500 games   policy loss 1.03   value loss 0.52   vs minimax-4: W 82  D 3  L 15"}
+{"c":"","layer":10,"label":"gen 10","value":12,"delay":520,"t":"gen 10   5000 games   policy loss 1.01   value loss 0.51   vs minimax-4: W 85  D 3  L 12"}
+{"c":"","layer":11,"label":"gen 11","value":11,"delay":520,"t":"gen 11   5500 games   policy loss 0.99   value loss 0.50   vs minimax-4: W 87  D 2  L 11"}
+{"c":"ok","layer":12,"label":"gen 12","value":10,"delay":520,"t":"gen 12   6000 games   policy loss 0.98   value loss 0.50   vs minimax-4: W 88  D 2  L 10"}
+{"c":"ok","t":"final: 88 wins, 2 draws, 10 losses vs the depth-4 minimax bot (win rate 88%)"}
+{"c":"","t":"6,000 self-play games · 214,000 positions (428,000 with mirrors) · 7 h 50 min"}
+{"c":"dim","t":"MCTS speed: 1,900 sims/s per CPU worker with batched net calls on the GPU"}

@@ -1,0 +1,18 @@
+{"c":"hi","t":"$ python extend_vocab.py --base meta-llama/Llama-3.1-8B --tokenizer tokenizers/llama31-mn-8k --init mean-of-pieces --eval data/mn-clean/heldout.jsonl"}
+{"c":"dim","t":"loading Llama 3.1 8B: NF4 blocks, bf16 embed_tokens and lm_head … 6.9 GB · tie_word_embeddings = False"}
+{"c":"dim","t":"base tokenizer 128,256 → extended 136,256 (8,000 new tokens from new_tokens.txt)"}
+{"c":"dim","t":"baseline: base model, base tokenizer, 4A.3's 2,000 held-out docs"}
+{"c":"","t":"  1.77 nats/token (ppl 5.84) ÷ ln 2 ÷ 2.45 chars/token = 1.04 bits/char"}
+{"c":"dim","t":"resize_token_embeddings(136256, pad_to_multiple_of=64)"}
+{"c":"","t":"  embed_tokens  [128256, 4096] → [136256, 4096]"}
+{"c":"","t":"  lm_head       [128256, 4096] → [136256, 4096]"}
+{"c":"ok","t":"  rows 0…128,255 unchanged (max |Δ| = 0.0)"}
+{"c":"dim","t":"pieces from the base tokenizer: 8,000 tokens · 2 to 9 pieces each · mean 3.4"}
+{"c":"dim","t":"step-0 loss, extended tokenizer, same 2,000 docs, four ways to fill the new rows:"}
+{"c":"bad","layer":0,"label":"random N(0, 1)","value":15.9,"delay":700,"t":"  random N(0, 1)          15.90 nats/token   ← worse than a uniform guess (11.82)"}
+{"c":"","layer":1,"label":"random N(0, 0.02)","value":5.02,"delay":700,"t":"  random N(0, 0.02)        5.02 nats/token"}
+{"c":"","layer":2,"label":"mean of all rows","value":4.41,"delay":700,"t":"  mean of all rows (HF)    4.41 nats/token"}
+{"c":"ok","layer":3,"label":"mean of pieces","value":3.83,"delay":700,"t":"  mean of pieces           3.83 nats/token ÷ ln 2 ÷ 5.11 chars/token = 1.08 bits/char"}
+{"c":"dim","t":"keeping mean of pieces for embed_tokens and lm_head"}
+{"c":"","t":"greedy sample: \"Улаанбаатар бол\" → \"Улаанбаатар бол Монгол Улсын нийслэл юм.\""}
+{"c":"ok","t":"saved runs/llama31-mn-8k-init/ (embed_tokens + lm_head in bf16, 2.2 GB) + new_ids.json"}

@@ -1,0 +1,13 @@
+{"c":"hi","t":"$ python sample.py --ckpt runs/tinystories-30m/best.pt --prompt \"Once upon a time\" --samples 100 --new-tokens 200 --seed 0 --compare"}
+{"c":"dim","t":"loading checkpoint … 30.2M params · vocab 21,504 · KV cache on · cuda:0"}
+{"c":"dim","t":"100 samples × 200 tokens per strategy · distinct-2 pooled over all samples · sampling time measured apart from the forward pass"}
+{"c":"","layer":0,"label":"greedy","value":0.01,"delay":400,"t":"  greedy           distinct-2 0.01   sampling   9 µs/token   (all 100 samples identical)"}
+{"c":"","layer":1,"label":"T=0.7","value":0.29,"delay":400,"t":"  T=0.7            distinct-2 0.29   sampling  24 µs/token"}
+{"c":"","layer":2,"label":"top-k 50","value":0.38,"delay":400,"t":"  T=1.0 top-k 50   distinct-2 0.38   sampling  41 µs/token"}
+{"c":"","layer":3,"label":"top-p 0.9","value":0.41,"delay":400,"t":"  T=1.0 top-p 0.9  distinct-2 0.41   sampling  86 µs/token   (sort over 21,504 logits)"}
+{"c":"","layer":4,"label":"T=1.0","value":0.52,"delay":400,"t":"  T=1.0            distinct-2 0.52   sampling  23 µs/token"}
+{"c":"bad","layer":5,"label":"T=1.5","value":0.83,"delay":400,"t":"  T=1.5            distinct-2 0.83   sampling  23 µs/token   ← word salad"}
+{"c":"","t":"sample (greedy)     \"Once upon a time, there was a little girl named Lily. She loved to play outside in the park. One day…\""}
+{"c":"","t":"sample (top-p 0.9)  \"Once upon a time, a small bunny named Pip found a shiny key under a leaf. He wanted to know what it opened…\""}
+{"c":"","t":"sample (T=1.5)      \"Once upon a time, mommy grass Tim splash quick the bowl. Funny sky, she ran tomorrow cars…\""}
+{"c":"ok","t":"top-p 0.9: distinct-2 0.41 · 86 µs/token of sampling against ~2,000 µs/token for the forward pass (4%)"}

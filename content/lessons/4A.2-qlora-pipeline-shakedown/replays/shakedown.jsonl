@@ -1,0 +1,29 @@
+{"c":"hi","t":"$ python qlora_train.py --model meta-llama/Llama-3.1-8B --data alpaca-cleaned --n-examples 6000 --pack --steps 200 --seq 2048 --rank 16 --alpha 32"}
+{"c":"dim","t":"loading in 4 bits: nf4 · double quant · compute dtype bfloat16"}
+{"c":"","t":"base model loaded: 5.70 GB allocated"}
+{"c":"","t":"trainable params: 41,943,040 || all params: 8,072,204,288 || trainable%: 0.5196"}
+{"c":"dim","t":"step 1 …"}
+{"c":"bad","t":"torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 1.75 GiB. GPU 0 has a total capacity of 11.66 GiB of which 1.02 GiB is free."}
+{"c":"dim","t":"No gradient checkpointing, so all 32 layers kept their activations for backward. Turn it on and go again."}
+{"c":"hi","t":"$ python qlora_train.py … --grad-checkpointing --optim paged_adamw_32bit"}
+{"c":"dim","t":"base model loaded: 5.70 GB · gradient checkpointing on · optimizer paged_adamw_32bit"}
+{"c":"dim","t":"6,000 examples packed into 800 sequences of 2048 tokens (1.64M tokens, one epoch) · 200 held out for eval"}
+{"c":"dim","t":"batch 1 sequence × grad accumulation 4 · lr 2e-4 · warmup 10 steps · 200 steps"}
+{"c":"","layer":0,"label":"step 20","value":9.4,"delay":250,"t":"  step  20   loss 1.41   peak 9.4 GB"}
+{"c":"","layer":1,"label":"step 40","value":9.6,"delay":250,"t":"  step  40   loss 1.30   peak 9.6 GB"}
+{"c":"","layer":2,"label":"step 60","value":9.7,"delay":250,"t":"  step  60   loss 1.24   peak 9.7 GB"}
+{"c":"","layer":3,"label":"step 80","value":9.6,"delay":250,"t":"  step  80   loss 1.20   peak 9.6 GB"}
+{"c":"","layer":4,"label":"step 100","value":9.9,"delay":250,"t":"  step 100   loss 1.18   peak 9.9 GB"}
+{"c":"dim","t":"  eval at step 100: loss 1.17"}
+{"c":"","layer":5,"label":"step 120","value":9.7,"delay":250,"t":"  step 120   loss 1.16   peak 9.7 GB"}
+{"c":"bad","layer":6,"label":"step 140","value":11.8,"delay":250,"t":"  step 140   loss 1.15   peak 11.8 GB   (paged 0.4 GB of optimizer state to CPU RAM)"}
+{"c":"","layer":7,"label":"step 160","value":9.8,"delay":250,"t":"  step 160   loss 1.13   peak 9.8 GB"}
+{"c":"","layer":8,"label":"step 180","value":9.7,"delay":250,"t":"  step 180   loss 1.13   peak 9.7 GB"}
+{"c":"","layer":9,"label":"step 200","value":9.8,"delay":250,"t":"  step 200   loss 1.10   peak 9.8 GB"}
+{"c":"ok","t":"eval at step 200: loss 1.12 (200 held-out examples)"}
+{"c":"","t":"max_memory_reserved 9.9 GB · nvidia-smi 10.4 GB · 200 steps × 4 × 2048 = 1.64M tokens in 34 min · 800 tokens/s"}
+{"c":"ok","t":"saved runs/shakedown/adapter_model.safetensors (168 MB)"}
+{"c":"hi","t":"sanity sample, base + adapter"}
+{"c":"dim","t":"### Instruction: Name three traditional Mongolian musical instruments."}
+{"c":"","t":"### Response: The morin khuur, a two-stringed fiddle with a horse's head carved on the neck; the yatga, a plucked zither; and the tovshuur, a two-stringed lute from western Mongolia."}
+{"c":"ok","t":"pipeline OK: loads, trains, fits, evaluates, saves, generates"}

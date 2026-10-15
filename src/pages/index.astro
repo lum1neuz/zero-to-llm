@@ -1,0 +1,8 @@
+---
+import Base from "../layouts/Base.astro";
+import Home from "../components/home/Home.tsx";
+import { lite } from "../lib/course.ts";
+---
+<Base title="Your path">
+  <Home client:only="react" course={lite()} tab="path" />
+</Base>

@@ -1,0 +1,4 @@
+# Keep LF everywhere: the pipeline and tests compare file text, and Python/JSONL fixtures are byte-sensitive.
+* text=auto eol=lf
+*.png binary
+*.whl binary

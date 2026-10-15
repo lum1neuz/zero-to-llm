@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.astro/
+generated/
+public/course.json
+public/runtime/
+*.log
+public/pyodide/
+.claude/

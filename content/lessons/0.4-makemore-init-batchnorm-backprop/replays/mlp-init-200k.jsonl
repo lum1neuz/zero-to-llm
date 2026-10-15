@@ -1,0 +1,16 @@
+{"c":"hi","t":"$ python mlp_init.py --steps 200000 --config all"}
+{"c":"dim","t":"names.txt: 32033 names · block_size 3 · 182625 train / 22655 val examples"}
+{"c":"dim","t":"MLP: 27×10 embedding → 30×200 tanh → 200×27 · 11897 params"}
+{"c":"","t":""}
+{"c":"","t":"[original]          step 0 loss 27.88 · tanh saturated at init 79%","delay":900}
+{"c":"bad","layer":0,"label":"original","value":2.168,"delay":1200,"t":"[original]          200k steps · train 2.125 · val 2.168"}
+{"c":"","t":"[output × 0.01]     step 0 loss 3.32 · tanh saturated at init 78%","delay":900}
+{"c":"","layer":1,"label":"output scaled","value":2.130,"delay":1200,"t":"[output × 0.01]     200k steps · train 2.069 · val 2.130"}
+{"c":"","t":"[+ W1 × 0.2]        step 0 loss 3.31 · tanh saturated at init 4%","delay":900}
+{"c":"ok","layer":2,"label":"tanh unsaturated","value":2.103,"delay":1200,"t":"[+ W1 × 0.2]        200k steps · train 2.036 · val 2.103"}
+{"c":"","t":"[kaiming (5/3)/√30] step 0 loss 3.31 · tanh saturated at init 6%","delay":900}
+{"c":"ok","layer":3,"label":"kaiming","value":2.107,"delay":1200,"t":"[kaiming (5/3)/√30] 200k steps · train 2.038 · val 2.107"}
+{"c":"","t":"[batchnorm]         step 0 loss 3.31 · 12097 params (b1 dropped, gain and bias added)","delay":900}
+{"c":"ok","layer":4,"label":"batchnorm","value":2.105,"delay":1200,"t":"[batchnorm]         200k steps · train 2.067 · val 2.105"}
+{"c":"","t":""}
+{"c":"ok","t":"best val 2.103 · every fix beats the original by 0.04–0.07 nats"}

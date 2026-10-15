@@ -1,0 +1,31 @@
+{"c":"hi","t":"$ python quantize_model.py --ckpt runs/tinystories-30m/best.pt --scheme absmax-int8"}
+{"c":"dim","t":"loading checkpoint … 30.2M params · fp16 · 60.4 MB"}
+{"c":"dim","t":"quantizing 24 nn.Linear layers (per-row absmax, 127 levels)"}
+{"c":"","layer":0,"label":"blocks.0.attn.c_attn","value":0.0026,"delay":160,"t":"  blocks.0.attn.c_attn   512×1536   max_err 0.0026"}
+{"c":"","layer":1,"label":"blocks.0.attn.c_proj","value":0.0038,"delay":160,"t":"  blocks.0.attn.c_proj   512×512    max_err 0.0038"}
+{"c":"","layer":2,"label":"blocks.0.mlp.c_fc","value":0.0059,"delay":160,"t":"  blocks.0.mlp.c_fc      512×2048   max_err 0.0059"}
+{"c":"","layer":3,"label":"blocks.0.mlp.c_proj","value":0.0029,"delay":160,"t":"  blocks.0.mlp.c_proj    2048×512   max_err 0.0029"}
+{"c":"","layer":4,"label":"blocks.1.attn.c_attn","value":0.0042,"delay":160,"t":"  blocks.1.attn.c_attn   512×1536   max_err 0.0042"}
+{"c":"","layer":5,"label":"blocks.1.attn.c_proj","value":0.0054,"delay":160,"t":"  blocks.1.attn.c_proj   512×512    max_err 0.0054"}
+{"c":"","layer":6,"label":"blocks.1.mlp.c_fc","value":0.004,"delay":160,"t":"  blocks.1.mlp.c_fc      512×2048   max_err 0.0040"}
+{"c":"","layer":7,"label":"blocks.1.mlp.c_proj","value":0.0045,"delay":160,"t":"  blocks.1.mlp.c_proj    2048×512   max_err 0.0045"}
+{"c":"","layer":8,"label":"blocks.2.attn.c_attn","value":0.0057,"delay":160,"t":"  blocks.2.attn.c_attn   512×1536   max_err 0.0057"}
+{"c":"","layer":9,"label":"blocks.2.attn.c_proj","value":0.0035,"delay":160,"t":"  blocks.2.attn.c_proj   512×512    max_err 0.0035"}
+{"c":"","layer":10,"label":"blocks.2.mlp.c_fc","value":0.0056,"delay":160,"t":"  blocks.2.mlp.c_fc      512×2048   max_err 0.0056"}
+{"c":"","layer":11,"label":"blocks.2.mlp.c_proj","value":0.0026,"delay":160,"t":"  blocks.2.mlp.c_proj    2048×512   max_err 0.0026"}
+{"c":"","layer":12,"label":"blocks.3.attn.c_attn","value":0.0038,"delay":160,"t":"  blocks.3.attn.c_attn   512×1536   max_err 0.0038"}
+{"c":"","layer":13,"label":"blocks.3.attn.c_proj","value":0.0051,"delay":160,"t":"  blocks.3.attn.c_proj   512×512    max_err 0.0051"}
+{"c":"","layer":14,"label":"blocks.3.mlp.c_fc","value":0.0037,"delay":160,"t":"  blocks.3.mlp.c_fc      512×2048   max_err 0.0037"}
+{"c":"","layer":15,"label":"blocks.3.mlp.c_proj","value":0.0042,"delay":160,"t":"  blocks.3.mlp.c_proj    2048×512   max_err 0.0042"}
+{"c":"","layer":16,"label":"blocks.4.attn.c_attn","value":0.0054,"delay":160,"t":"  blocks.4.attn.c_attn   512×1536   max_err 0.0054"}
+{"c":"","layer":17,"label":"blocks.4.attn.c_proj","value":0.0032,"delay":160,"t":"  blocks.4.attn.c_proj   512×512    max_err 0.0032"}
+{"c":"","layer":18,"label":"blocks.4.mlp.c_fc","value":0.0053,"delay":160,"t":"  blocks.4.mlp.c_fc      512×2048   max_err 0.0053"}
+{"c":"bad","layer":19,"label":"blocks.4.mlp.c_proj","value":0.0412,"delay":160,"t":"  blocks.4.mlp.c_proj    2048×512   max_err 0.0412   ← outlier row (lesson 3.3)"}
+{"c":"","layer":20,"label":"blocks.5.attn.c_attn","value":0.0035,"delay":160,"t":"  blocks.5.attn.c_attn   512×1536   max_err 0.0035"}
+{"c":"","layer":21,"label":"blocks.5.attn.c_proj","value":0.0048,"delay":160,"t":"  blocks.5.attn.c_proj   512×512    max_err 0.0048"}
+{"c":"","layer":22,"label":"blocks.5.mlp.c_fc","value":0.0034,"delay":160,"t":"  blocks.5.mlp.c_fc      512×2048   max_err 0.0034"}
+{"c":"","layer":23,"label":"blocks.5.mlp.c_proj","value":0.0038,"delay":160,"t":"  blocks.5.mlp.c_proj    2048×512   max_err 0.0038"}
+{"c":"dim","t":"evaluating val perplexity on 2,000 TinyStories samples …"}
+{"c":"ok","t":"linears fp16 37.7 MB  →  int8 18.9 MB (scales 0.06 MB) · model 60.4 → 41.6 MB, embeddings stay fp16"}
+{"c":"ok","t":"ppl    fp16 7.84     →  int8 7.91      (+0.9%)"}
+{"c":"","t":"sample \"Once upon a time, a little fox found a red ball in the tall grass. She rolled it to her friend…\""}

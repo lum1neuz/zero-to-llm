@@ -1,0 +1,15 @@
+{"c":"hi","t":"$ python generate.py --ckpt runs/tinystories-30m/best.pt --prompt \"Once upon a time\" --new-tokens 512 --temperature 0 --compare-cache"}
+{"c":"dim","t":"loading checkpoint … 30.2M params · 6 layers · 8 heads × 64 · fp32 · cuda:0"}
+{"c":"dim","t":"KV cache per sequence at 512 tokens: 2 × 6 × 8 × 64 × 512 × 4 bytes = 12.0 MiB"}
+{"c":"","layer":0,"label":"1–64","value":2.0,"delay":220,"t":"  tokens   1– 64   no cache 3.1 ms/token   cache 2.0 ms/token"}
+{"c":"","layer":1,"label":"65–128","value":2.0,"delay":220,"t":"  tokens  65–128   no cache 3.3 ms/token   cache 2.0 ms/token"}
+{"c":"","layer":2,"label":"129–192","value":2.0,"delay":220,"t":"  tokens 129–192   no cache 3.6 ms/token   cache 2.0 ms/token"}
+{"c":"","layer":3,"label":"193–256","value":2.1,"delay":220,"t":"  tokens 193–256   no cache 4.0 ms/token   cache 2.1 ms/token"}
+{"c":"","layer":4,"label":"257–320","value":2.1,"delay":220,"t":"  tokens 257–320   no cache 4.6 ms/token   cache 2.1 ms/token"}
+{"c":"","layer":5,"label":"321–384","value":2.1,"delay":220,"t":"  tokens 321–384   no cache 5.3 ms/token   cache 2.1 ms/token"}
+{"c":"","layer":6,"label":"385–448","value":2.2,"delay":220,"t":"  tokens 385–448   no cache 6.1 ms/token   cache 2.2 ms/token"}
+{"c":"","layer":7,"label":"449–512","value":2.2,"delay":220,"t":"  tokens 449–512   no cache 7.0 ms/token   cache 2.2 ms/token"}
+{"c":"ok","t":"no cache 216 tok/s  →  cache 480 tok/s   (2.2×)"}
+{"c":"ok","t":"same 512 tokens: yes · max |cached − full| logit diff 1.9e-06 (fp32)"}
+{"c":"dim","t":"the cached step is still ~2 ms: at this size the GPU waits on ~70 small kernel launches per token, not on math (lesson 2.5)"}
+{"c":"","t":"sample \"Once upon a time, there was a little girl named Lily. She loved to play outside in the park. One day, she saw a big…\""}

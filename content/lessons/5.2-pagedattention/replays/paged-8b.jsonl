@@ -1,0 +1,16 @@
+{"c":"hi","t":"$ python paged_kv.py --ckpt runs/mn-8b --block-size 16 --check-prompts 20 --replay requests_200.jsonl"}
+{"c":"dim","t":"loading runs/mn-8b · fp16 · 32 layers · 32 query heads · 8 KV heads × 128"}
+{"c":"dim","t":"KV per token: 2 × 32 × 8 × 128 × 2 B = 128 KiB · pool 2,048 blocks × 16 tokens = 4.0 GiB"}
+{"c":"dim","t":"check 1: paged cache vs the model's own cache, 20 prompts × 128 generated tokens"}
+{"c":"","layer":0,"label":"layers.0","value":0.00012,"delay":220,"t":"  layers.0    attn out max abs diff 1.2e-04"}
+{"c":"","layer":1,"label":"layers.4","value":0.00018,"delay":220,"t":"  layers.4    attn out max abs diff 1.8e-04"}
+{"c":"","layer":2,"label":"layers.8","value":0.00024,"delay":220,"t":"  layers.8    attn out max abs diff 2.4e-04"}
+{"c":"","layer":3,"label":"layers.12","value":0.00021,"delay":220,"t":"  layers.12   attn out max abs diff 2.1e-04"}
+{"c":"","layer":4,"label":"layers.16","value":0.00031,"delay":220,"t":"  layers.16   attn out max abs diff 3.1e-04"}
+{"c":"","layer":5,"label":"layers.20","value":0.00027,"delay":220,"t":"  layers.20   attn out max abs diff 2.7e-04"}
+{"c":"","layer":6,"label":"layers.24","value":0.00035,"delay":220,"t":"  layers.24   attn out max abs diff 3.5e-04"}
+{"c":"","layer":7,"label":"layers.28","value":0.00029,"delay":220,"t":"  layers.28   attn out max abs diff 2.9e-04"}
+{"c":"ok","t":"logits max abs diff 0.0039 · greedy tokens identical at 2,560 / 2,560 positions"}
+{"c":"dim","t":"check 2: replaying 200 Mongolian chat requests (prompt + answer: mean 700, p99 3,380 tokens)"}
+{"c":"bad","t":"  contiguous   reserve 4,096 per request   reserved but empty 82.9%   fits 8 requests in 4.0 GiB"}
+{"c":"ok","t":"  paged        16-token blocks             reserved but empty  1.1%   fits 46 requests in 4.0 GiB"}

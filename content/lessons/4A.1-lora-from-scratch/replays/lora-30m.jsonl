@@ -1,0 +1,25 @@
+{"c":"hi","t":"$ python lora_finetune.py --ckpt runs/tinystories-30m/best.pt --data tinystories-instruct --rank 8 --alpha 16 --steps 3000"}
+{"c":"dim","t":"loading checkpoint … 30.2M params · 24 nn.Linear layers"}
+{"c":"dim","t":"wrapping every nn.Linear in LoRALinear (r=8, alpha=16, scale 2.0) · base frozen"}
+{"c":"","t":"trainable params: 393,216 || all params: 30,580,736 || trainable%: 1.29"}
+{"c":"dim","t":"optimizer: AdamW over 48 tensors (lora_A and lora_B only) · lr 1e-3 · batch 32 × 512 tokens"}
+{"c":"dim","t":"step 0 is the base model. It has never seen Features: / Words: / Summary: prompts."}
+{"c":"","layer":0,"label":"step 0","value":2.31,"delay":300,"t":"  step    0   val 2.31"}
+{"c":"","layer":1,"label":"step 250","value":2.12,"delay":300,"t":"  step  250   train 2.15   val 2.12"}
+{"c":"","layer":2,"label":"step 500","value":2.03,"delay":300,"t":"  step  500   train 2.05   val 2.03"}
+{"c":"","layer":3,"label":"step 1000","value":1.95,"delay":300,"t":"  step 1000   train 1.96   val 1.95"}
+{"c":"","layer":4,"label":"step 1500","value":1.91,"delay":300,"t":"  step 1500   train 1.92   val 1.91"}
+{"c":"","layer":5,"label":"step 2000","value":1.89,"delay":300,"t":"  step 2000   train 1.89   val 1.89"}
+{"c":"","layer":6,"label":"step 2500","value":1.87,"delay":300,"t":"  step 2500   train 1.86   val 1.87"}
+{"c":"","layer":7,"label":"step 3000","value":1.86,"delay":300,"t":"  step 3000   train 1.85   val 1.86"}
+{"c":"ok","t":"done in 14 min · peak VRAM 1.4 GB (full fine-tune of the same model: 1.9 GB)"}
+{"c":"dim","t":"reference: full fine-tune, same data and steps → val 1.79"}
+{"c":"dim","t":"merging: W ← W + 2.0 · B @ A in 24 layers … max |logit diff| vs unmerged 3.1e-06"}
+{"c":"hi","t":"sample from the merged model"}
+{"c":"dim","t":"Features: Dialogue"}
+{"c":"dim","t":"Words: kite, brave, windy"}
+{"c":"dim","t":"Summary: Tom loses his kite on a windy day and his sister helps him find it."}
+{"c":"dim","t":"Story:"}
+{"c":"","t":"Tom had a red kite. One windy day the wind pulled it out of his hands. \"My kite!\" Tom cried."}
+{"c":"","t":"His sister Mia was brave. She said, \"Let's look by the big tree.\" They found the kite in the"}
+{"c":"","t":"branches and pulled it down together. Tom smiled and said, \"Thank you, Mia!\""}

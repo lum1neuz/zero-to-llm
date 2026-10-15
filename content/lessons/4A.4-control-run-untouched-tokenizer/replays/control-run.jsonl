@@ -1,0 +1,20 @@
+{"c":"hi","t":"$ python continued_pretrain.py --model meta-llama/Llama-3.1-8B --data data/mn-clean/train.jsonl --tokens 20M --rank 32 --alpha 64 --lr 1e-4 --seq 2048 --grad-accum 4"}
+{"c":"dim","t":"tokenizer: meta-llama/Llama-3.1-8B, untouched (128,256 tokens) · embeddings and lm_head frozen"}
+{"c":"dim","t":"QLoRA: nf4 + double quant · LoRA r=32 on all 7 Linears in 32 blocks"}
+{"c":"","t":"trainable params: 83,886,080 || all params: 8,114,147,328 || trainable%: 1.0338"}
+{"c":"dim","t":"sample: 20.0M tokens from 191.2M (seed 0, ids saved to runs/control/sample_ids.txt) · 2,441 steps of 4 × 2048 tokens"}
+{"c":"","t":"step 0 (base model): held-out ppl 5.84 · bits/char 1.04 · English ppl 6.10"}
+{"c":"","layer":0,"label":"step 0","value":5.84,"delay":300,"t":"  step    0   held-out ppl 5.84   bits/char 1.04"}
+{"c":"","layer":1,"label":"step 250","value":4.41,"delay":300,"t":"  step  250   train 1.52   held-out ppl 4.41   bits/char 0.87"}
+{"c":"","layer":2,"label":"step 500","value":3.92,"delay":300,"t":"  step  500   train 1.38   held-out ppl 3.92   bits/char 0.80"}
+{"c":"","layer":3,"label":"step 1000","value":3.51,"delay":300,"t":"  step 1000   train 1.27   held-out ppl 3.51   bits/char 0.74"}
+{"c":"","layer":4,"label":"step 1500","value":3.30,"delay":300,"t":"  step 1500   train 1.20   held-out ppl 3.30   bits/char 0.70"}
+{"c":"","layer":5,"label":"step 2000","value":3.17,"delay":300,"t":"  step 2000   train 1.16   held-out ppl 3.17   bits/char 0.68"}
+{"c":"","layer":6,"label":"step 2441","value":3.12,"delay":300,"t":"  step 2441   train 1.14   held-out ppl 3.12   bits/char 0.67"}
+{"c":"ok","t":"done: 7 h 02 min training + 4 min of evals = 7.1 GPU hours · 790 tokens/s · peak 10.6 GB reserved"}
+{"c":"","t":"English (WikiText sample) ppl 6.10 → 6.41 (+5.1%): mild forgetting"}
+{"c":"ok","t":"saved runs/control/adapter_model.safetensors (336 MB) · runs/control/eval_log.jsonl"}
+{"c":"hi","t":"prompt: Монгол Улсын нийслэл Улаанбаатар хот нь"}
+{"c":"dim","t":"base:    … крупнейший город страны, в котором проживает почти половина населения."}
+{"c":"","t":"control: … улсын эдийн засаг, соёлын төв бөгөөд нийт хүн амын бараг тал нь энд амьдардаг."}
+{"c":"dim","t":"The base model drifts into Russian, the Cyrillic language it saw far more of. The control stays in Mongolian."}

@@ -1,0 +1,17 @@
+{"c":"hi","t":"$ llama-server -m runs/mn-8b/mn-8b-f16.gguf -ngl 99 -c 16384 -np 16 --port 8080"}
+{"c":"dim","t":"llama.cpp  offloaded 33/33 layers to GPU · weights 15.0 GiB · 16 slots × 1024 ctx"}
+{"c":"hi","t":"$ vllm serve runs/mn-8b --dtype float16 --max-model-len 4096 --gpu-memory-utilization 0.92 --port 8000"}
+{"c":"dim","t":"vLLM  model weights 14.99 GiB · KV cache 4.37 GiB · # GPU blocks: 2237 (16 tokens each)"}
+{"c":"dim","t":"vLLM  maximum concurrency for 4096 tokens per request: 8.74x"}
+{"c":"hi","t":"$ python bench_serving.py --prompts mn_prompts.jsonl --users 1,4,16 --max-tokens 256 --engines llama.cpp:8080,vllm:8000"}
+{"c":"dim","t":"50 Mongolian prompts · 180 tokens median prompt · 256 new tokens max · greedy"}
+{"c":"dim","t":"users  engine      TTFT p50   TPOT p50   throughput"}
+{"c":"","layer":0,"label":"llama.cpp ×1","value":52,"delay":400,"t":"  1    llama.cpp      52 ms    19.8 ms      50 tok/s"}
+{"c":"","layer":1,"label":"vLLM ×1","value":44,"delay":400,"t":"  1    vLLM           44 ms    20.6 ms      48 tok/s"}
+{"c":"","layer":2,"label":"llama.cpp ×4","value":118,"delay":400,"t":"  4    llama.cpp     118 ms    24.9 ms     157 tok/s"}
+{"c":"","layer":3,"label":"vLLM ×4","value":61,"delay":400,"t":"  4    vLLM           61 ms    21.7 ms     181 tok/s"}
+{"c":"bad","layer":4,"label":"llama.cpp ×16","value":436,"delay":400,"t":"  16   llama.cpp     436 ms    48.6 ms     318 tok/s   ← first tokens slow down"}
+{"c":"","layer":5,"label":"vLLM ×16","value":97,"delay":400,"t":"  16   vLLM           97 ms    26.3 ms     612 tok/s"}
+{"c":"dim","t":"greedy check: first 64 tokens of all 50 prompts, both engines fp16 …"}
+{"c":"ok","t":"identical on 46 / 50 prompts (92%) · the 4 others split at a near-tie (top-2 logits within 0.02)"}
+{"c":"ok","t":"throughput at 16 users: vLLM 612 / llama.cpp 318 = 1.92×"}

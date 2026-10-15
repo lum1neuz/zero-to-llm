@@ -1,0 +1,45 @@
+{"c":"hi","t":"$ python awq_quantize.py --model meta-llama/Llama-3.1-8B --bits 4 --group-size 128 --calib pile --nsamples 128"}
+{"c":"dim","t":"loading Llama 3.1 8B into CPU memory … 8.03B params · fp16 · 16.1 GB"}
+{"c":"dim","t":"calibration: 128 samples × 512 tokens · mean |x| per input channel, grid search over alpha ∈ {0, 0.05, …, 1}"}
+{"c":"","layer":0,"label":"blocks.0","value":0.35,"delay":140,"t":"  blocks.0   best alpha 0.35   output err ÷1.9 vs RTN"}
+{"c":"","layer":1,"label":"blocks.1","value":0.4,"delay":140,"t":"  blocks.1   best alpha 0.40   output err ÷2.1 vs RTN"}
+{"c":"","layer":2,"label":"blocks.2","value":0.45,"delay":140,"t":"  blocks.2   best alpha 0.45   output err ÷2.3 vs RTN"}
+{"c":"","layer":3,"label":"blocks.3","value":0.4,"delay":140,"t":"  blocks.3   best alpha 0.40   output err ÷2.2 vs RTN"}
+{"c":"","layer":4,"label":"blocks.4","value":0.45,"delay":140,"t":"  blocks.4   best alpha 0.45   output err ÷2.4 vs RTN"}
+{"c":"","layer":5,"label":"blocks.5","value":0.5,"delay":140,"t":"  blocks.5   best alpha 0.50   output err ÷2.6 vs RTN"}
+{"c":"","layer":6,"label":"blocks.6","value":0.45,"delay":140,"t":"  blocks.6   best alpha 0.45   output err ÷2.5 vs RTN"}
+{"c":"","layer":7,"label":"blocks.7","value":0.4,"delay":140,"t":"  blocks.7   best alpha 0.40   output err ÷2.3 vs RTN"}
+{"c":"","layer":8,"label":"blocks.8","value":0.45,"delay":140,"t":"  blocks.8   best alpha 0.45   output err ÷2.4 vs RTN"}
+{"c":"","layer":9,"label":"blocks.9","value":0.5,"delay":140,"t":"  blocks.9   best alpha 0.50   output err ÷2.7 vs RTN"}
+{"c":"","layer":10,"label":"blocks.10","value":0.45,"delay":140,"t":"  blocks.10  best alpha 0.45   output err ÷2.5 vs RTN"}
+{"c":"","layer":11,"label":"blocks.11","value":0.5,"delay":140,"t":"  blocks.11  best alpha 0.50   output err ÷2.6 vs RTN"}
+{"c":"","layer":12,"label":"blocks.12","value":0.45,"delay":140,"t":"  blocks.12  best alpha 0.45   output err ÷2.4 vs RTN"}
+{"c":"","layer":13,"label":"blocks.13","value":0.4,"delay":140,"t":"  blocks.13  best alpha 0.40   output err ÷2.3 vs RTN"}
+{"c":"","layer":14,"label":"blocks.14","value":0.45,"delay":140,"t":"  blocks.14  best alpha 0.45   output err ÷2.5 vs RTN"}
+{"c":"","layer":15,"label":"blocks.15","value":0.5,"delay":140,"t":"  blocks.15  best alpha 0.50   output err ÷2.8 vs RTN"}
+{"c":"","layer":16,"label":"blocks.16","value":0.5,"delay":140,"t":"  blocks.16  best alpha 0.50   output err ÷2.7 vs RTN"}
+{"c":"","layer":17,"label":"blocks.17","value":0.45,"delay":140,"t":"  blocks.17  best alpha 0.45   output err ÷2.5 vs RTN"}
+{"c":"","layer":18,"label":"blocks.18","value":0.5,"delay":140,"t":"  blocks.18  best alpha 0.50   output err ÷2.9 vs RTN"}
+{"c":"","layer":19,"label":"blocks.19","value":0.55,"delay":140,"t":"  blocks.19  best alpha 0.55   output err ÷3.1 vs RTN"}
+{"c":"","layer":20,"label":"blocks.20","value":0.5,"delay":140,"t":"  blocks.20  best alpha 0.50   output err ÷2.8 vs RTN"}
+{"c":"","layer":21,"label":"blocks.21","value":0.45,"delay":140,"t":"  blocks.21  best alpha 0.45   output err ÷2.6 vs RTN"}
+{"c":"","layer":22,"label":"blocks.22","value":0.5,"delay":140,"t":"  blocks.22  best alpha 0.50   output err ÷2.9 vs RTN"}
+{"c":"","layer":23,"label":"blocks.23","value":0.55,"delay":140,"t":"  blocks.23  best alpha 0.55   output err ÷3.2 vs RTN"}
+{"c":"","layer":24,"label":"blocks.24","value":0.5,"delay":140,"t":"  blocks.24  best alpha 0.50   output err ÷3.0 vs RTN"}
+{"c":"","layer":25,"label":"blocks.25","value":0.55,"delay":140,"t":"  blocks.25  best alpha 0.55   output err ÷3.3 vs RTN"}
+{"c":"","layer":26,"label":"blocks.26","value":0.5,"delay":140,"t":"  blocks.26  best alpha 0.50   output err ÷3.0 vs RTN"}
+{"c":"","layer":27,"label":"blocks.27","value":0.55,"delay":140,"t":"  blocks.27  best alpha 0.55   output err ÷3.4 vs RTN"}
+{"c":"","layer":28,"label":"blocks.28","value":0.6,"delay":140,"t":"  blocks.28  best alpha 0.60   output err ÷3.7 vs RTN"}
+{"c":"bad","layer":29,"label":"blocks.29","value":0.65,"delay":140,"t":"  blocks.29  best alpha 0.65   output err ÷4.1 vs RTN"}
+{"c":"bad","layer":30,"label":"blocks.30","value":0.7,"delay":140,"t":"  blocks.30  best alpha 0.70   output err ÷4.6 vs RTN"}
+{"c":"bad","layer":31,"label":"blocks.31","value":0.65,"delay":140,"t":"  blocks.31  best alpha 0.65   output err ÷4.2 vs RTN"}
+{"c":"ok","t":"saved out/llama-3.1-8b-awq-g128 · 5.7 GB · search took 14.6 min"}
+{"c":"hi","t":"$ python nf4_load.py --model meta-llama/Llama-3.1-8B --double-quant --report-memory"}
+{"c":"dim","t":"quantizing to NF4 while loading (blocks of 64, absmax in 8 bits, fp32 per 256 blocks) …"}
+{"c":"ok","t":"weights in memory 5.70 GB   (Linears 3.60 GB at 4.127 bits · embed_tokens + lm_head 2.10 GB bf16)"}
+{"c":"hi","t":"$ python eval_ppl.py --models awq-g128,nf4-dq --eval-samples 2000"}
+{"c":"","t":"  fp16 (from 3.4)      ppl 6.24"}
+{"c":"ok","t":"  AWQ int4 g128        ppl 6.55   (+5.0%)"}
+{"c":"ok","t":"  NF4 + double quant   ppl 6.63   (+6.3%)"}
+{"c":"dim","t":"  GPTQ int4 g128 (3.4) ppl 6.52   (+4.5%)"}
+{"c":"","t":"sample \"A little camel named Tsogt did not like the cold, so every night he slept between his two big sisters…\""}

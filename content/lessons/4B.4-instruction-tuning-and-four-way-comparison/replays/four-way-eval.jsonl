@@ -1,0 +1,22 @@
+{"c":"hi","t":"$ python sft.py --base runs/llama31-mn-8k-cpt/best --adapter runs/llama31-mn-8k-cpt --data data/mn-instruct.jsonl --epochs 2 --mask-prompt"}
+{"c":"dim","t":"4A.5's recipe: 9,777 Mongolian pairs (after removing the 23 that overlapped eval questions) · continuing the r=32 adapter · lr 1e-4 · batch 16 · 1,222 steps"}
+{"c":"dim","t":"new rows of embed_tokens and lm_head frozen for SFT, as the control's embeddings were"}
+{"c":"","t":"  step   400   loss 1.38"}
+{"c":"","t":"  step   800   loss 1.17"}
+{"c":"ok","t":"  step 1,222   loss 1.09   · done in 1 h 31 min (control: 1 h 48, same pairs in fewer tokens) · saved runs/llama31-mn-8k-it"}
+{"c":"hi","t":"$ python eval_mn.py --models base,runs/sft,runs/llama31-mn-8k-cpt,runs/llama31-mn-8k-it --tasks mn_qa,mn_mc"}
+{"c":"dim","t":"4A.5 harness: mn_qa 150 (greedy, ≤ 32 new tokens, exact match after normalizing) · mn_mc 200 (log-prob per character) · about 18 min per model"}
+{"c":"","t":"  model           mn_qa    mn_mc    score   tok/answer"}
+{"c":"bad","t":"  base             14.0%    47.0%    30.5%    12.4","layer":0,"label":"base","value":12.4,"delay":800}
+{"c":"bad","t":"  control + SFT    48.7%    74.0%    61.4%    11.8","layer":1,"label":"control","value":11.8,"delay":800}
+{"c":"","t":"  extended         23.3%    55.0%    39.2%     6.0","layer":2,"label":"extended","value":6,"delay":800}
+{"c":"ok","t":"  extended + IT    52.7%    76.5%    64.6%     5.7","layer":3,"label":"extended + IT","value":5.7,"delay":800}
+{"c":"dim","t":"  (control before SFT, from 4A.5: 21.3% / 52.5% / 36.9%, the fair pair for extended)"}
+{"c":"dim","t":"paired, control + SFT vs extended + IT:"}
+{"c":"","t":"  mn_qa  14 of 150 differ · extended + IT wins 10, control 4 · 1.6σ from a coin flip"}
+{"c":"","t":"  mn_mc  31 of 200 differ · extended + IT wins 18, control 13 · 0.9σ"}
+{"c":"","t":"  +3.2 points overall: suggestive, not settled. Both tasks point the same way."}
+{"c":"","t":"sample (mn_qa) \"Монгол Улсын хамгийн том хот аль вэ?\""}
+{"c":"","t":"  control + SFT   \"Улаанбаатар\"   4 tokens"}
+{"c":"","t":"  extended + IT   \"Улаанбаатар\"   1 token"}
+{"c":"ok","t":"wrote results/four_way.csv"}

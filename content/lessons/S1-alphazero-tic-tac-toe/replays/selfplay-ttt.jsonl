@@ -1,0 +1,18 @@
+{"c":"hi","t":"$ python selfplay_ttt.py --games 2000 --sims 50 --eval-every 200"}
+{"c":"dim","t":"net: 9 cells → 64 → 64 → policy (9) + value (1) · 5,450 params · plain NumPy, no GPU"}
+{"c":"dim","t":"MCTS: PUCT c=1.5, 50 sims per move, priors and leaf values from the net (no rollouts)"}
+{"c":"dim","t":"self-play: temperature 1 for the first 4 moves, then the most visited move"}
+{"c":"dim","t":"eval: 100 games vs the perfect player, 50 as X and 50 as O"}
+{"c":"bad","layer":0,"label":"0 games","value":31,"delay":420,"t":"games     0   untrained net                vs perfect: 69 draws, 31 lost"}
+{"c":"bad","layer":1,"label":"200 games","value":24,"delay":420,"t":"games   200   policy loss 1.94  value loss 0.71   vs perfect: 76 draws, 24 lost"}
+{"c":"bad","layer":2,"label":"400 games","value":15,"delay":420,"t":"games   400   policy loss 1.61  value loss 0.52   vs perfect: 85 draws, 15 lost"}
+{"c":"","layer":3,"label":"600 games","value":9,"delay":420,"t":"games   600   policy loss 1.38  value loss 0.39   vs perfect: 91 draws, 9 lost"}
+{"c":"","layer":4,"label":"800 games","value":4,"delay":420,"t":"games   800   policy loss 1.22  value loss 0.31   vs perfect: 96 draws, 4 lost"}
+{"c":"","layer":5,"label":"1000 games","value":2,"delay":420,"t":"games  1000   policy loss 1.11  value loss 0.26   vs perfect: 98 draws, 2 lost"}
+{"c":"ok","layer":6,"label":"1200 games","value":0,"delay":420,"t":"games  1200   policy loss 1.04  value loss 0.22   vs perfect: 100 draws, 0 lost   ← first clean sweep"}
+{"c":"ok","layer":7,"label":"1400 games","value":0,"delay":420,"t":"games  1400   policy loss 0.99  value loss 0.20   vs perfect: 100 draws, 0 lost"}
+{"c":"ok","layer":8,"label":"1600 games","value":0,"delay":420,"t":"games  1600   policy loss 0.96  value loss 0.19   vs perfect: 100 draws, 0 lost"}
+{"c":"ok","layer":9,"label":"1800 games","value":0,"delay":420,"t":"games  1800   policy loss 0.94  value loss 0.18   vs perfect: 100 draws, 0 lost"}
+{"c":"ok","layer":10,"label":"2000 games","value":0,"delay":420,"t":"games  2000   policy loss 0.93  value loss 0.18   vs perfect: 100 draws, 0 lost"}
+{"c":"ok","t":"converged after 1,200 self-play games (first eval with 100/100 draws), 2,000 games in 3 min 40 s on 1 CPU core"}
+{"c":"","t":"empty board, X to move, policy head: centre 0.56 · corners 0.09 each · edges 0.02 each"}

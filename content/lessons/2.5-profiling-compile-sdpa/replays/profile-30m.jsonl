@@ -1,0 +1,16 @@
+{"c":"hi","t":"$ python profile_generate.py --ckpt runs/tinystories-30m/best.pt --new-tokens 256 --modes eager,sdpa,compile,compile+sdpa"}
+{"c":"dim","t":"loading checkpoint … 30.2M params · fp32 · KV cache on · batch 1 · cuda:0"}
+{"c":"dim","t":"torch.profiler, 20 decode steps, eager · per step:"}
+{"c":"","t":"  cudaLaunchKernel (CPU)          1.32 ms   ~70 launches"}
+{"c":"","t":"  aten::mm (GPU)                  0.21 ms"}
+{"c":"","t":"  attention + softmax (GPU)       0.09 ms"}
+{"c":"","t":"  layer norm, gelu, adds (GPU)    0.12 ms"}
+{"c":"bad","t":"  GPU busy 0.42 of 2.08 ms per step (20%): launch-bound. The GPU waits on Python, not on math."}
+{"c":"","layer":0,"label":"eager","value":480,"delay":500,"t":"  eager                         480 tok/s"}
+{"c":"","layer":1,"label":"SDPA","value":495,"delay":500,"t":"  + F.scaled_dot_product_attention   495 tok/s   (decode attends with 1 query: little to save)"}
+{"c":"dim","t":"  torch.compile(mode=\"reduce-overhead\") … compiling, first call 38 s"}
+{"c":"","layer":2,"label":"compile","value":1040,"delay":500,"t":"  torch.compile                 1,040 tok/s   (CUDA graphs: one launch replays the whole step)"}
+{"c":"","layer":3,"label":"compile + SDPA","value":1090,"delay":500,"t":"  torch.compile + SDPA          1,090 tok/s"}
+{"c":"","t":"  prefill 16 × 512 tokens: attention 4.1 ms eager → 1.6 ms SDPA (the [16, 8, 512, 512] scores never reach memory)"}
+{"c":"ok","t":"speedup 1,090 / 480 = 2.27×"}
+{"c":"ok","t":"same 256 tokens · max |compiled − eager| logit diff 3.8e-06 (fp32)"}

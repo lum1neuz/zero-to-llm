@@ -1,0 +1,12 @@
+{"c":"hi","t":"$ python env_check.py"}
+{"c":"dim","t":"torch 2.5.1+cu124 · CUDA 12.4"}
+{"c":"ok","t":"NVIDIA GeForce RTX 3090 · 24.0 GB · bf16: True","delay":500}
+{"c":"","t":""}
+{"c":"dim","t":"matmul 4096×4096, 3 warm-up runs, then the average of the timed runs"}
+{"c":"","t":"cpu   torch.float32    182.40 ms    0.8 TFLOP/s","delay":1600}
+{"c":"","layer":0,"label":"cuda float32","value":6.21,"delay":500,"t":"cuda  torch.float32      6.21 ms   22.1 TFLOP/s"}
+{"c":"","layer":1,"label":"cuda float16","value":2.01,"delay":500,"t":"cuda  torch.float16      2.01 ms   68.4 TFLOP/s"}
+{"c":"","layer":2,"label":"cuda bfloat16","value":2.03,"delay":500,"t":"cuda  torch.bfloat16     2.03 ms   67.7 TFLOP/s"}
+{"c":"","t":""}
+{"c":"dim","t":"names.txt: 32033 names · 228146 predictions","delay":400}
+{"c":"ok","t":"uniform baseline 3.2958 nats (ln 27 = 3.2958)"}
