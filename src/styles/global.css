@@ -483,3 +483,5 @@ p code, li code, .why code, .fb code, .hintbox code, .tier code { font-size: .88
 /* show code exactly as typed: no ">=" → "≥" ligatures */
 code, kbd, pre, .mono, textarea, .code, .hint-code, .term { font-variant-ligatures: none; font-feature-settings: "liga" 0, "calt" 0; }
 .fold-body td code { white-space: nowrap; }
+/* fill-in code wraps on narrow screens so every blank stays visible */
+.code.wrap { white-space: pre-wrap; overflow-wrap: anywhere; }

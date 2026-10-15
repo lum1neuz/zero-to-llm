@@ -11,7 +11,7 @@ export const XP = { card: 5, cardWithHint: 3, learnBonus: 10, challengeFull: 30,
 export interface ChallengeRec { phase: "intro" | "challenge" | "solved"; t: number; code: string | null; runs: number; hints: number; lastHintRun: number; peek: boolean; xp: number; at: number }
 export interface LessonRec {
   learn?: { done: boolean; bestXp: number; correct: number; total: number; at: number };
-  session?: { ci: number; gained: number; correct: number; at: number };
+  session?: { ci: number; gained: number; correct: number; scored?: number[]; at: number };
   challenges: Record<string, ChallengeRec>;
   checks: Record<string, { v: boolean; at: number }>;
   metrics?: { values: Record<string, number>; at: number };
@@ -184,7 +184,8 @@ export function parseImport(text: string): Progress {
     if (!isObj(l)) continue;
     const rec: LessonRec = { challenges: {}, checks: {} };
     if (isObj(l.learn)) rec.learn = { done: !!l.learn.done, bestXp: Math.max(0, num(l.learn.bestXp)), correct: num(l.learn.correct), total: num(l.learn.total), at: num(l.learn.at) };
-    if (isObj(l.session)) rec.session = { ci: Math.max(0, Math.floor(num(l.session.ci))), gained: Math.max(0, num(l.session.gained)), correct: num(l.session.correct), at: num(l.session.at) };
+    if (isObj(l.session)) rec.session = { ci: Math.max(0, Math.floor(num(l.session.ci))), gained: Math.max(0, num(l.session.gained)), correct: num(l.session.correct),
+      scored: Array.isArray(l.session.scored) ? l.session.scored.filter((x: unknown) => Number.isInteger(x) && (x as number) >= 0) : undefined, at: num(l.session.at) };
     for (const [cid, c] of Object.entries(isObj(l.challenges) ? l.challenges : {})) {
       if (!isObj(c) || !["intro", "challenge", "solved"].includes(c.phase)) continue;
       rec.challenges[cid] = { phase: c.phase, t: num(c.t), code: typeof c.code === "string" ? c.code : null, runs: num(c.runs), hints: Math.min(4, Math.max(0, num(c.hints))),

@@ -7,6 +7,7 @@ export const I = {
   flame: svg(<path d="M8 1c.6 2.6 4 4.3 4 8.2A4 4 0 0 1 8 15a4 4 0 0 1-4-4c0-1.7.8-2.9 1.8-3.6.1 1.4.9 2.3 1.7 2.3C7 7 7.1 3.8 8 1z" fill="currentColor" />, 14),
   shield: svg(<path d="M8 1.5 13 3.5v4c0 3.2-2.2 5.6-5 7-2.8-1.4-5-3.8-5-7v-4z" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />, 13),
   check: svg(<path d="M3 8.5l3 3 7-7" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />, 18),
+  back: svg(<path d="M10 3.5 5.5 8l4.5 4.5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />, 18),
   cross: svg(<path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />, 18),
   bulb: svg(<path d="M8 1.5a4.5 4.5 0 0 0-2.6 8.2c.4.3.6.7.6 1.1V12h4v-1.2c0-.4.2-.8.6-1.1A4.5 4.5 0 0 0 8 1.5zM6 13.6h4M6.8 15h2.4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />),
   lock: svg(<><rect x="3" y="7" width="10" height="7" rx="1.5" fill="currentColor" /><path d="M5 7V5a3 3 0 0 1 6 0v2" fill="none" stroke="currentColor" strokeWidth="1.6" /></>, 18),

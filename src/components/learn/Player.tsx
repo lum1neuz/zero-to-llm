@@ -9,7 +9,7 @@ import { Html, I } from "../ui.tsx";
 import { QuantGrid } from "./QuantGrid.tsx";
 
 interface Answer { slots: (string | null)[]; bits: number; pick: number | null; order: number[]; val: string; hint: boolean }
-interface Feedback { ok: boolean; title: string; why: string }
+interface Feedback { ok: boolean; title: string; why: string; practice?: boolean }
 const RIGHT = ["Nice.", "Correct.", "Exactly.", "That's it."];
 
 const newAnswer = (c: Card | undefined): Answer => ({
@@ -69,6 +69,9 @@ export default function Player({ lesson }: { lesson: Lesson }) {
   const [flash, setFlash] = useState(false);
   const [finished, setFinished] = useState<null | { gained: number; correct: number; missed: number }>(null);
   const [missed, setMissed] = useState(0);
+  // Cards already scored (XP or a review entry). Going back to one is practice only.
+  const [scored, setScored] = useState<number[]>(saved?.scored ?? []);
+  const [furthest, setFurthest] = useState(saved?.ci ?? 0);
   const c = cards[ci];
   const exercises = cards.filter((x) => x.type !== "concept").length;
 
@@ -77,20 +80,29 @@ export default function Player({ lesson }: { lesson: Lesson }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { if (saved && saved.ci >= cards.length) next(saved.gained, saved.correct, cards.length - 1); }, []);
 
-  const persistSession = (nextCi: number, g: number, cr: number) =>
-    update((d) => { lessonRec(d, lesson.id).session = { ci: nextCi, gained: g, correct: cr, at: Date.now() }; });
+  // The saved position never moves backwards, so going back and reloading resumes at the furthest card.
+  const persistSession = (nextCi: number, g: number, cr: number, sc = scored) => {
+    const far = Math.max(furthest, nextCi);
+    setFurthest(far);
+    update((d) => { lessonRec(d, lesson.id).session = { ci: far, gained: g, correct: cr, scored: sc, at: Date.now() }; });
+  };
 
   const check = () => {
     if (c.type === "concept") return next(gained, correct);
     const why = notReady(c, a);
     if (why) { setFlash(true); setTimeout(() => setFlash(false), 450); return; }
     const r = grade(c, a);
+    const practice = scored.includes(ci);
     let g = gained, cr = correct;
-    if (r.ok) { g += a.hint ? XP.cardWithHint : XP.card; cr++; setGained(g); setCorrect(cr); }
-    if (!r.ok && c.type === "quiz") { setMissed(missed + 1); update((d) => scheduleMiss(d, lesson.id, c.ref)); }
-    setFb({ ok: r.ok, title: r.ok ? RIGHT[ci % RIGHT.length] : "Not quite", why: r.why });
-    // Once a card is scored, a reload resumes after it, so its XP can't be earned twice.
-    if (r.ok || c.type === "quiz") persistSession(ci + 1, g, cr);
+    if (r.ok && !practice) { g += a.hint ? XP.cardWithHint : XP.card; cr++; setGained(g); setCorrect(cr); }
+    if (!r.ok && c.type === "quiz" && !practice) { setMissed(missed + 1); update((d) => scheduleMiss(d, lesson.id, c.ref)); }
+    setFb({ ok: r.ok, title: r.ok ? RIGHT[ci % RIGHT.length] : "Not quite", why: r.why, practice });
+    // Once a card is scored, a reload resumes after it and going back to it is practice, so its XP can't be earned twice.
+    if ((r.ok || c.type === "quiz") && !practice) {
+      const sc = [...scored, ci];
+      setScored(sc);
+      persistSession(ci + 1, g, cr, sc);
+    }
   };
 
   const next = (g = gained, cr = correct, from = ci) => {
@@ -113,6 +125,7 @@ export default function Player({ lesson }: { lesson: Lesson }) {
   };
 
   const retry = () => { setFb(null); setA({ ...newAnswer(c), hint: a.hint, bits: a.bits }); };
+  const back = () => { if (ci === 0) return; setFb(null); setCi(ci - 1); setA(newAnswer(cards[ci - 1])); };
 
   if (finished) {
     return (
@@ -141,6 +154,7 @@ export default function Player({ lesson }: { lesson: Lesson }) {
     <div className="learn-col">
       <div className="ls-head">
         <a className="icon-btn" href="/" aria-label="Leave lesson">{I.cross}</a>
+        {ci > 0 && <button className="icon-btn" onClick={back} aria-label="Previous card" title="Previous card">{I.back}</button>}
         <div className="prog" role="progressbar" aria-label="Lesson progress" aria-valuenow={ci} aria-valuemin={0} aria-valuemax={cards.length}><i style={{ width: `${(ci / cards.length) * 100}%` }} /></div>
         <span className="pill">{ci + 1}/{cards.length}</span>
       </div>
@@ -157,7 +171,8 @@ export default function Player({ lesson }: { lesson: Lesson }) {
         <div className={`fb ${fb.ok ? "ok" : "no"}`} role="status">
           <div className="fb-title">{fb.ok ? I.check : I.cross} {fb.title}</div>
           <Html as="p" html={inlineMd(fb.why)} />
-          {!fb.ok && c.type === "quiz" && <p><strong>Added to Review.</strong> It comes back tomorrow.</p>}
+          {!fb.ok && c.type === "quiz" && !fb.practice && <p><strong>Added to Review.</strong> It comes back tomorrow.</p>}
+          {fb.practice && <p className="fine" style={{ margin: 0 }}>Practice: you already scored this card, so it doesn't change your XP.</p>}
           <div className="fb-actions">
             {fb.ok || c.type === "quiz" ? <button className="btn primary block" onClick={() => next()} autoFocus>Continue</button> : (
               <><button className="btn primary block" onClick={retry} autoFocus>Try again</button><button className="btn block" onClick={() => next()}>Skip for now</button></>
@@ -231,7 +246,7 @@ function CardView({ card: c, a, setA, locked, quizLabel }: { card: Card; a: Answ
       return (
         <>
           {head}
-          <div className="code">
+          <div className="code wrap">
             {parts.map((part, k) => {
               const m = /^\[\[(\d+)\]\]$/.exec(part);
               if (!m) return <span key={k} dangerouslySetInnerHTML={{ __html: hl(part) }} />;
