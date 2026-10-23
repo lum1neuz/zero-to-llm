@@ -206,8 +206,45 @@ alternatives:
   - rules/alternatives/enumerate_all.py
   - rules/alternatives/loops.py
 hints:
+  logic: |
+    legal_moves:
+      keep each cell index whose cell is empty (0)
+        → return them, smallest first
+
+    winner:
+      for each line in LINES (cells a, b, c):
+        first cell empty?
+          yes → this line can't win, try the next
+          no  → all three cells equal?
+                  yes → return that cell (1 = X, -1 = O)
+      no line won:
+        any empty cell left?
+          no  → return 0 (draw)
+          yes → return None (game goes on)
+  tools: |
+    keep the empty cell indices
+      range(n)             0, 1, ... n-1
+      [i for i in seq if cond]   keeps items where cond holds
+    check one line
+      for a, b, c in lst   unpacks three numbers per line
+      x != y               are they different
+      x == y == z          are all three equal
+    no line won
+      x in lst, x not in lst   is x one of the items
+      a if cond else b     picks a or b
   nudge: Two questions about a board. Which cells are still empty? And has anyone filled a line? For winner, also think about what makes a game a draw rather than unfinished.
   concept: "A line wins when its three cells hold the same player *and* that player isn't 0, because three empty cells are equal too. Return that cell's value, so X's line gives 1 and O's −1. Only when no line wins: a board with no 0 left is a draw, 0, and anything else is still going, None."
+  example: |
+    Trace the starter board `[1, -1, 1, 0, -1, 0, 0, 1, 0]`:
+
+    - `legal_moves`: cells 0, 1, 2, 4 and 7 are taken, so you get `[3, 5, 6, 8]`.
+    - `winner`: no line holds three equal non-empty values (column 1 is `-1, -1, 1`), and there are still empty cells, so `None`.
+
+    Three more boards to check against:
+
+    - `[1, 1, 1, -1, -1, 0, 0, 0, 0]`: the top row, cells (0, 1, 2), is all 1, so `winner` returns `1`.
+    - `[-1, 1, 0, 1, -1, 0, 0, 0, -1]`: the diagonal (0, 4, 8) is all −1, so `-1`.
+    - `[1, -1, 1, 1, -1, -1, -1, 1, 1]`: full, no line, so `0`. On `[0] * 9` the first line is three equal values too, but they're empty, so the answer is `None`.
   skeleton: |
     # legal_moves
     return [i for i in range(9) if ________]
@@ -264,8 +301,36 @@ alternatives:
   - select_child/alternatives/inline_q.py
   - select_child/alternatives/max_key.py
 hints:
+  logic: |
+    for each (move, child) of node:
+      Q = child's average value per visit
+          (0 if never visited)
+      bonus = c_puct × child's prior P × √(parent's visits N)
+              ÷ (1 + child's own visits n)
+      score = Q + bonus
+      score beats the best so far?
+        yes → remember this move and child
+        no  → skip it
+    return the remembered move and child
+  tools: |
+    Q
+      child.q()            the child's average value per visit
+    bonus
+      child.prior          P, how much the prior likes the move
+      child.n, node.n      visit counts of child and parent
+      math.sqrt(x)         square root of x
+    score
+      plain arithmetic: * / + and 1 + n
   nudge: The score has two parts. One is what the move has earned so far, the other a bonus for moves that haven't been tried much. Which fields of the node and the child feed each part?
   concept: "Q is `child.q()`, the average value per visit (0 for an unvisited child). The bonus is c_puct × P × √N / (1 + n): P is `child.prior`, N is the parent's `node.n` and n is `child.n`. It grows slowly as the parent gets visited, fades as this child does, and the `1 +` keeps an unvisited child from dividing by zero."
+  example: |
+    Trace it with a parent at `node.n = 16` (so √N = 4), `c_puct = 1.5`, and three children:
+
+    - Child A: P = 0.5, n = 3, w = 1.5. Q = 1.5 / 3 = 0.5. Bonus = 1.5 × 0.5 × 4 / (1 + 3) = 0.75. Score `1.25`.
+    - Child B: P = 0.3, n = 0. Q = 0. Bonus = 1.5 × 0.3 × 4 / 1 = 1.8. Score `1.8`.
+    - Child C: P = 0.2, n = 1, w = −0.4. Q = −0.4. Bonus = 1.5 × 0.2 × 4 / 2 = 0.6. Score `0.2`.
+
+    B wins, even though nobody has tried it: an untried move with a decent prior gets a big bonus.
   skeleton: |
     score = child.____() + c_puct * child.______ * math.sqrt(____.n) / (1 + _____.n)
   solution: |
@@ -304,8 +369,33 @@ alternatives:
   - backup/alternatives/index_loop.py
   - backup/alternatives/sign_from_depth.py
 hints:
+  logic: |
+    value = result for the player to move at the leaf
+    for each node in path, from the leaf up to the root:
+      turn value to this node's mover's view
+        (w counts for whoever moved INTO this node,
+         the other player)
+      count one more visit, add value to w
+      → carry that value to the next node up
+    (signs alternate at every level)
+  tools: |
+    walk the path from the leaf up
+      reversed(lst)        lst from last item to first
+    turn value to the other player's view
+      plain arithmetic: - flips a number's sign
+    update the node
+      node.n += k          adds k to a field in place
+      node.w += x          adds x to a field in place
   nudge: Every node on the path took part in this simulation. What does each one gain? And is the result good or bad for the player who made the move into it?
   concept: "Walk the path from the leaf up with `reversed(path)`. value starts out as the result for the player *to move* at the leaf, while the leaf's w counts for the player who moved *into* it, their opponent. So flip first, then add: `value = -value`, one more visit, `w` plus value. The next node up was the other player's move, so one flip per step keeps every node in its own player's view."
+  example: |
+    Trace a path of three nodes, root → `a` → leaf, with `value = 1` (the player to move at the leaf wins):
+
+    - Leaf: flip to `-1`. `n` goes 0 → 1, `w` goes 0 → `-1`. The player who moved into the leaf is the one who just lost.
+    - `a`: flip to `+1`. `n = 1`, `w = +1`.
+    - Root: flip to `-1`. `n = 1`, `w = -1`.
+
+    Read root to leaf, `w` is `[-1, +1, -1]` and every `n` is 1. A second backup of the same `value` makes every `n` 2 and `w` doubles to `[-2, +2, -2]`.
   skeleton: |
     for node in ________(path):
         value = ______
@@ -347,8 +437,40 @@ alternatives:
   - visit_policy/alternatives/loop_and_normalise.py
   - visit_policy/alternatives/child_visits.py
 hints:
+  logic: |
+    visits = for cells 0 to 8: the child's n
+             (0 if the root has no child there)
+    temperature is 0?
+      yes → most visited cell gets 1.0, the other eight 0.0
+              → return those nine numbers
+      no  → raise every count to the power 1 ÷ temperature
+              → divide each by the total of them all
+                (so the nine add up to 1)
+              → return the nine probabilities
+  tools: |
+    visit count per cell
+      range(n)             0, 1, ... n-1
+      x in d               is key x in dict d
+      [f(i) for i in seq]  builds a list, one item per i
+      child.n              a child's visit count
+    temperature 0: one cell gets everything
+      max(lst)             the biggest item
+      lst.index(x)         position of the first x
+    otherwise: sharpen, then scale to 1
+      x ** p               x to the power p
+      sum(lst)             total of all items
+      plain arithmetic: 1 / t, x / total
   nudge: Start from each cell's visit count, with 0 for cells that have no child. How do you turn nine counts into nine probabilities? And what should temperature 0 mean?
   concept: "Collect n per cell (0 where there's no child), raise each to `1 / temperature`, and divide by the total so the nine add up to 1. Temperature 1 leaves the counts as they are; 0.5 squares them, which sharpens the policy. At temperature 0 that power would be `1 / 0`, so handle it first: 1.0 on the most visited cell, 0 everywhere else."
+  example: |
+    Trace it on a root whose children are cells 0, 2 and 4, with visit counts `n = 1, 3, 4`:
+
+    - Counts for all nine cells: `[1, 0, 3, 0, 4, 0, 0, 0, 0]`.
+    - Temperature 1: total is 8, so the policy is `[0.125, 0, 0.375, 0, 0.5, 0, 0, 0, 0]`.
+    - Temperature 0.5: the power is 2, giving `[1, 0, 9, 0, 16, ...]`. The total is 26, so cells 0, 2, 4 get about `0.04, 0.35, 0.62`. Cell 4 gained share.
+    - Temperature 0: cell 4 is the most visited, so the policy is `1.0` at index 4 and `0.0` everywhere else.
+
+    Divide by your own sum of the powered counts, not by `root.n`: the root's first simulation expanded it without visiting a child, so `root.n` is larger than the children's total.
   skeleton: |
     visits = [root.children[m].n if m in root.children else ___ for m in range(___)]
     if temperature == 0:

@@ -186,8 +186,26 @@ alternatives:
   - surprise/alternatives/times_minus_one.py
   - surprise/alternatives/log_of_inverse.py
 hints:
+  logic: |
+    take the natural log of p   (zero or negative when p is 1 or less)
+      → flip the sign           (a small chance becomes a big surprise)
+      → return it
+  tools: |
+    take the natural log
+      math.log(x)      the natural log of x (base e)
+    flip the sign
+      plain arithmetic: -x   (a minus sign in front)
   nudge: The log of a chance below 1 is negative. How do you make it positive?
   concept: "`math.log(p)` is the natural log of p. Put a minus sign in front of it so that unlikely chances give big positive numbers."
+  example: |
+    Trace it on a few chances:
+
+    - `p = 1.0`: the log is `0.0`, so the surprise is `0.0`. A sure thing surprises nobody.
+    - `p = 0.5`: the log is about `-0.6931`, so the surprise is about `0.6931`.
+    - `p = 0.25`: the log is about `-1.3863`, so the surprise is about `1.3863`.
+    - `p = 0.1`: the log is about `-2.3026`, so the surprise is about `2.3026`.
+
+    The smaller the chance, the bigger the surprise, and every answer is positive (or zero).
   skeleton: |
     return ___.___(p)
   solution: |
@@ -220,8 +238,31 @@ alternatives:
   - average_surprise/alternatives/plus_equals.py
   - average_surprise/alternatives/minus_log_inline.py
 hints:
+  logic: |
+    total starts at 0
+    for each guess p in probs:
+      work out the surprise of p
+        → add it onto total   (don't replace total)
+    after the loop
+      → average = total ÷ number of guesses   (the stub does this)
+      → return the average
+  tools: |
+    work out the surprise of p
+      surprise(x)      your function from step 1
+    add it onto total
+      plain arithmetic: a + b, then store the result back
   nudge: "It's an average, like in W2. What should go into `total` for each guess?"
   concept: "Use the `surprise` function you just wrote. Each time round the loop, make `total` bigger by `surprise(p)`."
+  example: |
+    Trace it on `probs = [0.5, 0.25, 1.0]`:
+
+    - Start: `total = 0`.
+    - `p = 0.5`: the surprise is about `0.6931`, so `total` becomes about `0.6931`.
+    - `p = 0.25`: the surprise is about `1.3863`, so `total` becomes about `2.0794`.
+    - `p = 1.0`: the surprise is `0.0`, so `total` stays about `2.0794`.
+    - There are `3` guesses, so the result is `2.0794 / 3`, about `0.6931`.
+
+    Print `total` inside the loop and compare. If it jumps back down instead of growing, you replaced it instead of adding to it.
   skeleton: |
     total = _____ + ________(p)
   solution: |

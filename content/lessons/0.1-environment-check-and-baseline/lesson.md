@@ -191,8 +191,29 @@ alternatives:
   - uniform_baseline/alternatives/sum_over_n.py
   - uniform_baseline/alternatives/neg.py
 hints:
+  logic: |
+    probs holds one probability per prediction
+    take the log of each probability   (0 if sure, very negative if wrong)
+      → average the logs into one number
+      → flip the sign   (so a better model gives a lower loss)
+      → return that one number
+  tools: |
+    log of each probability
+      t.log()          natural log of every value in t
+    average into one number
+      t.mean()         the average of all values in t
+    flip the sign
+      plain arithmetic: -x   (a minus sign in front)
   nudge: Three moves. Take the log of each probability, average them, and fix the sign so that lower means better.
   concept: "The log of a probability is 0 when the model was certain and right, and very negative when it was badly wrong. Averaging makes the loss independent of how many predictions you made. The minus sign turns it into something you minimise."
+  example: |
+    Trace it on two predictions, `probs = [0.5, 0.25]`:
+
+    - Logs: about `[-0.6931, -1.3863]`.
+    - Average: about `-1.0397`.
+    - Flip the sign: about `1.0397`. That's the loss.
+
+    Now the uniform model: 27 symbols, each given chance `1/27`. Every log is about `-3.2958`, so the average is `-3.2958` and the loss is `3.2958`, however many predictions there are.
   skeleton: |
     return -probs.____().____()
   solution: |

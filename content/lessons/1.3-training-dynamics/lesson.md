@@ -192,8 +192,36 @@ alternatives:
   - get_lr/alternatives/halved.py
   - get_lr/alternatives/min_lr_first.py
 hints:
+  logic: |
+    step < warmup_steps?
+      yes → climb in a straight line
+              the last warmup step reaches max_lr
+            → return that
+      no  → step > max_steps?
+              yes → hold at the floor, min_lr
+              no  → progress = how far through the decay
+                      (0 at warmup_steps, 1 at max_steps)
+                    → coeff = half a cosine, from 1 down to 0
+                    → blend between min_lr and max_lr by coeff
+                    → return the blend
+  tools: |
+    warmup: a straight climb
+      plain arithmetic: * / +
+    decay progress, 0 → 1
+      plain arithmetic: - /
+    half a cosine, 1 down to 0
+      math.cos(x)         cosine of x (in radians)
+      math.pi             the constant π
+      plain arithmetic: * +
   nudge: Three phases. During warmup, what fraction of max_lr should the last of 10 warmup steps get? During the decay, what should progress be at its first and its last step?
   concept: "Warmup climbs in equal steps and reaches max_lr on its last step, so step 9 of 10 gets the full max_lr. In the decay, progress runs from 0 at the end of warmup to 1 at max_steps. cos(π × progress) runs from 1 to −1; 0.5 × (1 + cos) squeezes that into 1 → 0."
+  example: |
+    Trace it with the script's numbers: `max_lr = 6e-4`, `min_lr = 6e-5`, 10 warmup steps, 50 steps in all:
+
+    - Step 4 is in warmup: 5 of 10 steps, so half of `max_lr`, `3.00e-04`. Step 9 gets the full `6.00e-04`.
+    - Step 10: `progress = 0`, `coeff = 1`, so the lr is `max_lr`, `6.00e-04`.
+    - Step 30: `progress = 20 / 40 = 0.5`, cosine of π/2 is 0, so `coeff = 0.5`. The lr is the midpoint of 6e-5 and 6e-4: `3.30e-04`.
+    - Step 50: `progress = 1`, `coeff = 0`, so the lr is `min_lr`, `6.00e-05`. Step 60 is past `max_steps`: also `6.00e-05`.
   skeleton: |
     return max_lr * (____ + 1) / ____________
     return ______
@@ -239,8 +267,40 @@ alternatives:
   - clip/alternatives/norms_of_norms.py
   - clip/alternatives/if_branch.py
 hints:
+  logic: |
+    total_norm = length of ALL the gradients
+      laid end to end as one long vector
+    factor = max_norm ÷ total_norm
+      (add a tiny amount first, so it never divides by 0)
+    factor above 1?   (the gradient is already short)
+      yes → use 1 instead, so nothing grows
+      no  → keep the factor
+    for each parameter:
+      multiply its gradient by the factor, in place
+    → return total_norm   (measured before clipping)
+  tools: |
+    length of all gradients as one vector
+      t ** 2              squares every value
+      t.sum()             adds up all the values in t
+      sum(items)          adds up a sequence of numbers
+      torch.sqrt(t)       square root
+    factor, never above 1
+      min(a, b)           the smaller of a and b
+      float(t)            a one-value tensor as a plain number
+      plain arithmetic: / +
+    scale each gradient in place
+      t.mul_(x)           multiplies t by x, in place
   nudge: Imagine laying every gradient end to end in one long vector. How long is it? And what single number shrinks that length to max_norm, without ever making it longer?
   concept: "The global norm is the square root of the sum of every gradient entry squared, across all parameters. The factor is max_norm / total_norm, capped at 1 so short gradients stay as they are. Multiplying every p.grad by that same factor keeps the update's direction and only shortens it."
+  example: |
+    Trace it with two tiny gradients and `max_norm = 1.0`: `p1.grad = [3, 0]` and `p2.grad = [0, 4]`:
+
+    - Squares added up: 9 + 16 = 25. So `total_norm = 5`.
+    - The factor is `1 / 5` ≈ `0.2`, below 1, so it's used.
+    - Scaled gradients: `[0.6, 0]` and `[0, 0.8]`. Their new norm is √(0.36 + 0.64) = `1.0`.
+    - The direction of the update hasn't changed (3 : 4 is still 0.6 : 0.8). It's just shorter.
+
+    Now a calm batch: `total_norm = 0.5`. The factor `1 / 0.5 = 2` is capped at 1.0, so nothing changes.
   skeleton: |
     total_norm = torch.____(sum((p.grad ** _).sum() for p in ______))
     scale = ___(1.0, max_norm / (float(__________) + 1e-6))

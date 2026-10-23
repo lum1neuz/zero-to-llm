@@ -214,8 +214,41 @@ alternatives:
   - quantize_groups/alternatives/explicit_rows.py
   - quantize_groups/alternatives/no_clamp.py
 hints:
+  logic: |
+    wg = w laid out as rows of g weights   (one group per row)
+    for each group (row of wg):
+      find its largest size (ignore the sign)
+        → scale = that size ÷ 7   (one scale per group, a column)
+      divide the row by its scale → round to a whole number
+      outside −7…7?
+        yes → pull it back to the edge
+        no  → keep it
+    store the whole numbers in one byte each
+      → return q and scale
+  tools: |
+    lay the row out as groups
+      t.reshape(a, b)    same values as a x b; -1 = work it out
+    find each group's largest size
+      t.abs()            each value without its sign
+      t.amax(dim, keepdim=True)   biggest along dim, as a column
+    scale, then whole numbers
+      t / x              divides every value by x
+      torch.round(t)     nearest whole number
+      t.clamp(lo, hi)    squeezes values into [lo, hi]
+    store in one byte each
+      t.to(dtype)        converts; torch.int8 is 1 byte
   nudge: Three moves. Lay the row out so each group is one row, find each row's largest magnitude, and map it to the edge of int4. Which value is that edge?
   concept: "`w.reshape(-1, g)` turns 16 weights into a `[4, 4]` table with one group per row (`-1` means \"work it out\"). `amax(dim=1, keepdim=True)` takes the max across each row and keeps a `[4, 1]` column, so `wg / scale` divides each row by its own scale. int4 holds −8…7. Map the largest |w| to ±7 so the grid stays symmetric, like ±127 in 3.1."
+  example: |
+    Trace it on 8 weights with `g = 4`, `w = [0.4, -1.0, 0.25, 0.1, 4.0, -1.9, 1.0, 0.2]`:
+
+    - `wg` is `[2, 4]`: row 0 is `[0.4, -1.0, 0.25, 0.1]`, row 1 is `[4.0, -1.9, 1.0, 0.2]`.
+    - Largest magnitudes, as a `[2, 1]` column: `[[1.0], [4.0]]`.
+    - `scale`: `[[0.1429], [0.5714]]`. That's 1.0 / 7 and 4.0 / 7.
+    - Row 0 divided by its scale: `[2.8, -7.0, 1.75, 0.7]`, which rounds to `[3, -7, 2, 1]`.
+    - Row 1 divided by its scale: `[7.0, -3.325, 1.75, 0.35]`, which rounds to `[7, -3, 2, 0]`.
+
+    Each group's biggest weight lands on ±7. The `4.0` in row 1 doesn't squash row 0, because the two groups have separate scales.
   skeleton: |
     wg = w.______(-1, ___)
     scale = wg.abs().____(dim=___, keepdim=____) / ___
@@ -265,8 +298,30 @@ alternatives:
   - dequantize_groups/alternatives/flatten.py
   - dequantize_groups/alternatives/int_times_scale.py
 hints:
+  logic: |
+    take q (whole numbers, one row per group)
+      and scale (one per row)
+      → turn q into floats first   (int8 math overflows)
+      → multiply each row by its own scale
+      → flatten back into one row, in the original order
+      → return it
+  tools: |
+    turn q into floats
+      t.float()          a float32 copy of t
+    multiply each row by its scale
+      t * x              multiplies every value by x
+    flatten into one row
+      t.reshape(n)       same values in one row of n; -1 = work it out
   nudge: Two things to undo, the division by scale and the reshape into groups. Which order keeps each group lined up with its own scale?
   concept: "Multiply first, while `q` is `[groups, g]` and `scale` is `[groups, 1]`, so each row meets its own scale. Use `q.float()` to stay out of int8 arithmetic. Then flatten back to one row with `reshape(-1)`."
+  example: |
+    Continue the trace: `q = [[3, -7, 2, 1], [7, -3, 2, 0]]` and `scale = [[0.1429], [0.5714]]`.
+
+    - As floats times `scale`: row 0 gives `[0.429, -1.0, 0.286, 0.143]`, row 1 gives `[4.0, -1.714, 1.143, 0.0]`. Still `[2, 4]`.
+    - Flattened: `[0.429, -1.0, 0.286, 0.143, 4.0, -1.714, 1.143, 0.0]`. That's 8 values, like the original `w`.
+    - Compare with `w`: the errors are `[0.029, 0, 0.036, 0.043, 0, 0.186, 0.143, 0.2]`. Row 0's stay under its scale / 2 = 0.071, and row 1's under 0.286.
+
+    Flatten last. If you flatten `q` first, the `[2, 1]` scale can no longer line up with its groups.
   skeleton: |
     return (q.______() * _____).reshape(___)
   solution: |

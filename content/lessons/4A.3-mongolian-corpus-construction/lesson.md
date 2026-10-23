@@ -202,8 +202,34 @@ alternatives:
   - normalize/alternatives/loop.py
   - normalize/alternatives/regex.py
 hints:
+  logic: |
+    put split-up letters back together (й from и + breve)
+      → split the text into words on any whitespace
+    for each word:
+      has Cyrillic?
+        yes → swap look-alike Latin letters for Cyrillic ones
+        no  → leave it alone
+    join the words with single spaces
+      → return the text
+  tools: |
+    put split-up letters back together
+      unicodedata.normalize(form, s)   recomposes letters in s
+    split into words on any whitespace
+      s.split()                        words, split on any whitespace
+    fix look-alikes, only in Cyrillic words
+      w.translate(table)               swaps characters using a table
+      a if cond else b                 picks one of two values
+      [expr for w in seq]              builds a list, one item per word
+    join with single spaces
+      sep.join(items)                  glues strings with sep between
   nudge: Two moves. Put the pieces of each letter back together, then go word by word and repair look-alikes only where the word is already Cyrillic.
   concept: "`unicodedata.normalize(\"NFC\", text)` composes letters (и + breve → й, o + diaeresis → ö). `text.split()` with no argument splits at any run of whitespace, tabs and non-breaking spaces included. `word.translate(LOOKALIKES)` swaps every look-alike in a word. `has_cyrillic(word)` tells you whether to."
+  example: |
+    Three small cases:
+
+    - `"Сургуулийн"` is 11 characters: и followed by a combining breve. After recomposing it is 10 characters, the breve folded into a single й.
+    - `"Малчид  өвөл бэл\tбаг".split()` gives `['Малчид', 'өвөл', 'бэл', 'баг']`. The double space, the non-breaking space and the tab are all gone.
+    - The word `"хотoд"` has a Latin `o` (code point `0x6f`) in the middle. It contains Cyrillic, so its look-alike is swapped and it becomes `"хотод"`. The English word `"news"` has no Cyrillic, so it stays `"news"`. That is why you only repair words that are already Cyrillic.
   skeleton: |
     text = unicodedata.normalize("___", text)
     words = [w.translate(__________) if has_cyrillic(_) else w for w in text._____()]
@@ -242,8 +268,40 @@ alternatives:
   - keep_filter/alternatives/sets.py
   - keep_filter/alternatives/one_return.py
 hints:
+  logic: |
+    fewer than 6 words?
+      yes → drop it
+    letters under half of the non-space characters?
+      yes → drop it (junk)
+    Cyrillic letters under 80% of the letters?
+      yes → drop it
+    no Mongolian-only letter (ө or ү) in it?
+      yes → drop it (Russian)
+    any Kazakh-only letter in it?
+      yes → drop it
+    no check tripped → keep it
+  tools: |
+    count words and characters
+      len(x)                        how many items are in x
+      s.replace(a, b)               copy of s with a swapped for b
+    share of letters that pass a test
+      sum(cond for c in seq)        counts the items that pass
+      plain arithmetic: * <         share compared with a threshold
+    does a letter from a set appear?
+      any(cond for c in seq)        True if at least one passes
+      x in collection               membership test
+      not cond                      flips True and False
   nudge: "Four checks, each a single `if … : return False`: too short, mostly not letters, mostly not Cyrillic, not Mongolian. What's the denominator of each share?"
   concept: "Count words with `len(words)`. Junk has few letters among its non-space characters, `len(text.replace(\" \", \"\"))`. The Cyrillic share is out of the letters, not every character, so digits and spaces don't count against a sentence. Russian never uses ө or ү, so a Mongolian document has at least one of them. Kazakh shares ө and ү, so also drop anything with a letter from `KAZAKH_ONLY`."
+  example: |
+    Words, letters, non-space characters, and Cyrillic share of the letters for some of the twelve documents:
+
+    - The footer `Бүх эрх хуулиар хамгаалагдсан.`: 4 words. Rule 1 drops it.
+    - The page counter `1. 2. 3. … Үзсэн: 1520 | Сэтгэгдэл: 0`: 13 words, 14 letters out of 38 non-space characters, 0.37. Rule 2 drops it.
+    - The English line: 12 words, 54 letters out of 55 (0.98), but 0 of them Cyrillic. Rule 3 drops it.
+    - The Russian line: 11 words, 69 of 72 (0.96), 100% Cyrillic, but no ө or ү. Rule 4 drops it.
+    - The Kazakh line: passes rules 1 to 3 and has a `ү`, but it also has `қ` and `і`, so the Kazakh-letter check drops it.
+    - A Mongolian line like `Монгол Улсын Их Хурлын намрын ээлжит чуулган өнөөдөр нээлтээ хийлээ.`: 10 words, 58 of 59 (0.98), 100% Cyrillic, has ө, no Kazakh letters. Kept.
   skeleton: |
     if len(words) < ___:
         return False
@@ -296,8 +354,41 @@ alternatives:
   - shingles/alternatives/zip_words.py
   - shingles/alternatives/set_methods.py
 hints:
+  logic: |
+    shingles:
+      split the text into words
+      for each start position where n words still fit:
+        join those n words with single spaces
+      collect them in a set (a repeat counts once)
+        → return the set
+    jaccard:
+      shared = shingles that are in both a and b
+      either = shingles that are in a or b
+        → return shared ÷ either
+  tools: |
+    each start position
+      range(n)                  0 up to n − 1
+      len(x)                    how many items are in x
+    n words from a start position
+      seq[a:b]                  items from index a up to b
+    join them into one string
+      sep.join(items)           glues strings with sep between
+    collect without repeats
+      {expr for i in seq}       set comprehension, repeats collapse
+    shared and either
+      a & b                     items in both sets
+      a | b                     items in either set
   nudge: "A document of w words has w − n + 1 runs of n words. Jaccard is the size of what two sets share over the size of everything in either."
   concept: "`words[i:i + n]` is the run starting at word i, and `\" \".join(...)` turns it into one string. Start i at 0 and stop at `len(words) - n`, inclusive, so `range(len(words) - n + 1)`. Use a set comprehension so repeats count once. For sets, `a & b` is what they share and `a | b` is everything in either."
+  example: |
+    Trace it with `n = 3` on `"a b c d e"` and `"a b c d f"`:
+
+    - First text: 5 words, so 5 − 3 + 1 = 3 runs: `{"a b c", "b c d", "c d e"}`.
+    - Second text: `{"a b c", "b c d", "c d f"}`.
+    - Shared: `"a b c"` and `"b c d"`, so 2. In either: those two plus `"c d e"` and `"c d f"`, so 4.
+    - Jaccard is 2 / 4 = `0.5`.
+
+    Edge cases: a text with 2 words has no run of 3, so `shingles("a b")` is the empty set. `"a b a b a"` gives `{"a b a", "b a b"}`, 2 items from 3 runs, because one repeats.
   skeleton: |
     return {" ".join(words[i:i + ___]) for i in range(len(words) - ___ + ___)}
     return len(a ___ b) / len(a ___ b)
@@ -339,8 +430,40 @@ alternatives:
   - minhash_dedup/alternatives/loop.py
   - minhash_dedup/alternatives/mean_of_bools.py
 hints:
+  logic: |
+    minhash:
+      for each seed from 0 to k − 1:
+        hash every shingle in the set with that seed
+          → this seed's entry = the lowest hash of them all
+      → return the k entries as a list
+    estimate:
+      for each position in the two signatures:
+        same number in both?
+          yes → count it
+      → return count ÷ signature length
+  tools: |
+    one entry per seed
+      [expr for seed in range(k)]   a list, one item per seed
+      h(seed, s)                    the seeded hash given above
+    the lowest hash
+      min(iterable)                 the smallest item
+    compare two signatures
+      zip(a, b)                     pairs items up by position
+      sum(cond for x, y in pairs)   counts the pairs that pass
+      x == y                        True when equal
+    divide by the length
+      len(x)                        how many items are in x
   nudge: "A signature has one entry per seed, not per shingle. Each entry is the smallest hash any of the document's shingles gets under that seed."
   concept: "Loop over seeds on the outside: for seed in range(k), take `min(h(seed, s) for s in shingle_set)`. Two signatures agree at position i exactly when both documents have the same first shingle under seed i, which happens with probability equal to their Jaccard. So the estimate is the number of agreeing positions over k."
+  example: |
+    Take a document with two shingles, `{"a b c", "b c d"}`, and 3 seeds. The hashes `h(seed, s)` come out as:
+
+    - Seed 0: `"a b c"` → 551424206, `"b c d"` → 3146183771. Smallest: `551424206`.
+    - Seed 1: 2080073951 and 1819524790. Smallest: `1819524790`.
+    - Seed 2: 1806619566 and 3674739975. Smallest: `1806619566`.
+    - The signature is `[551424206, 1819524790, 1806619566]`, three numbers for three seeds.
+
+    For `estimate`, compare `[7, 3, 9, 4]` with `[7, 5, 9, 8]`. Positions 0 and 2 agree, so 2 / 4 = `0.5`. Two identical signatures give `1.0`.
   skeleton: |
     return [___(h(____, s) for s in shingle_set) for seed in range(_)]
     return sum(x __ y for x, y in zip(sig_a, sig_b)) / len(_____)

@@ -243,8 +243,32 @@ alternatives:
   - fertility/alternatives/loop.py
   - fertility/alternatives/joined.py
 hints:
+  logic: |
+    for each sentence in sentences:
+      encode it with the merges given → count the ids   (tokens)
+      split it at spaces → count the words
+    add the counts up over ALL the sentences
+      → return total tokens ÷ total words
+  tools: |
+    tokens in one sentence
+      encode(s, m)     the ids for s with merges m (defined above)
+      len(x)           how many items x has
+    words in one sentence
+      s.split()        cuts s into words at spaces
+    add up over all sentences
+      sum(items)       adds up the items
+      plain arithmetic: /
   nudge: Two totals over all the sentences. How many tokens does `encode` produce, and how many words are there? And which tokenizer should `encode` use?
   concept: "`encode(s, merges)` returns one sentence's token ids, so its length is the token count. `s.split()` cuts a sentence into words at spaces. Sum both over all the sentences, then divide, so long sentences weigh more."
+  example: |
+    Use the merges `AB = {(208, 176): 256, (208, 177): 257, (256, 257): 258}`, which turn `аб` into one token, on `["аб аб", "аб"]`:
+
+    - `"аб аб"`: 9 bytes (each `а` and `б` is 2 bytes, plus the space). With `AB`, each `аб` becomes one token, so the ids are `[258, 32, 258]`: 3 tokens, 2 words.
+    - `"аб"`: 1 token, 1 word.
+    - Totals: `tokens = 4`, `words = 3`, so fertility is `4 / 3 ≈ 1.333`.
+    - Averaging the two sentences' ratios instead gives `(1.5 + 1) / 2 = 1.25`. That's the wrong answer.
+
+    With no merges, the same `"аб аб"` stays at 9 tokens for 2 words, which is `4.5`.
   skeleton: |
     tokens = sum(len(______(s, ______)) for s in sentences)
     words = sum(len(s._____()) for s in sentences)
@@ -281,8 +305,36 @@ alternatives:
   - partial/alternatives/bare_except.py
   - partial/alternatives/counter.py
 hints:
+  logic: |
+    is_partial(piece):
+      try to decode piece as UTF-8   (no replacing, let it fail)
+      decoding fails?
+        yes → True    (bytes stop in the middle of a character)
+        no  → False
+    partial_share:
+      for each piece in pieces:
+        is_partial?
+          yes → count it
+      → return partial count ÷ number of pieces
+  tools: |
+    can these bytes be read as text?
+      b.decode(enc)       bytes to text; raises on bad bytes
+      try: … except E:    runs the code, catches error E
+    count the partial pieces
+      sum(items)          adds up items; True counts as 1
+    out of all pieces
+      len(x)              how many items x has
+      plain arithmetic: /
   nudge: A piece is partial when it can't be read as text by itself. What does Python do when you decode bytes that stop in the middle of a character?
   concept: "`piece.decode(\"utf-8\")` raises UnicodeDecodeError on bytes that aren't complete characters. Catch it and return True; if decoding works, return False. The share is the number of partial pieces divided by the number of pieces."
+  example: |
+    Trace it on `"а б"`, where the only merge turns `а` (`b"\xd0\xb0"`) into one token:
+
+    - Encoded, the pieces are `b"\xd0\xb0"`, `b" "`, `b"\xd0"`, `b"\xb1"`. The `б` never got a merge, so it's two single-byte tokens.
+    - `is_partial` on each: `b"\xd0\xb0"` decodes to `"а"`, so `False`. `b" "` decodes, `False`. `b"\xd0"` raises, `True`. `b"\xb1"` raises, `True`.
+    - Partial pieces: 2. Total pieces: 4. `partial_share` is `2 / 4 = 0.5`.
+
+    Check: the print line multiplies by 100 itself, so you should return `0.5`, not `50`.
   skeleton: |
     try:
         piece.______("utf-8")
@@ -328,8 +380,45 @@ alternatives:
   - cyrillic/alternatives/loop.py
   - cyrillic/alternatives/range_ids.py
 hints:
+  logic: |
+    has_cyrillic(text):
+      for each character in text:
+        its code point is in U+0400…U+04FF?
+          yes → return True
+      no character matched → return False
+    cyrillic_share(vocab):
+      keep only the merged tokens   (id 256 or more)
+      turn each one's bytes into text   (half a letter → �)
+      count those that pass has_cyrillic
+        → return that count ÷ number of merged tokens
+  tools: |
+    is any character in the block?
+      ord(ch)             the code point (a number) of ch
+      lo <= x <= hi       True if x is between lo and hi
+      any(items)          True if at least one item is True
+    the merged tokens, as text
+      [e for k in d if c] a list of e for the keys k that pass c
+      b.decode(enc, errors=mode)
+                          bytes to text; mode chooses what
+                          happens to bytes that aren't valid
+    share of them with Cyrillic
+      sum(items)          adds up items; True counts as 1
+      len(x)              how many items x has
   nudge: Unicode keeps Cyrillic in one block of code points. Does а…я cover Ө and Ү? For the share, which ids are merged tokens, and how do you decode half a letter without crashing?
   concept: "Cyrillic is the block U+0400 to U+04FF, so `0x0400 <= ord(ch) <= 0x04FF` checks one character and `any(...)` checks a whole token. Merged tokens have ids 256 and up. `decode(\"utf-8\", errors=\"replace\")` turns half a letter into '�' instead of raising."
+  example: |
+    `has_cyrillic`:
+
+    - `"ж"` is U+0436, inside `0x0400`–`0x04FF`: `True`.
+    - `"ө"` is U+04E9. It's past `я` (U+044F) but still inside the block: `True`. A check for `а`…`я` alone would miss it.
+    - `"hello"`, `"αβγ"`, `"中文"` and `""` have no code point in the block: `False`.
+
+    `cyrillic_share`, with a vocab where 256 is `b"\xd0\xb6"`, 257 is `b"th"`, 258 is `b"\xd0"` and 259 is `b"\xd0\xb0\xd1\x80"`:
+
+    - Ids below 256 are skipped. The merged tokens are 256 to 259, four of them.
+    - Decoded: `"ж"`, `"th"`, `"�"` (half a letter, replaced instead of raising), `"ар"`.
+    - Contain Cyrillic: `"ж"` and `"ар"`. That's 2 of 4, so the share is `0.5`.
+    - If you counted all 260 ids, you'd get `2 / 260`. The single bytes only dilute the share.
   skeleton: |
     return ___(0x0400 <= ___(ch) <= 0x04FF for ch in text)
     merged = [vocab[i].______("utf-8", errors="_______") for i in vocab if i >= ___]

@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import type { Lesson } from "../../lib/course.ts";
+import { MdCharts } from "../Chart.tsx";
 import { phaseLabel } from "../../lib/course.ts";
 import type { Runtime } from "../../lib/pyclient.ts";
 import type { LiteCourse } from "../../lib/course.ts";
 import { checkValue, lessonRec, lessonState, prereqsMet, touchDay, update, useProgress } from "../../lib/progress.ts";
-import { blockMd } from "../../lib/text.ts";
+import { blockMd, inlineMd } from "../../lib/text.ts";
 import { Html, I, toast } from "../ui.tsx";
 import { Challenge, stepNote } from "./Challenge.tsx";
 import { MetricsStep } from "./MetricsStep.tsx";
@@ -62,6 +63,10 @@ export default function Workspace({ lesson, course, runtime }: { lesson: Lesson;
   };
 
   const learnDone = !!rec?.learn?.done;
+  // The concept recap comes from the primer: every section has a one-line key idea and the text
+  // behind it. Locked sections (answers to Learn exercises) never show here.
+  const primer = lesson.reading.find((d) => d.kind === "primer");
+  const concepts = (primer?.sections ?? []).filter((s) => !s.locked && (s.key || s.body));
   return (
     <div className="build">
       <header className="bh">
@@ -124,6 +129,18 @@ export default function Workspace({ lesson, course, runtime }: { lesson: Lesson;
           {step.kind === "challenge" && <Challenge key={step.id} lessonId={lesson.id} step={step} startCode={startCode(step)} runtime={runtime} />}
           {step.kind === "replay" && <Replay key={step.id} step={step} />}
           {step.kind === "metrics" && <MetricsStep key={step.id} lesson={lesson} title={step.title} intro={step.intro} />}
+          {concepts.length > 0 && (
+            <details className="recap">
+              <summary>Review the concepts <span>{concepts.length} key ideas from the primer</span></summary>
+              {concepts.map((s) => (
+                <details key={s.id} className="idea">
+                  <summary><b>{s.title}</b>{s.key && <Html className="key" html={inlineMd(s.key)} />}</summary>
+                  {s.body && <MdCharts className="md" md={s.body} charts={s.charts} />}
+                </details>
+              ))}
+              <p className="fine"><a href={`/read/${lesson.id}/`}>Open the full primer</a></p>
+            </details>
+          )}
         </main>
       </div>
     </div>

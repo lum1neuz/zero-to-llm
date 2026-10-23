@@ -198,8 +198,46 @@ alternatives:
   - pairs/alternatives/if_in.py
   - pairs/alternatives/slice_compare.py
 hints:
+  logic: |
+    get_stats:
+      for each pair of neighbours (ids[k], ids[k+1]):
+        add 1 to its count in counts   (new pair starts at 0)
+      → return counts
+    merge:
+      for each position i in ids, left to right:
+        a next id exists, and both ids match pair?
+          yes → write idx to out, skip past both ids
+          no  → copy ids[i] to out, move on by one
+      → return out
+  tools: |
+    every pair of neighbours
+      zip(a, b)        pairs up items of a and b, stops early
+      a[1:]            a without its first item
+    add 1 to a count
+      d.get(key, n)    d[key], or n if key is missing
+      d[key] = x       stores x under key
+    is there a next id?
+      len(a)           how many items a has
+      a[i]             item at position i
+    write to out, move on
+      out.append(x)    adds x to the end of out
   nudge: Neighbours overlap. In [1, 2, 3], the 2 belongs to both (1, 2) and (2, 3). For merge, what has to be true at position i before you write idx?
   concept: "`zip(ids, ids[1:])` walks the list beside itself shifted by one, giving every pair of neighbours. `counts.get(pair, 0) + 1` adds one whether or not you've seen the pair before. In merge, position i starts the pair when ids[i] and ids[i + 1] match its two ids, and there has to *be* an i + 1."
+  example: |
+    Trace `get_stats` on `ids = [97, 97, 97, 98, 100]` (the text "aaabd"):
+
+    - Pairs, left to right: `(97, 97)`, `(97, 97)`, `(97, 98)`, `(98, 100)`. Five ids give four pairs.
+    - Counts: `{(97, 97): 2, (97, 98): 1, (98, 100): 1}`. The two `(97, 97)` pairs overlap in the middle `97`, and both count.
+
+    Now `merge([97, 97, 97, 98, 100], (97, 97), 256)`:
+
+    - `i = 0`: `97, 97` matches. Append `256`, jump to `i = 2`.
+    - `i = 2`: `97, 98` doesn't match. Append `97`, move to `i = 3`.
+    - `i = 3`: `98, 100` doesn't match. Append `98`.
+    - `i = 4`: it's the last position, so there's no next id. Append `100`.
+    - Result: `[256, 97, 98, 100]`.
+
+    Check: the middle `97` was used once. Merging never overlaps.
   skeleton: |
     for pair in zip(___, ___[1:]):
         counts[pair] = counts.___(pair, _) + 1
@@ -242,8 +280,35 @@ alternatives:
   - train/alternatives/len_vocab.py
   - train/alternatives/unpacked.py
 hints:
+  logic: |
+    repeat for each of the vocab_size − 256 merges (i = 0, 1, …):
+      count the pairs in ids → stats
+      pair = the pair with the biggest count
+      idx = next free id   (0–255 are the single bytes)
+      replace pair by idx everywhere in ids
+      → remember it in merges
+      new token's bytes = first part's bytes + second part's bytes
+        → store them in vocab
+    return merges and vocab
+  tools: |
+    pair with the biggest count
+      max(d, key=fn)   the key of d with the biggest fn(key)
+    next free id
+      plain arithmetic: +   (0–255 are the single bytes)
+    the new token's bytes
+      d[key]           the value stored under key
+      p[0], p[1]       first and second item of a pair p
+      b1 + b2          joins two bytes objects end to end
   nudge: Three blanks. Which pair wins, which id comes after the last one used, and which bytes does the new token stand for?
   concept: "`max(stats, key=stats.get)` returns the pair whose *count* is largest. Ids 0–255 are the bytes, so the i-th merge gets 256 + i. A merged token stands for its first part's bytes followed by its second part's, `vocab[a] + vocab[b]`, which works even when a part is itself a merged token."
+  example: |
+    Trace it on the text `"aaabdaaabac"` with `vocab_size = 259`, which is three merges (`i = 0, 1, 2`):
+
+    - `i = 0`: `(97, 97)` is seen 4 times, so `pair = (97, 97)`. `idx = 256`. `vocab[256] = b"a" + b"a" = b"aa"`. `ids` becomes `[256, 97, 98, 100, 256, 97, 98, 97, 99]`.
+    - `i = 1`: `(256, 97)` and `(97, 98)` are both seen twice, and `max` keeps the one it met first, `(256, 97)`. `idx = 257`. `vocab[257] = b"aa" + b"a" = b"aaa"`, a merged token inside a merge.
+    - `i = 2`: `(257, 98)` is seen twice. `idx = 258`, `vocab[258] = b"aaab"`. `ids` is now `[258, 100, 258, 97, 99]`.
+
+    Check: `merges` ends up as `{(97, 97): 256, (256, 97): 257, (257, 98): 258}`.
   skeleton: |
     pair = max(stats, key=_____.___)
     idx = ___ + i
@@ -284,8 +349,47 @@ alternatives:
   - encode/alternatives/rank_function.py
   - encode/alternatives/sorted_first.py
 hints:
+  logic: |
+    decode:
+      for each id in ids:
+        look up its bytes in vocab
+      glue all the bytes into one bytes object
+        → decode it once as UTF-8   (half letter → �)
+        → return the text
+    encode:
+      start from the text's bytes as ids
+      while at least 2 ids are left:
+        count the pairs → stats
+        rank = the pair's id in merges   (never merged: infinity)
+        pair = the smallest rank
+        rank is infinity?
+          yes → stop
+          no  → merge that pair everywhere
+      → return ids
+  tools: |
+    look up each id's bytes
+      d[key]           the value stored under key
+    glue them into one bytes object
+      sep.join(items)  joins items with sep between them
+      (the separator must be bytes too)
+    pick the pair learned earliest
+      min(d, key=fn)   the key of d with the smallest fn(key)
+      d.get(key, x)    d[key], or x if key is missing
+      (for "never merged", x must be a rank nothing can beat)
   nudge: "decode: each id stands for some bytes, so how do you glue bytes together? encode: of the pairs in this text, which one would training have merged first?"
   concept: "Join every token's bytes into one bytes object, then decode it once, so a character split across two tokens comes back whole. In encode, rank each pair by its id in `merges` (a smaller id was learned earlier) and give pairs that were never merged infinity, so they never win."
+  example: |
+    `decode`, with `vocab[256] = b"a\xd0"` and `vocab[161] = b"\xa1"`:
+
+    - `ids = [256, 161]`. Looked up: `b"a\xd0"` and `b"\xa1"`.
+    - Joined: `b"a\xd0\xa1"`. Decoded once, that's `"aС"`. Decoding each piece alone would fail, because `b"\xd0"` is only half a Cyrillic letter.
+
+    `encode`, with `merges = {(98, 99): 256, (97, 98): 257}` on `"abcab"`:
+
+    - Bytes: `[97, 98, 99, 97, 98]`. Pairs: `(97, 98)` twice, `(98, 99)` once, `(99, 97)` once.
+    - Ranks: `(97, 98)` is `257`, `(98, 99)` is `256`, `(99, 97)` is infinity. The smallest is `(98, 99)`, even though `(97, 98)` is more frequent.
+    - Merge it: `[97, 256, 97, 98]`. Now `(97, 98)` is the only pair with a real rank, so merge it: `[97, 256, 257]`.
+    - The pairs left, `(97, 256)` and `(256, 257)`, are both infinity, so `pair not in merges` stops the loop.
   skeleton: |
     data = _"".join(_____[idx] for idx in ids)
     pair = min(stats, key=lambda p: merges.___(p, float("___")))

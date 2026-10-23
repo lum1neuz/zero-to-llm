@@ -190,8 +190,28 @@ solution: row_totals/solution.py
 alternatives:
   - row_totals/alternatives/inner_loop.py
 hints:
+  logic: |
+    totals starts as an empty list
+    for each row in grid:
+      add up the numbers in this one row
+        → put that total on the end of totals
+    after the loop
+      → return totals   (one total per row)
+  tools: |
+    add up the numbers in one row
+      sum(seq)         adds every number in a list
+    put the total on the end of totals
+      lst.append(x)    adds x to the end of the list lst
   nudge: "Inside the loop, `row` is one list of numbers. What do you want to put into `totals` for it?"
   concept: "`sum(row)` adds up one row. `totals.append(x)` adds `x` to the end of the `totals` list. Combine the two."
+  example: |
+    Trace it on `grid = [[1, 2], [3, 4], [5, 6]]`, with `totals` starting as `[]`:
+
+    - First `row` is `[1, 2]`. Its total is `3`, so `totals` becomes `[3]`.
+    - Second `row` is `[3, 4]`. Its total is `7`, so `totals` becomes `[3, 7]`.
+    - Third `row` is `[5, 6]`. Its total is `11`, so `totals` becomes `[3, 7, 11]`.
+
+    Three rows in, three totals out. If you got `[9, 12]` instead, you added down the columns.
   skeleton: |
     totals.______(___(row))
   solution: |
@@ -223,8 +243,29 @@ solution: to_percentages/solution.py
 alternatives:
   - to_percentages/alternatives/times_first.py
 hints:
+  logic: |
+    total = the whole row added up   (already done for you)
+    percents starts as an empty list
+    for each value in the row:
+      fraction = value ÷ total
+        → percent = fraction × 100
+        → put it on the end of percents
+    after the loop
+      → return percents
+  tools: |
+    fraction = value ÷ total, then × 100
+      plain arithmetic: a / b   and   a * b
+    put the percent on the end of percents
+      lst.append(x)    adds x to the end of the list lst
   nudge: What's 5 as a percent of 10? Write down how you worked it out.
   concept: "A percent is the value divided by the total, times 100. Append that to `percents` for each value."
+  example: |
+    Trace it on `row = [1, 3]`. The total is `4`:
+
+    - `value = 1`: `1 / 4` is `0.25`, times 100 is `25.0`. `percents` becomes `[25.0]`.
+    - `value = 3`: `3 / 4` is `0.75`, times 100 is `75.0`. `percents` becomes `[25.0, 75.0]`.
+
+    Check: `25.0 + 75.0` is `100.0`. Any row of percents adds up to 100, because every value is a part of the same total.
   skeleton: |
     percents.append(_____ / _____ * ___)
   solution: |

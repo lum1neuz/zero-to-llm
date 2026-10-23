@@ -277,8 +277,35 @@ alternatives:
   - extend_rows/alternatives/index_select.py
   - extend_rows/alternatives/loop.py
 hints:
+  logic: |
+    for each new token in pieces:
+      take the rows of weight for its base pieces
+        → average them into one row
+    stack the averaged rows → new_rows
+    old rows first, new_rows after them
+      → return the longer matrix
+  tools: |
+    rows for one token's pieces
+      t[ids]                       rows of t picked by a list of ids
+    average them into one row
+      t.mean(dim)                  average along dimension dim
+    one row per new token
+      [expr for p in seq]          a list, one item per token
+      torch.stack(list)            joins same-shape tensors, new dim 0
+    old rows first, new rows after
+      torch.cat([a, b], dim)       joins tensors along dimension dim
   nudge: Two steps. Build one row per new token from its pieces, then put all the rows together so the old ones keep their places. Where do the new rows go?
   concept: "`weight[ids]` with a list of piece ids gives one row per piece, shape `[pieces, 16]`. `.mean(dim=0)` averages down the pieces into one `[16]` row. `torch.stack` turns the list of those rows into `[new, 16]`, and `torch.cat([weight, new_rows], dim=0)` adds them after the old rows."
+  example: |
+    Trace it on a tiny matrix with 3 base rows of width 2:
+
+    - `weight = [[1, 2], [3, 4], [5, 6]]`, `pieces = [[0, 2], [1]]`. Two new tokens.
+    - New token 0 splits into base ids 0 and 2: rows `[1, 2]` and `[5, 6]`, mean `[3, 4]`.
+    - New token 1 has one piece, id 1: the mean of one row is that row, `[3, 4]`.
+    - `new_rows` has shape `[2, 2]`: `[[3, 4], [3, 4]]`.
+    - Result: shape `[5, 2]`. Rows 0 to 2 are exactly `weight`, rows 3 and 4 are `new_rows`.
+
+    Check: in the real script, `E` goes from `[102, 16]` to `[122, 16]`.
   skeleton: |
     new_rows = torch.stack([weight[___].mean(dim=_) for ids in ______])
     return torch.cat([______, ________], dim=_)
@@ -319,8 +346,36 @@ alternatives:
   - step0_loss/alternatives/embedding_linear.py
   - step0_loss/alternatives/log_softmax.py
 hints:
+  logic: |
+    drop the last id (nothing follows it)
+      → look up its embedding row for each remaining id
+      → score every vocab token against each row using H
+        (each row of H is one token's vector)  → logits
+    targets = the ids from the second one on
+      → return the mean cross-entropy of logits vs targets
+  tools: |
+    inputs and targets
+      x[a:b]                       slice of ids
+    embedding row per input id
+      t[ids]                       rows of t picked by indexes
+    score every vocab token against each row
+      a @ b                        matrix multiply: [n,d] @ [d,m]
+                                   H is [vocab, d]: fit the shapes
+    mean loss against the targets
+      F.cross_entropy(logits, y)   mean loss from raw scores
   nudge: Every token except the last predicts the one after it. What does `nn.Linear` do with its weight, and how do you write that with `H` alone?
   concept: "`E[ids[:-1]]` looks up a row for every token that has a next one, `[n−1, 16]`. The LM head scores every vocab token against that row: `nn.Linear` computes `x @ weight.T`, so with `H` of shape `[vocab, 16]` the logits are `E[ids[:-1]] @ H.T`, `[n−1, vocab]`. The targets are the tokens one step later, `ids[1:]`, and `F.cross_entropy` takes raw logits."
+  example: |
+    Trace it on a vocabulary of 3 with width 2: `E = [[1, 0], [0, 1], [1, 1]]`, `H = [[1, 0], [0, 1], [0, 0]]`, `ids = [0, 1, 1]`.
+
+    - Inputs: the first two ids, `[0, 1]`. Their rows of `E` are `[[1, 0], [0, 1]]`, shape `[2, 2]`.
+    - Logits: row 0 is `[1, 0, 0]`, row 1 is `[0, 1, 0]`. Shape `[2, 3]`, one score per vocab token.
+    - Targets: `[1, 1]`.
+    - Position 0 gives the target a score of 0 against a sum of e + 2 over everything: loss ln(e + 2) ≈ `1.551`.
+    - Position 1 gives the target a score of 1: loss ln(e + 2) − 1 ≈ `0.551`.
+    - Mean: `1.051`.
+
+    Check: a uniform guess over 3 tokens is ln 3 ≈ 1.099, so this model is slightly better than guessing.
   skeleton: |
     logits = E[ids[___]] @ _.__
     return F.cross_entropy(______, ids[__])

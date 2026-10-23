@@ -191,8 +191,32 @@ alternatives:
   - kaiming_init/alternatives/int_sizes.py
   - kaiming_init/alternatives/normal_.py
 hints:
+  logic: |
+    draw a fan_in × fan_out table of standard normal numbers
+      (use the generator g, so a seed repeats)
+      → their spread (std) is 1
+    wanted spread = gain ÷ √fan_in
+      → multiply the whole table by it
+      → return the weights
+  tools: |
+    draw the table of normal numbers
+      torch.randn(shape, generator=g)   standard normal numbers
+                                        shape is a tuple
+    work out the scale
+      plain arithmetic: * / and ** (power)
+    scale the table
+      t * x                             multiplies every value by x
   nudge: "Start from standard normal weights of the right shape, drawn with g. Their std is 1. What do you multiply them by to get gain / √fan_in?"
   concept: "`torch.randn((fan_in, fan_out), generator=g)` has std 1. Multiplying a tensor scales its std by the same factor, so multiply by `gain / fan_in**0.5`."
+  example: |
+    Trace it with `fan_in = 100`, `fan_out = 100`, `gain = 5/3`:
+
+    - The draw has shape `[100, 100]` and std about `1`.
+    - The target std is `(5/3) / √100 = 1.6667 / 10 ≈ 0.167`. Multiply the draw by that, and `W.std()` comes out near `0.167`.
+    - Feed it `x` with std `1`. Each output sums 100 products, so its std is about `1 * 0.167 * √100 ≈ 1.67`. After `tanh`, the spread is about `0.76` and about 21% of units are saturated; deeper layers fall to about 6%.
+    - Leave the scaling out and the std is `1 * √100 = 10` before `tanh`, so about 83% of the outputs sit at ±1.
+
+    Another size: `fan_in = 30`, `fan_out = 200` gives a `[30, 200]` matrix with std `(5/3) / √30 ≈ 0.304`.
   skeleton: |
     return torch.randn((______, _______), generator=_) * ____ / ______**0.5
   solution: |
@@ -230,8 +254,39 @@ alternatives:
   - batchnorm/alternatives/no_keepdim.py
   - batchnorm/alternatives/manual_var.py
 hints:
+  logic: |
+    for each feature (column of h), looking down the batch:
+      mean = the average
+      variance = average squared distance from the mean
+        (divide by n, not n − 1)
+    centre: h − mean
+      → divide by √(variance + eps)   (eps: never divide by 0)
+      → multiply by gamma
+      → add beta
+      → return
+  tools: |
+    mean and variance of each column
+      t.mean(dim, keepdim=True)         average along dim
+      t.var(dim, keepdim=True, unbiased=b)
+                                        variance along dim
+                                        b=False divides by n
+    centre, divide, scale, shift
+      plain arithmetic: * / + -
+      torch.sqrt(t)                     square root of every value
   nudge: "Statistics down the batch, one per feature. Then subtract, divide by a standard deviation that can't be 0, scale and shift."
   concept: "`h.mean(0, keepdim=True)` is a [1, features] row of column means. `.var(0, keepdim=True, unbiased=False)` divides by n, like nn.BatchNorm1d in training. The std is `torch.sqrt(var + eps)`: eps keeps a constant feature from dividing by 0. gamma multiplies, beta adds."
+  example: |
+    Trace it on 3 examples and 2 features, with `gamma = 1`, `beta = 0`:
+
+    - `h = [[1, 10], [2, 14], [3, 6]]`.
+    - Means per column: `[2, 10]`. Variances (divide by 3): `[0.667, 10.667]`. Stds: `[0.816, 3.266]`.
+    - Centred: `[[-1, 0], [0, 4], [1, -4]]`.
+    - Divided by the std: `[[-1.225, 0], [0, 1.225], [1.225, -1.225]]`.
+    - Each column now has mean 0 and std 1, even though the second started out about four times wider.
+
+    With `gamma = 2` and `beta = 1`, the first column becomes `2 * [-1.225, 0, 1.225] + 1 = [-1.449, 1, 3.449]`.
+
+    Traps: dividing by `n − 1` gives a first column of `[-1, 0, 1]`, a bit too small. And a constant column like `[5, 5, 5]` has variance 0, which only works because `eps` is there. It comes out as all zeros.
   skeleton: |
     mean = h.____(_, keepdim=True)
     var = h.___(_, keepdim=True, unbiased=_____)
@@ -274,8 +329,45 @@ alternatives:
   - manual_backprop/alternatives/karpathy.py
   - manual_backprop/alternatives/one_minus_tanh.py
 hints:
+  logic: |
+    dlogits: softmax of each row, minus the right answers
+      → scaled because the loss is an average
+    second layer (logits came from h, W2, b2):
+      dW2: the layer's input (flipped) times the gradient
+           from above, shaped like W2
+      db2: the gradient from above, added up over the batch
+      dh:  the gradient from above sent back through W2
+    through tanh, one number at a time:
+      dhpreact: tanh's local slope, written with its output,
+                times the gradient arriving from above
+    first layer, same pattern as the second:
+      dW1 and db1 from X and dhpreact, shaped like W1 and b1
+  tools: |
+    softmax, and the table of right answers
+      F.softmax(t, dim)             softmax along dim
+      F.one_hot(idx, num_classes)   0/1 table, one row per idx
+      t.shape[i]                    the size of dimension i
+    products and flips
+      a @ b                         matrix product
+      t.T                           transpose
+    adding up over the batch
+      t.sum(dim)                    adds along dim
+    one number at a time
+      plain arithmetic: * / - and ** (power)
   nudge: "Go top to bottom. Cross-entropy's gradient is the softmax minus the one-hot target, averaged over the batch. For `out = a @ W + b`: W's gradient pairs a with d(out), a's gradient pairs d(out) with W, and b's gradient sums d(out) over the batch. tanh's slope is 1 − h²."
   concept: "Shapes decide the products. W2 is [hidden, vocab], h is [n, hidden], dlogits is [n, vocab], so dW2 = h.T @ dlogits and dh = dlogits @ W2.T. A bias was added to every row, so its gradient sums over dim 0. tanh is elementwise, so its backward is `*`, not `@`. `F.one_hot(Y, vocab)` builds the target table."
+  example: |
+    Trace the first lines on a tiny batch: `n = 2`, 3 classes, `logits = [[0, 1, 2], [2, 0, 0]]`, `Y = [2, 0]`:
+
+    - Softmax rows: `[0.090, 0.245, 0.665]` and `[0.787, 0.107, 0.107]`.
+    - Subtract the one-hot rows `[0, 0, 1]` and `[1, 0, 0]`: `[[0.090, 0.245, -0.335], [-0.213, 0.107, 0.107]]`.
+    - Divide by `n = 2`: `dlogits = [[0.045, 0.122, -0.167], [-0.107, 0.053, 0.053]]`.
+    - Each row sums to 0. The right class gets a negative entry, which means raising its logit lowers the loss.
+    - Summed down the batch, you get one number per class: `[-0.061, 0.176, -0.114]`. That has the shape of `b2`.
+
+    Tanh: if one `h` entry is `0.5`, its slope is `1 - 0.25 = 0.75`. With `dh = 0.2` that entry, `dhpreact`, is `0.15`.
+
+    Shapes for the test (`n = 5`, 3 inputs, 4 hidden, 6 classes): `dW2` is `[4, 6]`, `db2` is `[6]`, `dh` and `dhpreact` are `[5, 4]`, `dW1` is `[3, 4]`, `db1` is `[4]`.
   skeleton: |
     dlogits = (F.softmax(______, 1) - F.one_hot(_, logits.shape[1])) / _
     dW2 = _.T @ _______

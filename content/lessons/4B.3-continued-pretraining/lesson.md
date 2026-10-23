@@ -203,8 +203,35 @@ alternatives:
   - token_plan/alternatives/via_words.py
   - token_plan/alternatives/ceil_steps.py
 hints:
+  logic: |
+    same_text_tokens:
+      words = llama_tokens ÷ fert_llama   (how many words)
+        → extended tokens = words × fert_ext
+        → return that
+    run_plan:
+      steps = whole batches of tokens_per_step in tokens
+              (drop the leftover part of a batch)
+      seconds = tokens ÷ tok_per_s
+        → hours = seconds ÷ seconds in an hour
+      return steps and hours
+  tools: |
+    tokens → words → extended tokens
+      plain arithmetic: * /   (words per token, tokens per word)
+    whole batches only
+      x // y                  divides, drops the remainder
+      int(x)                  turns a number into a whole int
+    seconds, then hours
+      plain arithmetic: /
   nudge: The text stays the same, so the words stay the same. How many words are the control's tokens, and what do those words cost in extended tokens? Then a step eats a fixed number of tokens, and the GPU a fixed number per second.
   concept: "Words = Llama tokens / 3.38, and extended tokens = words × 1.62, so `llama_tokens * fert_ext / fert_llama`. One pass takes `tokens // tokens_per_step` whole steps. Time is tokens over tokens per second, which gives seconds; divide by 3,600 for hours."
+  example: |
+    Trace it on a tiny run: `llama_tokens = 12000`, `fert_llama = 3.0`, `fert_ext = 1.5`, `tokens_per_step = 800`, `tok_per_s = 10`.
+
+    - Words: 12000 / 3.0 = `4000`.
+    - Extended tokens: 4000 × 1.5 = `6000`. Half as many tokens for the same text.
+    - Batches: 6000 / 800 = 7.5, so `steps = 7`. The leftover half batch isn't a step.
+    - Seconds: 6000 / 10 = `600`.
+    - Hours: 600 / 3600 ≈ `0.167`.
   skeleton: |
     return llama_tokens * ________ / __________
     steps = int(______ // _______________)
@@ -245,8 +272,38 @@ alternatives:
   - lr_at/alternatives/warmup_from_zero.py
   - lr_at/alternatives/coeff.py
 hints:
+  logic: |
+    step < warmup?
+      yes → climb in a straight line, reaching max_lr
+            on the last warmup step
+      no  → step >= total?
+              yes → stay at the floor, min_lr
+              no  → progress = steps since warmup
+                               ÷ length of the decay   (0 → 1)
+                    → half cosine of progress, falling 1 → 0
+                    → scale by (max_lr − min_lr), add min_lr
+  tools: |
+    in warmup: a straight line up
+      plain arithmetic: * / +
+    past the end: stay at the floor
+      compare: a >= b
+    in the decay: progress from 0 to 1
+      plain arithmetic: - /
+    half cosine, falling 1 → 0
+      math.cos(x)     cosine of x, with x in radians
+      math.pi         the number π
+    scale and shift
+      plain arithmetic: * +
   nudge: Three pieces. A straight line up during warmup, a flat floor after the end, and in between a half cosine that starts at max_lr and lands exactly on min_lr. Where does the cosine start counting?
   concept: "Warmup climbs by `max_lr / warmup` per step, so `max_lr * (step + 1) / warmup` reaches max_lr on the last warmup step. For the decay, `progress = (step - warmup) / (total - warmup)` runs from 0 to 1. `0.5 * (1 + cos(π · progress))` runs from 1 to 0, so scale it by `max_lr - min_lr` and add `min_lr`."
+  example: |
+    Trace it with `max_lr = 1e-3`, `min_lr = 1e-4`, `warmup = 4`, `total = 14`:
+
+    - Warmup, steps 0 to 3: `2.5e-4`, `5e-4`, `7.5e-4`, `1e-3`. Equal slices of `max_lr / 4`.
+    - Step 4, the first decay step: `progress = 0`, the cosine part is 1, so the rate is `1e-3`.
+    - Step 9: `progress = 5 / 10 = 0.5`, the cosine part is exactly 0.5 halfway, so the rate is the midpoint, `5.5e-4`.
+    - Step 13: `progress = 0.9`, so the rate is close to the floor, about `1.22e-4`.
+    - Step 14 and later: `1e-4`, flat.
   skeleton: |
     return max_lr * (____ + 1) / ______
     return ______

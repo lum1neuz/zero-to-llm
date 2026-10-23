@@ -234,8 +234,36 @@ alternatives:
   - macro_scores/alternatives/statistics_mean.py
   - macro_scores/alternatives/explicit_loop.py
 hints:
+  logic: |
+    for each (model, task) group:
+      acc = right answers ÷ rows in the group   (0 to 1)
+    for each model:
+      keep only the acc values that belong to this model
+        → mean of them   (every task counts once)
+        → × 100 to make it a percent
+        → scores[model]
+    return scores
+  tools: |
+    accuracy of each (model, task) group
+      sum(f(x) for x in xs)  adds up f(x) over a list
+      len(xs)                how many items in xs
+      plain arithmetic: /
+    keep only this model's accuracies
+      d.items()              (key, value) pairs of a dict d
+      [v for k, v in ps if cond]   a list keeping only matches
+    mean, as a percent
+      sum(xs), len(xs)       total and count of a list
+      plain arithmetic: * /
   nudge: Two averages, one inside the other. First each (model, task) group's share of right answers, then, for each model, the mean of those shares.
   concept: "A group's accuracy is `sum(r.correct for r in group) / len(group)`, a number from 0 to 1. `acc` maps `(model, task)` keys to those. For one model, keep the values whose key starts with that model, average them, and multiply by 100. Every task counts once, whatever its size."
+  example: |
+    Trace one model with two tasks of different sizes. `mn_qa` has 4 rows with `correct = [1, 0, 0, 0]`. `mn_mc` has 8 rows with `correct = [1, 1, 1, 1, 1, 1, 0, 0]`.
+
+    - `acc` for `mn_qa`: 1 / 4 = `0.25`.
+    - `acc` for `mn_mc`: 6 / 8 = `0.75`.
+    - `mine = [0.25, 0.75]`. Mean: `0.5`. Score: `50.0`.
+
+    Check: pooling all 12 rows would give 7 / 12 ≈ 58.3%. The bigger task would count twice as much. Your answer should be 50.0.
   skeleton: |
     acc = {key: sum(r.correct for r in group) / ___(_____) for key, group in by(rows, "model", "task").items()}
     mine = [a for (m, t), a in acc.items() if _ == _____]
@@ -273,8 +301,32 @@ solution: answer_cost/solution.py
 alternatives:
   - answer_cost/alternatives/loops.py
 hints:
+  logic: |
+    for each model (its rows are group):
+      total = tokens of every answer, right or wrong
+      tokens_per_answer
+        → total ÷ number of answers
+      tokens_per_right_answer
+        → total ÷ number of right answers
+    each function returns a dict: model → number
+  tools: |
+    total tokens of a model's answers
+      r.field                reads a field of a row
+      sum(f(x) for x in xs)  adds up f(x) over a list
+    divide by the number of answers
+      len(xs)                how many items in xs
+    divide by the number of right answers
+      sum(...) again         correct is 1 or 0, so a sum counts
+      plain arithmetic: /
   nudge: Both are a sum of tokens over a count. What do you divide by in each, every answer or only the right ones?
   concept: "`sum(r.tokens for r in group)` is every answer token the model produced in the eval. Divided by `len(group)` it's the mean answer length. Divided by `sum(r.correct for r in group)`, the number it got right, it's what one right answer costs, wrong answers included."
+  example: |
+    Trace two small models. Model `a` has three answers: 10 tokens right, 40 tokens wrong, 10 tokens right. Model `b` has three: 5 right, 5 right, 5 wrong.
+
+    - `a`: total tokens `60`. Per answer: 60 / 3 = `20.0`. Right answers: 2, so per right answer: 60 / 2 = `30.0`.
+    - `b`: total tokens `15`. Per answer: 15 / 3 = `5.0`. Right answers: 2, so per right answer: 15 / 2 = `7.5`.
+
+    Check: the right-only mean for `a` would be 10, which ignores the 40 tokens it wasted on the wrong answer. Yours should be 30.
   skeleton: |
     return {model: sum(r.______ for r in group) / ___(_____) for model, group in by(rows, "model").items()}
     return {model: sum(r.______ for r in group) / sum(r._______ for r in group) for model, group in by(rows, "model").items()}

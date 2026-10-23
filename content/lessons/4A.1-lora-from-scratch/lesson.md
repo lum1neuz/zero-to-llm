@@ -209,8 +209,43 @@ alternatives:
   - lora_layer/alternatives/kaiming.py
   - lora_layer/alternatives/weight_shape.py
 hints:
+  logic: |
+    setup:
+      freeze everything the base layer owns
+      A = small random numbers, shape r × in
+      B = zeros, shape out × r   (so the update starts at nothing)
+      scale = alpha ÷ r
+    forward on x:
+      base output = the frozen layer applied to x
+      x through A (r numbers) → through B (out numbers)
+        → times scale = the update
+      return base output + update
+  tools: |
+    freeze the base layer
+      module.requires_grad_(flag)   turns grads on or off for
+                                    every parameter it owns
+    make A and B trainable
+      nn.Parameter(t)    registers t as a trainable parameter
+      torch.randn(a, b)  random normal numbers, shape [a, b]
+      torch.zeros(a, b)  zeros, shape [a, b]
+      layer.in_features, layer.out_features   a Linear's sizes
+    scale
+      plain arithmetic: /
+    forward
+      a @ b              matrix product
+      t.T                rows and columns swapped
+      plain arithmetic: * +
   nudge: "Four pieces: switch off gradients for everything the base owns, make A small and random, make B zero, and add the scaled update to the base's output. Which shapes let `x @ A.T @ B.T` work?"
   concept: "`module.requires_grad_(False)` freezes every parameter a module owns, weight and bias. `nn.Parameter(t)` registers a tensor so `parameters()` and the optimizer can see it. A is `[r, in]` and B is `[out, r]`, stored like `nn.Linear` weights, so `x @ A.T` is `[batch, r]` and `@ B.T` makes it `[batch, out]`. B starts at zero so that B @ A is zero and step 0 is exactly the base model. The scale is alpha / r."
+  example: |
+    Trace the lesson's layer: `base = nn.Linear(6, 10)`, `r = 4`, `alpha = 8`, and `x` of shape [3, 6].
+
+    - `A` is [4, 6] (24 numbers) and `B` is [10, 4] (40 numbers). The scale is 8 / 4 = `2.0`.
+    - Shapes in `forward`: `x @ A.T` is [3, 4], then `@ B.T` is [3, 10], the same as `base(x)`, so the two add.
+    - At step 0, `B` is all zeros, so the update is all zeros and the output is exactly `base(x)`. That's the first print: `True`.
+    - Only `A` and `B` still require grad, so the second print lists `A` and `B` and nothing starting with `base.`.
+
+    A tiny version with numbers, `r = 1`, `x = [[1, 2, 3]]`, `A = [[0.01, -0.02, 0.03]]`: `x @ A.T = [[0.06]]`. If `B` later becomes `[[0.5], [-1.0]]` and the scale is 2, the update is `0.06 × [0.5, -1.0] × 2 = [[0.06, -0.12]]`.
   skeleton: |
     self.base.______________(False)
     self.A = nn.Parameter(torch.randn(___, base.in_features) * 0.01)
@@ -264,8 +299,39 @@ alternatives:
   - train_lora/alternatives/filter.py
   - train_lora/alternatives/model_zero_grad.py
 hints:
+  logic: |
+    trainable:
+      for each parameter of the model:
+        still requires grad?
+          yes → keep it
+          no  → skip it
+      return the kept ones as a list
+    train_step:
+      clear the old gradients
+        → run the model on X → loss = mean squared error vs Y
+        → backpropagate → optimizer takes a step
+        → return the loss as a number
+  tools: |
+    keep only the trainable parameters
+      model.parameters()   every parameter of the model
+      p.requires_grad      True while p still trains
+      [x for x in xs if c] a list of the items that pass c
+    clear old gradients
+      optim.zero_grad()    sets every gradient to zero
+    the loss
+      F.mse_loss(pred, y)  mean squared error
+    learn
+      y.backward()         fills the gradients
+      optim.step()         moves the parameters one step
   nudge: "`trainable` keeps a parameter only if it still requires grad. `train_step` is the loop you've written since micrograd: clear, forward and loss, backward, step."
   concept: "`model.parameters()` yields every parameter, frozen ones included, so filter on `p.requires_grad`, and make it a list because the script reads it twice. `backward()` adds into `.grad`, so `opt.zero_grad()` has to run before it. `F.mse_loss(pred, target)` is the mean of the squared errors."
+  example: |
+    Trace the lesson's model, `base = nn.Linear(6, 10)` with `r = 4`.
+
+    - `model.parameters()` yields 4 tensors: `base.weight` [10, 6], `base.bias` [10], `A` [4, 6], `B` [10, 4]. The first two have `requires_grad = False`, so `trainable` returns a list of 2: `A` and `B`.
+    - Counts: 24 + 40 = 64 trainable of 134 in total (60 + 10 for the base), which prints as `47.8%`.
+    - Mean squared error on a tiny case: predictions `[1, 3]` against targets `[0, 1]` give (1² + 2²) / 2 = `2.5`. A sum would give 5.0.
+    - The loss `train_step` returns is measured before the optimizer moves anything, so step 0 prints the biggest loss, and the later prints fall toward 0. The base weights stay equal to `w0`, because the optimizer never saw them.
   skeleton: |
     return [p for p in model.__________() if p.____________]
     opt.__________()

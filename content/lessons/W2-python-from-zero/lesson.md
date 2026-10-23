@@ -186,8 +186,39 @@ alternatives:
   - count_letter/alternatives/plus_equals.py
   - count_letter/alternatives/builtin_count.py
 hints:
+  logic: |
+    count starts at 0   (nothing counted yet)
+    for each letter ch in word:
+      ch is the same as letter?
+        yes → count goes up by 1
+        no  → leave count alone
+    after the loop is finished
+      → return count
+  tools: |
+    start a counter
+      name = value     plain assignment: store a value in a name
+    go through the word letter by letter
+      for ch in seq:   ch is each item of seq in turn
+    is ch the same as letter?
+      a == b           True if a and b are equal
+    add 1 and keep it
+      plain arithmetic: a + 1, then store it back in the name
+    hand the answer back
+      return x         gives x back to whoever called
   nudge: Before you look at any letters, how many matches have you counted?
   concept: "Start `count` at 0. The loop gives you one letter at a time as `ch`. When `ch` is the same as `letter` (use `==` to compare), store a bigger count: `count = count + 1`."
+  example: |
+    Trace it on `word = "banana"` and `letter = "a"`:
+
+    - Start: `count` is `0`.
+    - `b`: not an `a`, so `count` stays `0`.
+    - `a`: a match, so `count` becomes `1`.
+    - `n`: no match, so `count` stays `1`.
+    - `a`: a match, so `count` becomes `2`.
+    - `n`: no match, so `count` stays `2`.
+    - `a`: a match, so `count` becomes `3`.
+
+    The loop ends, and the function returns `3`. If you print `count` inside your loop, you should see it go `0, 1, 1, 2, 2, 3`.
   skeleton: |
     count = ___
     for ch in word:
@@ -224,8 +255,28 @@ solution: average/solution.py
 alternatives:
   - average/alternatives/loop_sum.py
 hints:
+  logic: |
+    add up all the numbers   → total
+    count how many numbers there are
+      → average = total ÷ that count   (keep the decimals)
+      → return the average
+  tools: |
+    add up all the numbers
+      sum(seq)         adds every number in a list
+    count the numbers
+      len(seq)         how many items are in a list
+    divide
+      a / b            plain division, keeps the decimals
   nudge: Which two numbers do you need for an average?
   concept: "`sum(numbers)` adds up the whole list. `len(numbers)` tells you how many numbers it has. Divide the first by the second with a single `/`."
+  example: |
+    Trace it on `numbers = [2, 4, 9]`:
+
+    - The total is 2 + 4 + 9 = `15`.
+    - There are `3` numbers in the list.
+    - `15 / 3` is `5.0`, the average.
+
+    Another one, `numbers = [1, 2]`: the total is `3`, there are `2` numbers, and `3 / 2` is `1.5`. A single `/` keeps the `.5`.
   skeleton: |
     total = ___(numbers)
     return total / ___(numbers)

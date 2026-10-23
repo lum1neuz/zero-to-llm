@@ -214,8 +214,38 @@ alternatives:
   - quantize_absmax/alternatives/no_clamp.py
   - quantize_absmax/alternatives/to_dtype_kwarg.py
 hints:
+  logic: |
+    find the weight with the largest size (ignore the sign)
+      → scale = that size ÷ 127   (what one int8 step is worth)
+    for each weight in the row:
+      divide by scale → round to a whole number
+      outside −127…127?
+        yes → pull it back to the edge
+        no  → keep it
+    store the whole numbers in one byte each
+      → return q and scale
+  tools: |
+    find the largest size
+      t.abs()          each value without its sign
+      t.max()          the biggest value in t
+    divide → round to a whole number
+      t / x            divides every value by x
+      torch.round(t)   nearest whole number
+    outside the range? pull it back
+      t.clamp(lo, hi)  squeezes values into [lo, hi]
+    store in one byte each
+      t.to(dtype)      converts; torch.int8 is 1 byte
   nudge: One weight decides the scale for the whole row. Which one, and which int8 value should it land on?
   concept: You want `w / scale` to hit exactly ±127 at the largest |w|. Solve that for scale. Then q is `w / scale` snapped to the nearest whole number, kept inside ±127 and stored in one byte.
+  example: |
+    Trace it on a tiny row, `w = [0.5, -2.0, 1.0]`:
+
+    - Magnitudes: `[0.5, 2.0, 1.0]`. The largest is `2.0`.
+    - `scale` is 2.0 / 127 ≈ `0.01575`.
+    - `w / scale` ≈ `[31.75, -127.0, 63.5]`.
+    - Rounded: `[32, -127, 64]`.
+
+    Check: the biggest weight lands exactly on −127, and nothing falls outside ±127.
   skeleton: |
     scale = w.____().max() / ___
     q = torch.____(w / scale).clamp(____, ____).to(torch.____)
@@ -255,8 +285,24 @@ solution: dequantize/solution.py
 alternatives:
   - dequantize/alternatives/int_times_scale.py
 hints:
+  logic: |
+    take q (int8 whole numbers) and its scale
+      → turn q into floats first   (int8 math overflows)
+      → multiply by scale          (undoes the divide)
+      → return the floats
+  tools: |
+    turn q into floats
+      t.float()        a float32 copy of t
+    multiply by scale
+      t * x            multiplies every value by x
   nudge: Quantizing divided w by scale. What undoes a division?
   concept: Multiply the integers by the same scale. Turn q into floats first so you stay out of int8 arithmetic, where 127 × 2 overflows.
+  example: |
+    Continue the tiny row from step 1: `q = [32, -127, 64]` and `scale ≈ 0.01575`.
+
+    - As floats: `[32.0, -127.0, 64.0]`.
+    - Times `scale`: ≈ `[0.504, -2.0, 1.008]`.
+    - Against the original `[0.5, -2.0, 1.0]`, each error is at most half a step (`scale / 2 ≈ 0.0079`).
   skeleton: |
     return q.____() * _____
   solution: |

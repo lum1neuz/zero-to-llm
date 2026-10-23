@@ -134,7 +134,7 @@ export const ChallengeSrc = z.strictObject({
   tests: z.string(),
   solution: z.string(),
   alternatives: z.array(z.string()).default([]),
-  hints: z.strictObject({ nudge: Md, concept: Md, skeleton: z.string(), solution: z.string() }),
+  hints: z.strictObject({ logic: Md, tools: Md, nudge: Md, concept: Md, example: Md, skeleton: z.string(), solution: z.string() }),
   on_solve: Md,
   mistakes: z.array(z.strictObject({ file: z.string(), fails: Slug, says: z.string() })).default([]),
 });
@@ -208,7 +208,7 @@ export const StepOut = z.discriminatedUnion("kind", [
     start: z.union([z.object({ code: z.string() }), z.object({ from: z.string() })]),
     setup: z.array(z.object({ say: z.string(), type: z.string(), pause: z.number() })),
     tests: z.string(), testNames: z.array(z.object({ id: z.string(), name: z.string() })), solution: z.string(),
-    hints: z.object({ nudge: z.string(), concept: z.string(), skeleton: z.string(), solution: z.string() }),
+    hints: z.object({ logic: z.string(), tools: z.string(), nudge: z.string(), concept: z.string(), example: z.string(), skeleton: z.string(), solution: z.string() }),
     onSolve: z.string(),
   }),
   z.object({

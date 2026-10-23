@@ -251,8 +251,39 @@ alternatives:
   - cached_step/alternatives/transpose.py
   - cached_step/alternatives/stack_rows.py
 hints:
+  logic: |
+    embed the token at pos → q, k, v   (one row of C numbers each)
+    make k and v one-row tables
+      → add them under the cache's old rows
+    score q against every cached key
+      → ÷ √C → softmax → att   (one weight per cached token)
+    mix the cached values using att → h
+      → return the logits from h
+  tools: |
+    make a row into a one-row table
+      t[None]              adds a new dimension of size 1
+      t.unsqueeze(n)       same, at position n
+    add it under the old rows
+      torch.cat([a, b])    joins a and b along their first dimension
+    score q against every cached key
+      m @ v                dot product of each row of m with v
+      plain arithmetic: /  and a square root of C
+    scores to weights
+      F.softmax(t, dim=-1) makes the last dimension add up to 1
+    mix the cached values
+      w @ m                weighted sum of the rows of m
   nudge: "Two jobs: remember this token's k and v, then let q look at everything remembered so far. What shape is the cache, and what shape is k?"
   concept: "The cache is a table with one row per token, and `k` is a single row of 16 numbers. Give it a row dimension and `torch.cat` it under the old rows. Attention is then the full forward's, for one query: dot q with every cached key (`cache[\"k\"] @ q`), divide by √C, softmax, and use the weights to mix the cached values."
+  example: |
+    Shrink the sizes so the numbers are readable: `C = 4`, so √C = 2. Two tokens are already cached, and token 2 arrives.
+
+    - Old keys: `[[1, 0, 0, 0], [0, 1, 0, 0]]`. New `k = [1, 1, 0, 0]`. Giving `k` a row dimension makes it shape `[1, 4]`, and the cache grows from `[2, 4]` to `[3, 4]`.
+    - Values grow the same way: old `[[1, 2, 3, 4], [5, 6, 7, 8]]`, new `v = [0, 0, 10, 10]`.
+    - With `q = [2, 0, 0, 0]`, the dot products with the three keys are `[2, 0, 2]`. Divided by 2: `[1, 0, 1]`.
+    - Softmax: `att ≈ [0.422, 0.155, 0.422]`. Three weights, one per cached token, adding up to 1.
+    - Mixed values: `h ≈ [1.199, 1.777, 6.578, 7.155]`. It has `C = 4` numbers, like `q`.
+
+    Check: the cache shape goes `[0, C]`, `[1, C]`, `[2, C]`... one row per step, and `att` always has as many entries as the cache has rows.
   skeleton: |
     cache["k"] = torch.___([cache["k"], k[____]])
     cache["v"] = torch.___([cache["v"], ____])
@@ -294,8 +325,41 @@ solution: cached_generate/solution.py
 alternatives:
   - cached_generate/alternatives/shape_pos.py
 hints:
+  logic: |
+    cache starts empty
+    prefill, for each prompt position pos:
+      run the token at pos through step → logits
+    repeat max_new_tokens times:
+      next_id = position of the largest logit
+      add next_id to the end of idx
+      run ONLY next_id through step, at its index in idx
+        → new logits
+    return idx
+  tools: |
+    run one token through the model
+      step(model, tok, pos, cache)
+                           logits for token tok at position pos;
+                           it also adds tok to the cache
+    a prompt token
+      t[i]                 item i of t
+    where the newest token sits
+      len(x)               how many items x has
   nudge: "Both blanks call step(). For each call: which token, at which position, with which cache?"
   concept: "In the prefill, token `idx[pos]` sits at position `pos`. In the loop, the id you just picked is already appended, so it's the last entry of `idx`, at index `len(idx) - 1`. Pass the same `cache` every time so the keys and values pile up."
+  example: |
+    Take a prompt `idx = [7, 3, 9]` and two new tokens.
+
+    Prefill, 3 calls to `step`:
+
+    - `step(model, 7, 0, cache)`: cache has 1 row.
+    - `step(model, 3, 1, cache)`: cache has 2 rows.
+    - `step(model, 9, 2, cache)`: cache has 3 rows. `logits` is the prediction after the `9`.
+
+    Say it picks `4`. `idx` becomes `[7, 3, 9, 4]`, length 4. The new token sits at index 3, so `step(model, 4, 3, cache)`. Now the cache has 4 rows.
+
+    Say it picks `6` next. `idx` is `[7, 3, 9, 4, 6]`, length 5, so `step(model, 6, 4, cache)`.
+
+    Check: each token is run once, at its own index, so 3 prompt tokens plus 2 new ones is 5 positions processed. The no-cache loop re-reads the whole sequence each step: 3 + 4 = 7 positions for the same two tokens.
   skeleton: |
     logits = step(model, idx[___], ___, cache)
     logits = step(model, _______, len(idx) ___, cache)
@@ -333,8 +397,35 @@ alternatives:
   - kv_bytes/alternatives/named.py
   - kv_bytes/alternatives/true_div.py
 hints:
+  logic: |
+    head_dim = hidden_size ÷ number of query heads
+    per position, in one layer, the cache holds:
+      K and V   (2 tensors)
+      each one head_dim-wide vector per KV head
+        (KV heads, not query heads)
+    multiply by layers, ctx positions and bytes_per_value
+      → return the bytes
+  tools: |
+    read config values
+      d[key]               the value stored under key
+    head width
+      plain arithmetic: //  whole-number division
+    multiply the factors together
+      plain arithmetic: *
   nudge: The cache holds a K and a V vector for every layer, every KV head and every position. How wide is each vector, and how many bytes does each number take?
   concept: "Each head is `hidden_size / num_attention_heads` wide, 128 for Llama 3.1 8B. With grouped-query attention, several query heads share one K/V head, so the cache holds `num_key_value_heads` heads, not `num_attention_heads`. Multiply 2 (K and V) × layers × KV heads × head width × positions × bytes per value."
+  example: |
+    Trace it on a small made-up config: 2 layers, 4 query heads, 2 KV heads, `hidden_size = 8`, `ctx = 3`, 2 bytes per value.
+
+    - `head_dim`: 8 split across 4 heads is `2`.
+    - K and V: `2`.
+    - Times layers: `2 * 2 = 4`.
+    - Times KV heads (2, not the 4 query heads): `4 * 2 = 8`.
+    - Times `head_dim`: `8 * 2 = 16`.
+    - Times `ctx`: `16 * 3 = 48` numbers.
+    - Times bytes per value: `48 * 2 = 96` bytes.
+
+    Check: if you used the 4 query heads you would get `192`, twice too much. The same slip on Llama 3.1 8B (32 query heads, 8 KV heads) is 4× too much: `4.00` GiB instead of `1.00`.
   skeleton: |
     head_dim = cfg["___________"] // cfg["___________________"]
     return ___ * cfg["num_hidden_layers"] * cfg["___________________"] * head_dim * ctx * _______________

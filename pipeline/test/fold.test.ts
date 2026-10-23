@@ -103,7 +103,7 @@ describe("lesson fold", () => {
     ],
     build: [
       { kind: "challenge", id: "ch", title: "Write it", intro: "Write the function.", setup: [{ say: "Here is the stub.", type: "", pause: 1 }],
-        hints: { nudge: "SECRET NUDGE", concept: "SECRET CONCEPT", skeleton: "SECRET ____", solution: "SECRET SOLUTION" }, solution: "SECRET REFERENCE", tests: "", testNames: [], file: "a.py", start: { code: "" }, onSolve: "Done." },
+        hints: { logic: "SECRET LOGIC", tools: "SECRET TOOLS", nudge: "SECRET NUDGE", concept: "SECRET CONCEPT", example: "SECRET EXAMPLE", skeleton: "SECRET ____", solution: "SECRET SOLUTION" }, solution: "SECRET REFERENCE", tests: "", testNames: [], file: "a.py", start: { code: "" }, onSolve: "Done." },
       { kind: "replay", id: "r", title: "Run it", intro: "Watch the run.", recorded: { hardware: "GPU", illustrative: true }, log: [], summary: [], speed: 40 },
       { kind: "metrics", id: "m", title: "Record", intro: "Write numbers down." },
     ],

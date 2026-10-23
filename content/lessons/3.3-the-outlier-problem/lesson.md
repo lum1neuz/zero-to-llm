@@ -217,8 +217,34 @@ alternatives:
   - int8_matmul/alternatives/float_acc.py
   - int8_matmul/alternatives/outer_scales.py
 hints:
+  logic: |
+    quantize X per token → whole numbers qx, one scale sx each
+    quantize W per output channel → qw, one scale sw each
+    multiply the whole numbers, every token against every channel
+      → acc   (sums get big, so they must not wrap around)
+    turn acc into floats
+      → entry [token i, channel j] gets sx of i and sw of j
+      → return the scaled result
+  tools: |
+    keep the whole numbers from overflowing
+      t.int()          an int32 copy of t
+    multiply tokens against channels
+      a @ b            matrix product
+      t.T              t with rows and columns swapped
+    turn acc into floats
+      t.float()        a float32 copy of t
+    apply the two scales
+      t * x            multiplies every value by x (shapes broadcast)
   nudge: "Two things to get right: the integer products must not overflow, and output [i, j] came from token i and channel j. Which two scales does it need?"
   concept: "int8 × int8 products summed over six features run into the thousands, past int8's 127, so real kernels accumulate in int32: cast with `.int()` before `@`. `acc` is [4, 3]. `sx` is a [4, 1] column, one scale per token, which lines up with acc's rows. `sw` is [3, 1], one per output channel, and output channels run along acc's columns, so it needs to be a row: `sw.T`."
+  example: |
+    Trace it on 2 tokens and 2 features, `X = [[0.5, -2.0], [4.0, 1.0]]` and `W = [[1.0, 0.5], [-0.5, 2.0]]`:
+
+    - `qx = [[32, -127], [127, 32]]`, `sx ≈ [0.01575, 0.0315]` (one per token).
+    - `qw = [[127, 64], [-32, 127]]`, `sw ≈ [0.00787, 0.01575]` (one per output channel).
+    - `acc`, as integers: `[[-4064, -17153], [18177, 0]]`. Entry [0, 0] is 32 × 127 + (−127) × 64. These are far past 127, so a one-byte accumulator would wrap.
+    - Entry [0, 1] needs token 0's scale and channel 1's scale: −17153 × 0.01575 × 0.01575 ≈ −4.25.
+    - Full result ≈ `[[-0.504, -4.254], [4.508, 0.0]]`. The float answer `X @ W.T` is `[[-0.5, -4.25], [4.5, 0.0]]`.
   skeleton: |
     acc = qx.____() @ qw.____().___
     return acc.float() * ___ * ___.___
@@ -257,8 +283,43 @@ alternatives:
   - mixed_matmul/alternatives/amax_mask.py
   - mixed_matmul/alternatives/f_linear.py
 hints:
+  logic: |
+    for each feature column:
+      does any token's size pass threshold?
+        yes → mark the column big
+        no  → leave it
+    big columns of X and W → full-precision matmul
+    all other columns → int8_matmul
+    add the two results
+      → return the sum
+  tools: |
+    size of every entry, then the test
+      t.abs()          each value without its sign
+      t > x            True or False for every value
+    does any token pass?
+      t.any(dim)       True if any value along dim is True
+    pick or skip columns
+      t[:, mask]       the columns where mask is True
+      ~mask            flips every True and False
+    full-precision part
+      a @ b            matrix product
+      t.T              rows and columns swapped
+    int8 part
+      int8_matmul(a, b)   your function from step 1
+    add the two results
+      a + b            adds matching values
   nudge: "A matmul is a sum over features, so you can split the features into two sets, multiply each set separately, and add. Which features belong in which set?"
   concept: "`X.abs() > threshold` is a [4, 6] grid of bools. Reduce it over the tokens (`dim=0`) with `any`, and you get one flag per feature. `X[:, big]` keeps only the flagged columns of X, and `W[:, big]` the same features of W, since W is [out, features]. `~big` flips the mask for the int8 part."
+  example: |
+    Trace it on 2 tokens and 4 features, with `threshold = 6.0`:
+
+    `X = [[0.5, 10.0, 1.0, -0.3], [-1.0, 2.0, 8.0, 0.7]]`, `W = [[0.4, 0.2, -0.3, 0.5], [0.1, -0.5, 0.6, -0.2]]`
+
+    - The grid is True at `X[0, 1]` (10.0) and `X[1, 2]` (8.0), and False everywhere else.
+    - `big = [False, True, True, False]`. Feature 1 spikes only in token 0, feature 2 only in token 1, and both still count.
+    - Full-precision part, features 1 and 2: `[[1.7, -4.4], [-2.0, 3.8]]`.
+    - int8 part, features 0 and 3: `[[0.051, 0.110], [-0.051, -0.241]]`.
+    - Sum: `[[1.751, -4.290], [-2.051, 3.559]]`. The exact `X @ W.T` is `[[1.75, -4.29], [-2.05, 3.56]]`.
   skeleton: |
     big = (X.____() > threshold).___(dim=___)
     return X[:, ___] @ W[:, ___].T + int8_matmul(X[:, ____], W[:, ____])
@@ -297,8 +358,33 @@ alternatives:
   - smooth/alternatives/pow_method.py
   - smooth/alternatives/negative_power.py
 hints:
+  logic: |
+    for each feature:
+      largest size of X in that feature (over tokens)
+      largest size of W in that feature (over outputs)
+      s = (X largest ^ alpha) ÷ (W largest ^ (1 − alpha))
+    divide each feature of X by its s
+    multiply each feature of W by its s   (product unchanged)
+      → return X, then W
+  tools: |
+    largest size per feature
+      t.abs()          each value without its sign
+      t.amax(dim)      the biggest value along dim
+    combine into s
+      plain arithmetic: ** / -   (power, divide, subtract)
+    rescale the columns
+      plain arithmetic: * /   (a [features] vector applies to
+                               every row of a [rows, features] tensor)
   nudge: Each feature gets one factor. The activations should get smaller where they're big, and the weights pick up the difference. Which side divides and which multiplies?
   concept: "`X.abs().amax(dim=0)` is the largest |x| per feature, shape [6]. W is [out, features], so `W.abs().amax(dim=0)` is the largest |w| per feature, also [6]. s = max|X|^alpha / max|W|^(1 − alpha). `X / s` and `W * s` broadcast that [6] along the features of each, and the product (X / s) @ (W * s).T is exactly X @ W.T."
+  example: |
+    Trace it with `alpha = 0.5` on `X = [[1, 8], [-4, 16]]` and `W = [[1.0, 0.25], [-0.25, 0.2]]`:
+
+    - Largest |x| per feature: `[4, 16]`. Largest |w| per feature: `[1.0, 0.25]`.
+    - `s = [√4 / √1.0, √16 / √0.25] = [2, 8]`.
+    - `X / s = [[0.5, 1.0], [-2.0, 2.0]]`. The outlier feature went from 16 down to 2.
+    - `W * s = [[2.0, 2.0], [-0.5, 1.6]]`. Feature 1's weights grew from 0.25 to 2.0.
+    - Check: `(X / s) @ (W * s).T` and `X @ W.T` are both `[[3.0, 1.35], [0.0, 4.2]]`.
   skeleton: |
     s = X.___().____(dim=___) ** alpha / W.___().____(dim=___) ** (1 - _____)
     return X _ s, W _ s

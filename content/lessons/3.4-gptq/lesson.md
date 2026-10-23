@@ -210,8 +210,36 @@ alternatives:
   - hessian/alternatives/eye_sum.py
   - hessian/alternatives/no_constant.py
 hints:
+  logic: |
+    for every pair of features:
+      multiply them token by token, add up over all tokens
+    scale by 2 ÷ number of tokens
+      → H   (one row and column per feature)
+    damp = percdamp × average of H's diagonal
+    add damp to each diagonal entry only
+      → return H
+  tools: |
+    products of every feature pair
+      t.T              rows and columns swapped
+      a @ b            matrix product
+    scale by 2 over n
+      t.shape[i]       the size of dimension i of t
+      plain arithmetic: * /
+    damp from the diagonal
+      H[idx, idx]      the diagonal entries picked by index
+      t.mean()         the average of all values
+    add to the diagonal only
+      torch.eye(n)     n × n, ones on the diagonal, zeros elsewhere
+      plain arithmetic: * +
   nudge: "Two features, i and j, are related through the tokens they share. Which product of X with itself gives one number per *pair of features*?"
   concept: "X is [tokens, features], so `X.T @ X` is [features, features]: entry [i, j] sums feature i times feature j over the tokens. Multiply by 2 and divide by the number of tokens. `H[idx, idx]` picks out the diagonal, so `percdamp * H[idx, idx].mean()` is GPTQ's damping, and adding it times `torch.eye` touches the diagonal only."
+  example: |
+    Trace it on 2 tokens and 3 features, where feature 2 never fires: `X = [[1, 2, 0], [3, -1, 0]]`.
+
+    - `XᵀX` is [3, 3]. Entry [0, 0] is 1² + 3² = 10, entry [0, 1] is 1×2 + 3×(−1) = −1, entry [1, 1] is 2² + (−1)² = 5. Everything in row and column 2 is 0.
+    - With 2 tokens, `2 / n` is 1, so `H = [[10, -1, 0], [-1, 5, 0], [0, 0, 0]]`.
+    - The diagonal is `[10, 5, 0]`, its mean is 5, and `damp = 0.01 × 5 = 0.05`.
+    - Result: `[[10.05, -1, 0], [-1, 5.05, 0], [0, 0, 0.05]]`. The dead feature's diagonal is no longer 0, so `H` can be inverted.
   skeleton: |
     H = 2 * X.__ @ X / X.shape[___]
     damp = ________ * H[idx, idx].____()
@@ -257,8 +285,39 @@ alternatives:
   - gptq/alternatives/next_columns.py
   - gptq/alternatives/unsqueeze.py
 hints:
+  logic: |
+    for each column j, left to right:
+      divide column j by each row's scale → round to a whole number
+        outside −7…7?
+          yes → pull it back to the edge
+          no  → keep it
+      multiply back by scale → q, store it in Q
+      err = how far column j moved ÷ U's diagonal entry for j
+      update = err (per row) times U's row for j, from j on
+      subtract update from columns j onward
+        (column j lands on q, later columns adjust)
+    return Q
+  tools: |
+    round onto the grid
+      torch.round(t)   nearest whole number
+      t.clamp(lo, hi)  squeezes values into [lo, hi]
+      plain arithmetic: * /   (to and from the grid)
+    how far it moved
+      plain arithmetic: - /
+      indexing into U: single entries and slices of a row
+    the correction
+      t[:, None]       adds a column axis, [n] becomes [n, 1]
+      a * b            multiplies, a column against a row gives a grid
   nudge: "Three lines per column. Quantize column j exactly like 3.2 did. Then work out how far it moved, and hand that error to the columns after it. Where in U does column j's correction live?"
   concept: "`q` is column j rounded on each row's grid: divide by `scale`, round, clamp to ±7, multiply back. The error is `W[:, j] - q`, one value per row, divided by `U[j, j]`. Row j of U from column j on, `U[j, j:]`, says how much of that error each remaining column absorbs. The update is the outer product of the two, a [rows, columns left] block: `err[:, None] * U[j, j:]`."
+  example: |
+    Trace it on one row, two features that move together, with a step of `scale = 0.1`: `W = [[0.34, 0.24]]`, `H = [[1, 0.8], [0.8, 1]]`.
+
+    - `U` (upper Cholesky factor of H⁻¹) ≈ `[[1.667, -1.333], [0, 1]]`.
+    - j = 0: 0.34 / 0.1 = 3.4, rounds to 3, so `q = 0.3`. The error is 0.04, `err = 0.04 / 1.667 = 0.024`.
+    - `update = 0.024 × [1.667, -1.333] = [0.04, -0.032]`. Column 0 becomes 0.34 − 0.04 = 0.3, and column 1 becomes 0.24 + 0.032 = 0.272.
+    - j = 1: 0.272 / 0.1 = 2.72, rounds to 3, so `q = 0.3`. Result: `Q = [[0.3, 0.3]]`.
+    - Plain rounding would give `[[0.3, 0.2]]`. Against the original `[0.34, 0.24]`, the output error (the weight error `d` measured through `H`, as `d·H·d`) is 0.00136 for GPTQ and 0.00576 for rounding, over 4× lower, even though the second weight moved further (0.06 against 0.04).
   skeleton: |
     q = torch.round(W[:, j] / _____).clamp(___, ___) * _____
     err = (W[:, j] - _) / U[_, _]

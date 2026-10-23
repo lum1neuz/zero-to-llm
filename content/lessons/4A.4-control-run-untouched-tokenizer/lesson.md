@@ -187,8 +187,45 @@ alternatives:
   - heldout_eval/alternatives/loop.py
   - heldout_eval/alternatives/log2.py
 hints:
+  logic: |
+    doc_nll:
+      each position predicts the next token
+        → the last row has no next token, the first id is never predicted
+      score every prediction's loss, add them up
+        → return the total
+    heldout:
+      for each document:
+        add its loss to total_nll
+        add its predicted tokens to n_tokens
+        add its characters to n_chars
+      ppl = e to the power (total_nll ÷ n_tokens)
+      bpc = total_nll in bits (÷ ln 2) ÷ n_chars
+        → return ppl and bpc
+  tools: |
+    line up predictions and targets
+      x[a:b]                       slice of rows or ids
+    loss of every prediction
+      F.cross_entropy(logits, y, reduction=m)
+                                   loss; m picks how to combine
+      t.item()                     one-value tensor to a number
+    pool over the documents
+      sum(expr for d in docs)      adds one value per document
+      len(x)                       how many items are in x
+    perplexity and bits per character
+      math.exp(x)                  e to the power x
+      math.log(x)                  natural log
   nudge: "`doc_nll`: shift by one and sum. `heldout`: add everything up first, the loss, the predicted tokens and the characters, then divide once."
   concept: "`F.cross_entropy(logits[:-1], ids[1:], reduction=\"sum\")` scores every position against the token after it. A document of n ids makes n − 1 predictions, because BOS is never predicted. Perplexity is `exp(total loss / predicted tokens)`. Bits per character is `total loss / ln 2 / characters`: nats to bits, then per character, which doesn't depend on the tokenizer."
+  example: |
+    Use a vocabulary of 4 and two tiny documents.
+
+    - Doc A: `ids` has 3 entries, so 2 predictions. All-zero logits give each token probability 1/4, a loss of ln 4 ≈ 1.386 each. `doc_nll` = 2 × 1.386 ≈ `2.773`. Its text is 8 characters.
+    - Doc B: `ids` has 5 entries, so 4 predictions. Suppose each correct token gets probability 1/2: a loss of ln 2 ≈ 0.693 each. `doc_nll` = 4 × 0.693 ≈ `2.773`. Its text is 12 characters.
+    - Pooled: `total_nll` ≈ 5.545, `n_tokens` = 2 + 4 = `6`, `n_chars` = `20`.
+    - `ppl` = exp(5.545 / 6) ≈ `2.52`.
+    - Bits: 5.545 / ln 2 = 8 bits. `bpc` = 8 / 20 = `0.4`.
+
+    Check: A alone has perplexity 4 and B alone has 2. Their plain average is 3, which is not 2.52. Pooling first weights B for its extra predictions.
   skeleton: |
     return F.cross_entropy(logits[____], ids[___], reduction="___").item()
     total_nll = sum(doc_nll(logits, ids) for _, logits, ids in docs)

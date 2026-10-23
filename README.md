@@ -120,7 +120,7 @@ A lesson is Markdown with YAML frontmatter. Stubs have frontmatter only. A ready
 
 **Build steps** are `### Title` headings, each with one block:
 
-- ` ```challenge `: `id`, `file`, `start` (`{ code }` or `{ from: <earlier challenge> }`), `setup` (narrated segments `{ say, type | type_file, pause }`), `tests`, `solution`, `alternatives[]`, `hints { nudge, concept, skeleton, solution }`, `on_solve`, `mistakes[] { file, fails, says }`.
+- ` ```challenge `: `id`, `file`, `start` (`{ code }` or `{ from: <earlier challenge> }`), `setup` (narrated segments `{ say, type | type_file, pause }`), `tests`, `solution`, `alternatives[]`, `hints { logic, tools, nudge, concept, example, skeleton, solution }` (the ladder opens in that order; logic and tools open without a test run, every later rung after another run), `on_solve`, `mistakes[] { file, fails, says }`. `logic` is the core logic as a plain-text flow, shown as written in monospace: checks with `yes →` / `no →` branches, `for each …:` loops, `→` for "then". `tools` follows the same steps and lists, under each, the functions to reach for and what each does, never how they combine. `example` traces the logic on small concrete inputs in Markdown. None of them may quote a full answer line (prose maths like `×` and `÷` counts) or contain triple backticks.
 - ` ```replay `: `id`, `intro`, `log` (JSONL lines `{ t, c, layer?, label?, value?, delay? }`), `recorded { hardware, date?, illustrative, note? }`, `chart?`, `summary[]`, `run_yourself?`.
 - ` ```metrics `: `id`, `intro?`. Uses the frontmatter metrics.
 

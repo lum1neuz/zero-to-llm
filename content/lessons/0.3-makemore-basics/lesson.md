@@ -207,8 +207,31 @@ alternatives:
   - count_bigrams/alternatives/string.py
   - count_bigrams/alternatives/two_brackets.py
 hints:
+  logic: |
+    for each name w:
+      chs = "." + the letters of w + "."
+      for each neighbouring pair (ch1, ch2) in chs:
+        row = number of ch1, column = number of ch2
+          → add 1 to that cell of N   (add, don't overwrite)
+    return N
+  tools: |
+    add the start and end markers
+      list(s)           the characters of a string, as a list
+      a + b             joins two lists
+    find the cell and add one
+      stoi[ch]          a letter's number (dict lookup)
+      N[i, j] += x      adds x to one cell of a tensor
   nudge: "Every name needs a start marker and an end marker. Then each pair adds one to the cell at (row of the first character, column of the second)."
   concept: "`[\".\"] + list(w) + [\".\"]` gives the characters with a \".\" at each end, and `zip(chs, chs[1:])` walks every neighbouring pair. `stoi` turns each character into its row or column number, and `N[i, j] += 1` adds one to a cell."
+  example: |
+    Trace it on two names, `["ab", "aab"]`. Numbers: `"."` is `0`, `a` is `1`, `b` is `2`.
+
+    - `"ab"` gives `chs = [".", "a", "b", "."]`. The pairs are `(".", "a")`, `("a", "b")`, `("b", ".")`, so cells `(0, 1)`, `(1, 2)`, `(2, 0)` each go up by 1.
+    - `"aab"` gives `[".", "a", "a", "b", "."]`. The pairs are `(".", "a")`, `("a", "a")`, `("a", "b")`, `("b", ".")`.
+    - Final counts: `N[0, 1] = 2`, `N[1, 2] = 2`, `N[2, 0] = 2`, `N[1, 1] = 1`. Every other cell is `0`.
+    - `N.sum()` is `7`: the names have 2 + 3 letters, plus one extra pair per name.
+
+    Check: row `0` (after `"."`) only has `a`, and column `0` (before `"."`) only has `b`.
   skeleton: |
     chs = [___] + list(_) + [___]
     N[stoi[____], stoi[____]] += _
@@ -245,8 +268,34 @@ alternatives:
   - sample_name/alternatives/method.py
   - sample_name/alternatives/int_cast.py
 hints:
+  logic: |
+    ix = 0   (the "." start marker)
+    repeat, at most 50 times:
+      draw one next index from row ix of P, using g
+        → turn it into a plain int → store it in ix
+      ix is 0 (the "." end marker)?
+        yes → stop
+        no  → add that letter to the name
+    join the letters → return the name
+  tools: |
+    pick the row to draw from
+      P[i]                        row i of a tensor
+    draw one index in proportion to the row
+      torch.multinomial(p, num_samples=n, replacement=True,
+                        generator=g)
+                                  draws n indices, by weight p
+    turn it into a plain int
+      t.item()                    a one-element tensor as a number
   nudge: Row ix of P is the distribution of what comes after character ix. Draw one index from it at random, in proportion to the probabilities, using the generator g so a seed repeats the same names.
   concept: "`torch.multinomial(probs, num_samples=1, replacement=True, generator=g)` draws an index from a 1-D tensor of weights and returns it as a one-element tensor. `.item()` turns that into a plain int, which is what `itos` and the `== 0` check need."
+  example: |
+    Trace it on a tiny table where `"."` is followed by `a` or `b` with probability 0.5 each, and both of those are followed by `"."` for sure:
+
+    - `ix = 0`. Row `P[0]` is 0.5 at index `1` and 0.5 at index `2`, zero elsewhere.
+    - The draw returns, say, `tensor([2])`. As a plain int that's `2`, so `ix = 2` and `itos[2]` is `"b"`.
+    - `ix` is not `0`, so `"b"` is appended and the loop goes round. `P[2]` is 1.0 at index `0`.
+    - That draw can only return `0`. The loop breaks and the name is `"b"`.
+    - Over many calls, about half of the names come out `"a"` and half `"b"`. Same seed, same list.
   skeleton: |
     ix = torch.multinomial(P[__], num_samples=_, replacement=True, generator=_).____()
   solution: |
@@ -279,8 +328,34 @@ solution: bigram_nll/solution.py
 alternatives:
   - bigram_nll/alternatives/method_log.py
 hints:
+  logic: |
+    log_likelihood = 0, n = 0
+    for each name, for each pair (ch1, ch2):
+      p = what P gives for row ch1, column ch2
+        → take the log of p   (zero or negative)
+        → add it to log_likelihood, count the pair in n
+    average = log_likelihood ÷ n
+      → flip the sign → return it
+  tools: |
+    look up the probability
+      stoi[ch]          a letter's number (dict lookup)
+      P[i, j]           one cell of a tensor
+    take the log
+      torch.log(t)      natural log of every value
+    average and flip the sign
+      plain arithmetic: - and /
   nudge: "P's row is the character you came from and its column the one that came next. Sum the logs as you go, then turn the sum into an average loss."
   concept: "`P[stoi[ch1], stoi[ch2]]` is the probability the model gave this pair. Its log is at most 0. Averaging the logs and flipping the sign gives the negative log-likelihood: lower is better, and 0 would mean every pair was predicted with certainty."
+  example: |
+    Trace it on the single name `"ab"`, which has three pairs. Say `P` gives these probabilities:
+
+    - `(".", "a")`: `0.5`, so the log is about `-0.693`.
+    - `("a", "b")`: `0.25`, so the log is about `-1.386`.
+    - `("b", ".")`: `0.8`, so the log is about `-0.223`.
+    - `log_likelihood` is about `-2.303` and `n` is `3`.
+    - The loss is `2.303 / 3 ≈ 0.768`.
+
+    Check: a model with the right answer at probability `1.0` for every pair would give exactly `0`. One that's uniform over 27 characters gives `log(27) ≈ 3.30`.
   skeleton: |
     logprob = torch.___(P[stoi[___], stoi[___]])
     return -______________ / _
@@ -340,8 +415,44 @@ alternatives:
   - neural_bigram/alternatives/nll_loss.py
   - neural_bigram/alternatives/no_grad.py
 hints:
+  logic: |
+    forward:
+      logits → make every number positive (counts)
+        → divide each row by its own total → probs
+    loss_fn, all rows at once:
+      pick each row's probability at its target ys[i]
+        → take the log → flip the sign
+      average over the rows → the loss
+    each training step, after the gradients are filled in:
+      move W a step of size 50 against its gradient
+        (change the numbers behind W, not W itself)
+  tools: |
+    make every logit positive
+      t.exp()                     e raised to each value
+    make each row sum to 1
+      t.sum(dim, keepdim=True)    adds along dim, keeps it size 1
+      t / x                       divides every value by x
+    pick one probability per row
+      torch.arange(n)             0, 1, ..., n-1
+      len(x)                      how many rows
+      t[rows, cols]               one cell per (row, col) pair
+    log, flip sign, average
+      t.log()                     natural log of every value
+      t.mean()                    average of all values
+    update W
+      t.data                      the numbers behind t, untracked
+      t.grad                      the gradient autograd filled in
   nudge: "Three pieces. Softmax: make the logits positive, then make each row sum to 1. Loss: one probability per row, the one at that row's target, then −log and average. Update: move W a step against its gradient."
   concept: "`logits.exp()` gives positive counts and dividing by `.sum(1, keepdim=True)` normalises each row. `probs[torch.arange(len(ys)), ys]` picks row i's probability for target ys[i], one per row. For the update, change `W.data` so autograd doesn't record it, and subtract: the gradient points uphill."
+  example: |
+    Trace softmax and the loss on 3 characters instead of 27. Say `logits = [[0, 1, 2], [2, 0, 0]]` and `ys = [2, 0]`:
+
+    - Exponentiated, row 0 is `[1.0, 2.718, 7.389]` and sums to `11.107`. Row 1 is `[7.389, 1.0, 1.0]` and sums to `9.389`.
+    - `probs` row 0 is `[0.090, 0.245, 0.665]`, row 1 is `[0.787, 0.107, 0.107]`. Each row sums to `1`.
+    - Picks: row 0 at column `2` gives `0.665`, row 1 at column `0` gives `0.787`. That's a shape-`[2]` tensor.
+    - `-log` of those: `[0.408, 0.240]`. Their mean, `≈ 0.324`, is the loss.
+
+    The update, for one entry of `W`: if it is `0.30` and its `grad` is `0.02`, the step gives `0.30 - 50 * 0.02 = -0.70`. The loss should go down each round.
   skeleton: |
     counts = logits.___()
     probs = counts / counts.___(_, keepdim=____)

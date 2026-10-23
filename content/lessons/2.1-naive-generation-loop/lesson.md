@@ -249,8 +249,41 @@ alternatives:
   - greedy_loop/alternatives/tolist.py
   - greedy_loop/alternatives/softmax_first.py
 hints:
+  logic: |
+    greedy(logits):
+      → return the position of the largest logit
+    generate:
+      repeat max_new_tokens times:
+        run the model on ALL of idx → logits, one row per position
+        keep only the last row   (it predicts the next token)
+        pick an id from that row → next_id
+        make next_id a 1-element tensor
+          → add it to the end of idx
+      → return idx
+  tools: |
+    position of the largest logit
+      t.argmax()          index of the biggest value in t
+    run the model on everything so far
+      model(ids)          logits, one row per position
+    the last row
+      t[-1]               the last item (row) of t
+    add one id to the end
+      t.view(n)           the same values reshaped to n items
+      torch.cat([a, b])   joins tensors a and b end to end
   nudge: "Four blanks, one idea: the newest prediction lives in the last row. What do you feed the model, which row do you read, and how does the new id join the sequence?"
   concept: "`greedy` returns the *position* of the largest logit, which is the token id. In the loop, run the model on all of `idx`, hand `pick` the last row of `logits`, and join the old ids and the new one with `torch.cat`. argmax gives a 0-d tensor and `torch.cat` needs at least one dimension, so make it a 1-element tensor first."
+  example: |
+    Take a tiny model with 5 token ids that always predicts "(last id + 1) mod 5". The prompt is `idx = [2, 3]`.
+
+    `greedy` on one row: `[0.1, 2.0, -1.0, 0.5, 0.0]`. The biggest value is `2.0`, at position `1`. So it returns `1`, not `2.0`.
+
+    Step 1 of the loop:
+
+    - The model sees `[2, 3]` and returns `logits` with shape `[2, 5]`: row 0 predicts what follows the `2`, row 1 predicts what follows the `3`.
+    - Last row: its biggest logit is at position `4`, so `next_id` is `tensor(4)`, a 0-d tensor.
+    - As a 1-element tensor it's `[4]`. Joined to the old ids: `idx = [2, 3, 4]`.
+
+    Step 2: the model sees all 3 ids, `[2, 3, 4]`, and `logits` has shape `[3, 5]`. The last row peaks at `0` (4 + 1 wraps around), so `idx` grows to `[2, 3, 4, 0]`.
   skeleton: |
     return logits.______()
     logits = _____(idx)
@@ -295,8 +328,34 @@ alternatives:
   - temperature/alternatives/num_samples.py
   - temperature/alternatives/exp_normalise.py
 hints:
+  logic: |
+    divide logits by temperature
+      (below 1 sharpens, above 1 flattens)
+      → softmax into probs
+      → draw one id at random, weighted by probs
+          using the generator given, so a seed repeats
+      → return the id
+  tools: |
+    divide by the temperature
+      plain arithmetic: /   (acts on every logit)
+    scores to probabilities
+      F.softmax(t, dim=-1)  makes the last dimension add up to 1
+    draw one id at random
+      torch.multinomial(p, n, generator=g)
+                            draws n ids, weighted by p,
+                            using the random generator g
   nudge: "Two moves: reshape the distribution with the temperature, then roll the dice. Should temperature act on the logits or on the probabilities?"
   concept: "Divide the logits by the temperature *before* softmax. T < 1 stretches the gaps (sharper, closer to greedy), T > 1 shrinks them (flatter, more random). Then `torch.multinomial` draws one id in proportion to `probs`. Pass it the generator so a seed reproduces the draws."
+  example: |
+    Take `logits = [2.0, 1.0, 0.0, -1.0]` and see how the temperature reshapes the probabilities:
+
+    - `T = 1.0`: nothing changes, `probs ≈ [0.644, 0.237, 0.087, 0.032]`.
+    - `T = 0.5`: the logits become `[4.0, 2.0, 0.0, -2.0]`, and `probs ≈ [0.865, 0.117, 0.016, 0.002]`. The top id wins even more often, so it's close to greedy.
+    - `T = 2.0`: the logits become `[1.0, 0.5, 0.0, -0.5]`, and `probs ≈ [0.455, 0.276, 0.167, 0.102]`. The choice is flatter, so unlikely ids show up more.
+
+    Then the draw: with the `T = 1.0` probabilities, 800 draws give id `0` about 515 times, id `1` about 190 times, and so on. Each call returns a 1-element tensor holding one id.
+
+    Check: if you divide *after* the softmax, `T = 0.5` and `T = 2.0` would give the same draws as `T = 1.0`. Printing your `probs` at each T shows you quickly if the temperature has any effect.
   skeleton: |
     probs = F.softmax(logits ___ temperature, dim=-1)
     return torch.___________(probs, 1, generator=_________)

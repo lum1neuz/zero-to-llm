@@ -189,8 +189,33 @@ alternatives:
   - roofline/alternatives/if_else.py
   - roofline/alternatives/ternary_flip.py
 hints:
+  logic: |
+    flops = one multiply and one add per weight,
+      for every sequence in the batch
+    bytes_moved = every weight, read once per step
+      → compute_ms and memory_ms = each count ÷ hardware speed
+    compute_ms bigger than memory_ms?
+      yes → bound = "compute"
+      no  → bound = "memory"
+    ms = the larger of the two times   (they overlap)
+    return ms and bound
+  tools: |
+    count the arithmetic and the memory traffic
+      plain arithmetic: * and +   (counts, not tensors)
+    pick the slower side
+      max(a, b)          the larger of a and b
+    name the bound
+      a > b              True when a is bigger than b
+      x if cond else y   x when cond is True, otherwise y
   nudge: Which of the two costs grows with the batch, and which one doesn't? And if both happen at once, when is the step over?
   concept: "Each token in the batch does a multiply and an add with every weight: 2 × params × batch FLOPs. The weights are read once per step and shared by every token: params × bytes_per_param bytes. Compute and memory overlap, so the step takes the larger of the two times, and the larger one names the bound."
+  example: |
+    Trace it for an 8B model in fp16 (`bytes_per_param = 2`) on the 3090 (71 TFLOPS, 936 GB/s):
+
+    - Batch 1: `flops` = 16e9, `bytes_moved` = 16e9. Compute takes ≈ `0.225` ms, memory ≈ `17.09` ms. The step takes `17.09` ms and `bound` is `"memory"`.
+    - Batch 256: `flops` = 4.1e12, so compute takes ≈ `57.7` ms. `bytes_moved` is still 16e9, so memory still takes `17.09` ms. The step takes `57.7` ms and `bound` is `"compute"`.
+
+    Only `flops` changed between the two. The weights are read once per step, so `bytes_moved` and `memory_ms` stay put.
   skeleton: |
     flops = _ * params * _____
     bytes_moved = ______ * _______________
@@ -234,8 +259,38 @@ alternatives:
   - sdpa_match/alternatives/triu_mask.py
   - sdpa_match/alternatives/where_softmax.py
 hints:
+  logic: |
+    scores = every query against every key, ÷ √D   [B, H, T, T]
+    for each query t and key s:
+      key s comes after query t?
+        yes → score becomes -inf   (future hidden)
+        no  → keep the score
+    softmax over the keys   (each query's weights sum to 1)
+      → mix the values with those weights
+      → return the result   [B, H, T, D]
+  tools: |
+    compare every query with every key
+      t.transpose(a, b)    swaps dims a and b
+      a @ b                matrix multiply, per batch and head
+      plain arithmetic: / and **   (for the √D scale)
+    hide the future
+      torch.tril(t)        keeps the lower triangle, zeroes the rest
+      torch.ones(n, n, dtype=d)   an n × n block of ones
+      ~mask                flips True and False
+      t.masked_fill(mask, v)   replaces where mask is True
+    softmax over the keys, mix the values
+      F.softmax(t, dim)    turns scores into weights that sum to 1
+      a @ b                matrix multiply
   nudge: "Three lines, same as 1.1: scores, mask, softmax-and-mix. With four dims, which two dims of k do you swap?"
   concept: "`k.transpose(-2, -1)` swaps only the last two dims, so `q @ k.transpose(-2, -1)` is [B, H, T, T]. Divide by √D. `torch.tril` of a T×T block of True marks the keys each query may see, so fill the rest with `-inf`. Softmax over the last dim (the keys), then `@ v`."
+  example: |
+    Check the mask and softmax by hand on a tiny case, `B = H = 1`, `T = 3`, `D = 4`. Take `q = k` with rows `[2,0,0,0]`, `[0,2,0,0]`, `[2,2,0,0]`:
+
+    - `scores` is `[1, 1, 3, 3]`, each entry divided by √4 = 2: `[[2, 0, 2], [0, 2, 2], [2, 2, 4]]`.
+    - After the mask: `[[2, -inf, -inf], [0, 2, -inf], [2, 2, 4]]`. Query 0 sees only key 0.
+    - Softmax per row: `[1, 0, 0]`, `[0.119, 0.881, 0]`, `[0.107, 0.107, 0.787]`.
+    - Every row adds up to 1, and every weight above the diagonal is exactly 0.
+    - Mixing with `v`: query 0's output is just `v[0]`, and query 1's is 0.119 × `v[0]` + 0.881 × `v[1]`. The output is `[1, 1, 3, 4]`, like `q`.
   skeleton: |
     scores = q @ k.transpose(__, __) / D**___
     masked = scores.masked_fill(~torch.____(torch.ones(T, T, dtype=torch.bool)), float("____"))

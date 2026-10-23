@@ -1,21 +1,20 @@
 // Scrimba-style challenge: a short narrated setup types only the setup code and a stub with
 // `...` placeholders, then stops. The learner writes the code; "Run tests" runs real tests in
-// Pyodide; only the first failing test's diagnostic shows. Hints unlock one rung at a time,
-// and each rung needs another test run first.
+// Pyodide; every failing test explains its mistake. Hints unlock one rung at a time,
+// starting with the logic and the tools (free), then each rung after another test run.
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import type { ChallengeStep } from "../../../pipeline/schema.ts";
-import { blankChallenge, lessonRec, touchDay, update, useProgress, XP, type ChallengeRec } from "../../lib/progress.ts";
+import { blankChallenge, FREE_RUNGS, lessonRec, RUNGS, touchDay, update, useProgress, XP, type ChallengeRec } from "../../lib/progress.ts";
 import { isReady, pythonVersion, runTests, type RunOutcome, type Runtime } from "../../lib/pyclient.ts";
-import { esc, fmtTime, hl, inlineMd, plural } from "../../lib/text.ts";
+import { blockMd, esc, fmtTime, hl, inlineMd, plural } from "../../lib/text.ts";
 import { Html, I, toast } from "../ui.tsx";
 
 const CPS = 26;
 const SPEEDS = [1, 1.5, 2];
-const RUNGS = ["nudge", "concept", "skeleton", "solution"] as const;
-const RUNG_LABEL = { nudge: "Nudge", concept: "Concept", skeleton: "Skeleton", solution: "Solution" };
+const RUNG_LABEL = { logic: "Logic", tools: "Tools", nudge: "Nudge", concept: "Concept", example: "Worked example", skeleton: "Skeleton", solution: "Solution" };
 
 export function stepNote(c: ChallengeRec | undefined, locked: string | null, minutes?: number) {
-  if (c?.phase === "solved") return c.hints >= 4 ? "Solved · solution shown" : c.hints ? `Solved · ${plural(c.hints, "hint")}` : "Solved · no hints";
+  if (c?.phase === "solved") return c.hints >= RUNGS.length ? "Solved · solution shown" : c.hints ? `Solved · ${plural(c.hints, "hint")}` : "Solved · no hints";
   if (locked) return locked;
   if (c?.phase === "challenge") return `Your turn · ${plural(c.runs, "run")}`;
   return `Challenge · ~${minutes ?? 30} min`;
@@ -159,7 +158,7 @@ export function Challenge({ lessonId, step, startCode, runtime }: Props) {
     });
     if (solvedNow) {
       const h = p.lessons[lessonId]?.challenges[step.id]?.hints ?? 0;
-      toast(`All tests pass. +${solvedNow} XP${h >= 4 ? " (solution shown)" : h ? ` (${plural(h, "hint")})` : ", no hints"}.`);
+      toast(`All tests pass. +${solvedNow} XP${h >= RUNGS.length ? " (solution shown)" : h ? ` (${plural(h, "hint")})` : ", no hints"}.`);
     }
   };
 
@@ -171,7 +170,6 @@ export function Challenge({ lessonId, step, startCode, runtime }: Props) {
   const status = intro ? (playing ? ["live", "Setup · playing"] : ["", "Setup · paused"]) : saved.phase === "solved" ? ["done", "Solved"] : ["mine", "Your turn"];
   const caption = intro ? (t === 0 && !playing ? "A short setup plays first. Then the code is yours to write." : seg.say) : saved.phase === "solved" ? step.onSolve : segs[segs.length - 1].say;
   const result = outcome?.kind === "ok" ? outcome.result : null;
-  const firstFail = result ? result.tests.findIndex((x) => x.status === "fail" || x.status === "error") : -1;
   const passing = result ? result.tests.filter((x) => x.status === "pass").length : 0;
 
   return (
@@ -233,7 +231,12 @@ export function Challenge({ lessonId, step, startCode, runtime }: Props) {
             ) : result ? result.tests.map((x, k) => (
               <li key={x.id} className={x.status}>
                 <span className="ic">{x.status === "pass" ? "✓" : x.status === "skip" ? "·" : "✗"}</span>
-                <div><b>{x.name}</b>{k === firstFail && <p className="why"><strong>What's wrong:</strong> <Html html={inlineMd(x.message)} /></p>}</div>
+                <div><b>{x.name}</b>
+                  {(x.status === "fail" || x.status === "error") && (result.tests.slice(0, k).some((y) => y.status !== "pass" && y.message === x.message)
+                    ? <p className="why fine">Same cause as the test above.</p>
+                    : <p className="why"><strong>What's wrong:</strong> <Html html={inlineMd(x.message)} /></p>)}
+                  {x.status === "skip" && x.message && <p className="why fine"><Html html={inlineMd(x.message)} /></p>}
+                </div>
               </li>
             )) : step.testNames.map((x) => (
               <li key={x.id} className={saved.phase === "solved" ? "pass" : "skip"}><span className="ic">{saved.phase === "solved" ? "✓" : "·"}</span><div><b>{x.name}</b></div></li>
@@ -265,6 +268,22 @@ function consoleHtml(o: RunOutcome | null, running: false | "boot" | "run") {
   return parts.join("\n") || `<span class="dim">(your script printed nothing)</span>`;
 }
 
+/** The logic and tools rungs as written, one row per line. Each row keeps its indent, and a row that wraps
+ *  hangs under itself, so branches stay readable in the narrow help panel. In tools, an indented
+ *  "signature   what it does" line becomes a tool row whose description drops below when space runs out. */
+function LogicFlow({ text, tools }: { text: string; tools?: boolean }) {
+  return (
+    <div className="logic">
+      {text.replace(/\n+$/, "").split("\n").map((line, i) => {
+        const indent = line.length - line.trimStart().length;
+        const tool = tools && indent > 0 ? /^(\S.*?)\s{2,}(\S.*)$/.exec(line.trimStart()) : null;
+        if (tool) return <div key={i} className="tool" style={{ paddingLeft: `${indent}ch` }}><code>{tool[1]}</code><span>{tool[2]}</span></div>;
+        return <div key={i} style={{ paddingLeft: `${indent + 2}ch`, textIndent: "-2ch" }}>{line.trimStart() || " "}</div>;
+      })}
+    </div>
+  );
+}
+
 function HintLadder({ step, rec: c, intro, running, solAsk, setSolAsk, openHint, peek }: {
   step: ChallengeStep; rec: ChallengeRec; intro: boolean; running: boolean; solAsk: boolean; setSolAsk: (v: boolean) => void; openHint: () => void; peek: () => void;
 }) {
@@ -281,6 +300,8 @@ function HintLadder({ step, rec: c, intro, running, solAsk, setSolAsk, openHint,
         const text = step.hints[k];
         let body;
         if (open && (k === "nudge" || k === "concept")) body = <Html as="p" html={inlineMd(text)} />;
+        else if (open && (k === "logic" || k === "tools")) body = <LogicFlow text={text} tools={k === "tools"} />;
+        else if (open && k === "example") body = <Html as="div" className="md" html={blockMd(text)} />;
         else if (open && !(isSol && solved)) {
           const guarded = isSol && !solved;
           body = (
@@ -297,7 +318,7 @@ function HintLadder({ step, rec: c, intro, running, solAsk, setSolAsk, openHint,
             : open ? <Html as="p" html={inlineMd(text)} /> : <span className="lockr">Not needed</span>;
         } else if (intro) body = <span className="lockr">{I.lock} Opens on your turn</span>;
         else if (i === c.hints && running) body = <span className="lockr">Wait for the tests to finish.</span>;
-        else if (i === c.hints && (i === 0 || c.runs > c.lastHintRun)) {
+        else if (i === c.hints && (i < FREE_RUNGS || c.runs > c.lastHintRun)) {
           body = !isSol ? <button className="btn sm" onClick={openHint}>Show hint {i + 1}</button>
             : solAsk ? (
               <>
@@ -308,7 +329,7 @@ function HintLadder({ step, rec: c, intro, running, solAsk, setSolAsk, openHint,
         } else body = <span className="lockr">{I.lock} {i > c.hints ? `Open hint ${i} first` : "Run the tests once more to unlock"}</span>;
         return <div key={k} className={`tier ${open ? "open" : ""}`}><b>{label}</b>{body}</div>;
       })}
-      <p className="fine pnl-foot">The tests point at your actual mistake first. Each hint unlocks only after another run.</p>
+      <p className="fine pnl-foot">Start with the logic, then the tools to build it with. After that, the tests point at your actual mistake, and each further hint unlocks after another run.</p>
     </div>
   );
 }

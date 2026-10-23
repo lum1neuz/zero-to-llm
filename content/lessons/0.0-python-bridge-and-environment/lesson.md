@@ -190,8 +190,41 @@ alternatives:
   - encode_decode/alternatives/map_get.py
   - encode_decode/alternatives/loops.py
 hints:
+  logic: |
+    encode(word):
+      put a "." at the front and at the back of word
+      for each character in that longer word:
+        look up its integer in stoi
+      → return the integers as a list
+    decode(ids):
+      for each integer in ids:
+        look up its character in itos
+      glue the characters into one string
+      → return it   (keep the "." marks)
+  tools: |
+    put "." at both ends
+      a + b            joins two strings into one
+    look up each character's integer (and each integer's character)
+      d[key]           the value stored under key in dict d
+      [f(x) for x in seq]   builds a list, one entry per item
+    glue the characters into one string
+      "".join(seq)     glues a sequence of strings together
   nudge: "encode needs a \".\" on each side of the word, then one lookup per character. decode does the lookups the other way and glues the characters together."
   concept: "A list comprehension, `[f(x) for x in seq]`, builds a list in one line. Strings are sequences of characters, and `\".\" + word + \".\"` adds the markers. `\"\".join(seq)` glues a sequence of strings into one."
+  example: |
+    Trace `encode("ava")`:
+
+    - With the markers: `".ava."`.
+    - Characters: `. a v a .`
+    - Looked up in `stoi`: `0 1 22 1 0`.
+    - So `encode("ava")` is `[0, 1, 22, 1, 0]`.
+
+    Now trace `decode([0, 5, 13, 13, 1, 0])`:
+
+    - Looked up in `itos`: `. e m m a .`
+    - Glued together: `".emma."`.
+
+    Check: `decode(encode("emma"))` gives `".emma."`, with the dots still there.
   skeleton: |
     return [stoi[____] for ch in ____]
     return "".____(itos[i] for i in ____)
@@ -236,8 +269,28 @@ alternatives:
   - probs_of/alternatives/gather.py
   - probs_of/alternatives/arange_rows.py
 hints:
+  logic: |
+    pair i means: row xs[i], column ys[i] of P
+    read the cell of P for every pair, all at once (no loop)
+      → one number per pair
+      → return them in one tensor   (4 pairs → 4 numbers)
+  tools: |
+    read the cell at one row and one column
+      t[a, b]          the value in row a, column b of t
+    read many cells at once
+      t[ra, cb]        ra and cb are index tensors of the same
+                       length: one value per matching pair
   nudge: "You could loop over the pairs, but tensors let you index with whole tensors of positions. Can one indexing expression take the row from xs and the column from ys?"
   concept: "Indexing with two tensors of the same length inside one bracket pairs them up: `P[a, b]` gives `P[a[0], b[0]]`, `P[a[1], b[1]]`, and so on. Two separate brackets, `P[a][b]`, index one dimension at a time and do something else."
+  example: |
+    Use the setup's `P`, `xs = [0, 2, 1, 0]` and `ys = [1, 0, 2, 2]`. The pairs are (0,1), (2,0), (1,2), (0,2):
+
+    - Pair 1, row 0 column 1: `0.6`.
+    - Pair 2, row 2 column 0: `0.2`.
+    - Pair 3, row 1 column 2: `0.25`.
+    - Pair 4, row 0 column 2: `0.3`.
+
+    So `probs_of(P, xs, ys)` is `tensor([0.6, 0.2, 0.25, 0.3])`, shape `[4]`. If you got a `[4, 4]` table or a `[4, 3]` one, you picked rows and columns separately instead of in pairs.
   skeleton: |
     return P[____, ____]
   solution: |
@@ -271,8 +324,29 @@ alternatives:
   - normalize_rows/alternatives/unsqueeze.py
   - normalize_rows/alternatives/transpose.py
 hints:
+  logic: |
+    add up each row of N along the row   (one total per row)
+      → keep the totals as a column, not a flat list
+      → divide every entry by the total of its own row
+      → return the table   (fractions, so each row sums to 1)
+  tools: |
+    add up each row
+      t.sum(dim)       adds up t along dimension dim
+      (sum has an option to keep the summed dimension as size 1)
+    divide every entry by its row's total
+      a / b            divides entry by entry; shapes line up
+                       from the right (broadcasting)
   nudge: Each row needs its own total. Which dim adds along a row, and what shape does the result need so each row meets its own total?
   concept: "`N.sum(1)` gives one total per row, shape [4]. Broadcasting lines shapes up from the right, so a [4] stretches across the *columns*, the wrong way, and on a square table nothing complains. `keepdim=True` keeps the totals as a [4, 1] column, which stretches across each row. `/` on integers gives floats, so the counts can stay int64."
+  example: |
+    Trace it on a small table, `N = [[1, 3], [1, 7]]`:
+
+    - Row totals: `[4, 8]`. Kept as a column, the shape is `[2, 1]`.
+    - Row 0 is divided by `4`: `[0.25, 0.75]`.
+    - Row 1 is divided by `8`: `[0.125, 0.875]`.
+    - Row sums: `[1.0, 1.0]`.
+
+    Now the bug. If the totals stay flat, shape `[2]`, the `4` and the `8` get matched to the columns instead: `[[0.25, 0.375], [0.25, 0.875]]`. No error appears, but the row sums come out `[0.625, 1.125]`, not 1.
   skeleton: |
     return N / N.____(___, keepdim=____)
   solution: |

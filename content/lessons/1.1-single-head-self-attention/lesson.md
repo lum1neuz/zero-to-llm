@@ -198,8 +198,41 @@ alternatives:
   - causal_weights/alternatives/where.py
   - causal_weights/alternatives/big_negative.py
 hints:
+  logic: |
+    scores = every query against every key   (a T × T grid)
+      → divide by √d
+    tril = T × T grid, 1 on and below the diagonal, 0 above
+    for each cell of the score grid:
+      tril says 0?   (that token would peek ahead)
+        yes → overwrite with a score softmax turns into 0
+        no  → keep the score
+    masked → softmax along each row   (weights sum to 1)
+      → return wei
+  tools: |
+    score every query against every key
+      a @ b               matrix multiply
+      t.transpose(i, j)   swaps axes i and j of t
+      x ** p              x to the power p (a root is a power)
+    grid of ones, keep the lower triangle
+      torch.ones(n, n)    n × n grid of ones
+      torch.tril(t)       zeroes everything above the diagonal
+    overwrite where the grid says 0
+      t == x              True wherever t equals x
+      t.masked_fill(m, v) puts v wherever mask m is True
+    softmax along each row
+      t.softmax(dim)      weights that sum to 1 along dim
   nudge: Three moves, score, hide, normalise. Which score does softmax turn into exactly zero weight?
   concept: "Row t of the score grid is query t dotted with every key, so k's last two dimensions have to swap before the `@`. Divide by √d to keep the scores near ±1. `torch.tril` of a grid of ones is 1 on and below the diagonal, the cells a token may see. Fill the rest with a score softmax turns into 0, then softmax along each row."
+  example: |
+    Trace it on three tokens with `d = 4`, so √`d` = 2:
+
+    - `q = [[1,0,1,0], [0,2,0,0], [1,1,0,0]]` and `k = [[2,0,0,0], [0,1,0,1], [1,0,1,0]]`.
+    - Raw scores, `q` against every `k`: `[[2,0,2], [0,2,0], [2,1,1]]`. Divided by 2: `scores = [[1,0,1], [0,1,0], [1,0.5,0.5]]`.
+    - `tril` is `[[1,0,0], [1,1,0], [1,1,1]]`.
+    - `masked` is `[[1,×,×], [0,1,×], [1,0.5,0.5]]`, where × is the score softmax turns into exactly 0.
+    - `wei` is about `[[1,0,0], [0.269,0.731,0], [0.452,0.274,0.274]]`.
+
+    Check: row 0 puts everything on token 0, every future cell is exactly 0, and every row sums to 1.
   skeleton: |
     scores = q @ k.__________(-2, -1) / d ** ___
     tril = torch.____(torch.ones(T, T))
@@ -251,8 +284,32 @@ alternatives:
   - head/alternatives/positional_bias.py
   - head/alternatives/matmul.py
 hints:
+  logic: |
+    when the head is built:
+      key, query, value = three learned layers
+        each: n_embd features → head_size, no bias
+    when x comes in:
+      run x through each layer → k, q, v
+      wei = causal_weights(q, k)
+      mix the values (not x, k or q) by the weights
+        → return the mix
+  tools: |
+    three learned layers
+      nn.Linear(n_in, n_out, bias=b)   a learned linear map
+    run x through each layer
+      layer(x)            applies the layer to x
+    mix the values by the weights
+      a @ b               matrix multiply
   nudge: Key, query and value are each a learned map from n_embd numbers to head_size numbers. Which layer is a learned linear map? Then which of the three do the weights mix?
   concept: "`nn.Linear(n_embd, head_size, bias=False)` stores a [head_size, n_embd] weight. Call each layer on x to get k, q and v, each [B, T, head_size]. The keys and queries decide the weights; the weights then take a mix of the *values*."
+  example: |
+    Trace the shapes with the script's numbers, `n_embd = 32`, `head_size = 16`, and `x` of shape `[4, 8, 32]` (4 sequences, 8 tokens):
+
+    - `k`, `q` and `v` are each `[4, 8, 16]`: every token went from 32 features to 16.
+    - `wei` is `[4, 8, 8]`: for each sequence, how much each token listens to each other token.
+    - `wei` times `v`: `[4, 8, 8]` times `[4, 8, 16]` gives `[4, 8, 16]`.
+
+    Check: the script prints `out (4, 8, 16)`. A sequence and a token position in, a `head_size` vector out.
   skeleton: |
     self.key = nn.______(n_embd, _________, bias=_____)
     self.query = nn.______(n_embd, _________, bias=_____)

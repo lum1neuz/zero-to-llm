@@ -209,8 +209,37 @@ alternatives:
   - nf4_memory/alternatives/if_else.py
   - nf4_memory/alternatives/bits_first.py
 hints:
+  logic: |
+    scale_bits = absmax overhead per weight, in bits
+    double_quant on?
+      no  → one fp32 absmax (32 bits) per BLOCK weights
+              → scale_bits = 32 ÷ BLOCK
+      yes → an 8-bit absmax per BLOCK weights
+            + one fp32 constant per BLOCK × DQ_BLOCK weights
+              → scale_bits = the two shares added
+    quantized weight = 4 bits + scale_bits   → ÷ 8 for bytes
+    bf16 weight = 2 bytes
+    total_bytes = n_quant × its bytes + n_bf16 × its bytes
+      → return total_bytes ÷ 1e9
+  tools: |
+    absmax overhead per weight
+      plain arithmetic: / +    spread a cost over n weights
+      a if cond else b         picks one of two values
+    bytes for the quantized weights
+      plain arithmetic: + * /  bits to bytes, count × size
+    bf16 weights and the total
+      plain arithmetic: * +    count × 2 bytes, then add
   nudge: Every NF4 weight pays 4 bits for itself plus its share of the block's scale. Spread each scale over the weights that share it.
   concept: "Without double quantization each block of 64 weights has one fp32 absmax, 32 / 64 = 0.5 bits per weight. With it, the absmax is stored in 8 bits (8 / 64) and every 256 absmaxes share one fp32 constant (32 / (64 × 256)). A quantized weight costs (4 + scale_bits) / 8 bytes, a bf16 weight 2 bytes."
+  example: |
+    Trace it on one full double-quant group: `BLOCK * DQ_BLOCK = 16384` weights, 256 blocks of 64.
+
+    - No double quant: 16384 weights × (4 + 0.5) bits = 73728 bits = `9216` bytes.
+    - Double quant: the 256 absmaxes cost 256 × 8 = 2048 bits, plus one fp32 constant, 32 bits. Weights themselves: 16384 × 4 = 65536 bits. Total 67616 bits = `8452` bytes.
+    - Per weight that's 4.5 bits without, and ≈ `4.127` bits with.
+    - 16384 bf16 weights: 16384 × 2 = `32768` bytes.
+
+    Check: for 1 billion weights the tests expect `0.5625` GB without double quant, ≈ `0.5159` GB with it, and `2.0` GB for bf16.
   skeleton: |
     scale_bits = ___ / BLOCK + ___ / (BLOCK * DQ_BLOCK) if double_quant else ___ / BLOCK
     total_bytes = n_quant * (___ + scale_bits) / ___ + n_bf16 * ___
@@ -251,8 +280,39 @@ alternatives:
   - lora_budget/alternatives/loop.py
   - lora_budget/alternatives/spelled_out.py
 hints:
+  logic: |
+    lora_params:
+      for each (in, out) Linear layer in shapes:
+        A holds r × in numbers, B holds out × r numbers
+          → add them
+      sum over the layers in a block → times layers
+    adapter_gb:
+      each trainable number keeps weight, gradient, Adam m, Adam v
+        → 4 fp32 values = 16 bytes
+      → count × bytes each ÷ 1e9 → return GB
+    logits_gb:
+      one fp32 (4 bytes) per vocab entry, for every token
+      tokens = seq × batch → return GB
+  tools: |
+    A and B sizes for every layer
+      sum(expr for i, o in seq)   adds one value per pair
+      plain arithmetic: * +       sizes of A and B, times layers
+    optimizer state in GB
+      plain arithmetic: * /       bytes per number, bytes to GB
+    logits in GB
+      plain arithmetic: * /       numbers × 4 bytes, bytes to GB
   nudge: "Three counts: the numbers in A and B across every adapted layer, the bytes training keeps per trainable number, and the size of the logits."
   concept: "Per adapted Linear, A has r × in numbers and B has out × r, so r × (in + out), times every block. Each trainable number keeps four fp32 values while training: the weight, its gradient, and Adam's m and v, 16 bytes. The logits are one fp32 number per vocabulary entry for every token in the batch."
+  example: |
+    Trace the small case the tests use: `shapes = [(4, 6), (6, 3)]`, `r = 2`, `layers = 3`.
+
+    - Layer `(4, 6)`: A is 2 × 4 = 8, B is 6 × 2 = 12. Together `20`.
+    - Layer `(6, 3)`: A is 2 × 6 = 12, B is 3 × 2 = 6. Together `18`.
+    - One block: 20 + 18 = 38. Three blocks: `114`.
+    - `adapter_gb(10**9)`: a billion numbers × 16 bytes = `16.0` GB.
+    - `logits_gb(1000, 50_000, batch=3)`: 1000 × 50,000 × 3 = 150 million numbers × 4 bytes = 600 million bytes = `0.6` GB.
+
+    Mind the traps: in × out (126) is the full weight matrix, not A plus B, and 38 is a single block.
   skeleton: |
     return ______ * sum(r * (___ + ___) for i, o in shapes)
     return n_trainable * ___ / 1e9

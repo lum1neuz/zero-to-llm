@@ -252,8 +252,31 @@ alternatives:
   - top_k/alternatives/sort.py
   - top_k/alternatives/where.py
 hints:
+  logic: |
+    find the k largest logits
+      → kth = the smallest of those   (the cutoff)
+    for each logit in the row:
+      below kth?
+        yes → replace it with -inf   (softmax gives it 0)
+        no  → keep it
+    return the row, still one logit per token
+  tools: |
+    find the cutoff
+      t.topk(n)          the n largest values and their positions
+      .values            just the values, sorted largest first
+      t[-1]              the last item of t
+    cut what is below it
+      t < x              True where a value is below x
+      t.masked_fill(mask, v)   replaces where mask is True
   nudge: Which single number decides the cut? Every logit at or above it stays, and every one below it goes.
   concept: "`logits.topk(k)` returns the k largest as `(values, indices)`, sorted from the top, so the cutoff is the last of the values. Then `masked_fill(mask, value)` replaces every position where `mask` is True. Use `-inf`, because softmax turns it into exactly 0."
+  example: |
+    Trace it on a tiny row, `logits = [0.5, 3.0, -1.0, 2.0, 1.0]` with `k = 2`:
+
+    - The two largest values are `3.0` and `2.0`. The smaller of them is the cutoff, so `kth = 2.0`.
+    - Below the cutoff: `0.5`, `-1.0` and `1.0` (positions 0, 2 and 4). The value `2.0` itself is not below it, so it stays.
+    - After the cut: `[-inf, 3.0, -inf, 2.0, -inf]`. Still 5 entries, one per token.
+    - Softmax of that: `[0, 0.731, 0, 0.269, 0]`. The cut tokens get exactly 0.
   skeleton: |
     kth = logits.____(k).______[___]
     return logits.masked_fill(logits ___ kth, float("____"))
@@ -292,8 +315,33 @@ alternatives:
   - top_p/alternatives/shifted.py
   - top_p/alternatives/torch_cumsum.py
 hints:
+  logic: |
+    sorted_probs = probabilities, largest first
+      → cum = running total of sorted_probs
+    for each token, in sorted order:
+      the mass above it already reaches p?
+        yes → cut it
+        no  → keep it   (the token that crosses p stays)
+    put the cut flags back in vocabulary order
+      → cut logits become -inf → return
+  tools: |
+    running total of the sorted probabilities
+      t.cumsum(dim)      running total along dim
+    mass above each token, then the cut test
+      plain arithmetic and a comparison against p
   nudge: Walk down the sorted list with a running total. For each token, look at the total of the tokens *above* it. When is that token no longer needed?
   concept: "`cumsum` gives the running total, including each token itself. Subtract the token's own probability and you get the mass of everything ranked above it. If that already reaches p, the token is cut. The token that crosses p is kept, so the most likely token always survives."
+  example: |
+    Trace it on `logits = [1.0, 3.0, 0.0, 2.0]` with `p = 0.8`:
+
+    - Probabilities: `[0.087, 0.644, 0.032, 0.237]`.
+    - Sorted: `[0.644, 0.237, 0.087, 0.032]`, from tokens `[1, 3, 0, 2]`.
+    - `cum`: `[0.644, 0.881, 0.968, 1.0]`.
+    - Mass above each token (`cum` minus its own): `[0, 0.644, 0.881, 0.968]`.
+    - Cut where the mass above already reaches 0.8: `[False, False, True, True]`. Token 3 is the one that pushes the total past 0.8, and it is kept.
+    - Back in vocabulary order: tokens 0 and 2 are cut. The result is `[-inf, 3.0, -inf, 2.0]`.
+
+    With `p = 0.6` the second token's mass above (0.644) already covers it, so only token 1 survives.
   skeleton: |
     cum = sorted_probs.______(dim=-1)
     cut_sorted = cum - ____________ __ p
@@ -331,8 +379,32 @@ alternatives:
   - distinct/alternatives/comprehension.py
   - distinct/alternatives/set_first.py
 hints:
+  logic: |
+    pairs = each id together with the id right after it
+      (n ids give n − 1 pairs)
+    count how many of those pairs are different from each other
+      → return different pairs ÷ all pairs
+    all different → 1.0, more repeats → closer to 0
+  tools: |
+    pair each id with the next one
+      zip(a, b)          pairs up items of a and b, as tuples
+      x[n:]              everything from index n on
+      list(it)           collects an iterator into a list
+    count the different pairs
+      set(items)         one copy of each distinct item
+      len(c)             how many items in c
+    divide
+      plain arithmetic: /
   nudge: How many neighbouring pairs does a list of n ids have? And how do you count the different ones?
   concept: "`zip(ids, ids[1:])` pairs each id with the next one, as tuples. A `set` keeps one copy of each distinct pair. distinct-2 is the number of distinct pairs divided by the number of pairs, n − 1."
+  example: |
+    Trace it on `ids = [4, 4, 7, 4, 4, 7, 9]`:
+
+    - Pairs: `(4, 4)`, `(4, 7)`, `(7, 4)`, `(4, 4)`, `(4, 7)`, `(7, 9)`. That's 6 pairs from 7 ids.
+    - Different ones: `(4, 4)`, `(4, 7)`, `(7, 4)`, `(7, 9)`. That's 4.
+    - Result: 4 / 6 ≈ `0.667`.
+
+    Check it on `[1, 2, 3, 4]`: 3 pairs, all different, so the score is `1.0`.
   skeleton: |
     pairs = list(___(ids, ids[__:]))
     return len(___(pairs)) / len(_____)

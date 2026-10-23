@@ -126,6 +126,12 @@ describe("Build challenges", () => {
     expectError((f) => sub(f, L31, "    q = torch.round(w / scale).clamp(-127, 127).to(torch.int8)\non_solve", "on_solve"), /neither in the setup nor in hints\.solution/));
   test("the setup must end on a stub with ... placeholders", () =>
     expectError((f) => { f["lessons/3.1-int8-absmax/dequantize/stub.py"] = "\ndef dequantize(q, scale):\n    return q\n"; }, /\.\.\. placeholders/));
+  test("prose maths still counts as quoting an answer line", () =>
+    expectError((f) => sub(f, L31, "    for each weight in the row:", "    scale = w.abs().max() ÷ 127\n    for each weight in the row:"), /hints\.logic gives away/));
+  test("logic and example never quote a whole answer line", () => {
+    expectError((f) => sub(f, L31, "    for each weight in the row:", "    scale = w.abs().max() / 127\n    for each weight in the row:"), /hints\.logic gives away the answer line "scale = w\.abs\(\)\.max\(\) \/ 127"/);
+    expectError((f) => sub(f, L31, "    - As floats:", "    - Then `return q.float() * scale`.\n    - As floats:"), /hints\.example gives away the answer line "return q\.float\(\) \* scale"/);
+  });
   test("the skeleton needs ____ blanks", () => expectError((f) => sub(f, L31, "return q.____() * _____", "return q.float() * scale"), /skeleton needs ____ blanks/));
   test("hint solution must match the reference file", () => expectError((f) => sub(f, L31, "    return q.float() * scale\non_solve", "    return scale * q.float()\non_solve"), /isn't in dequantize\/solution\.py/));
   test("referenced files must exist", () => expectError((f) => { delete f["lessons/3.1-int8-absmax/quantize_absmax/tests.py"]; }, /file quantize_absmax\/tests\.py not found/));

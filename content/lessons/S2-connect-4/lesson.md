@@ -194,8 +194,44 @@ alternatives:
   - win_detection/alternatives/three_steps.py
   - win_detection/alternatives/any_direction.py
 hints:
+  logic: |
+    run_length(row, col, dr, dc):
+      player = who sits at (row, col)
+      count = 0, then step once away along (dr, dc)
+      while this cell is on the board AND holds player:
+        count = count + 1 → step once more
+      (stops at an edge or at any other cell)
+      return count   (the piece itself is not counted)
+
+    is_win(row, col):
+      for each direction: across, down, two diagonals:
+        1 + run one way + run the opposite way is 4 or more?
+          yes → return True
+      none reached 4 → return False
+  tools: |
+    read who sits at the piece
+      board[r][c]          the cell at row r, column c
+    walk away while it matches
+      while cond:          repeat as long as cond holds
+      0 <= x < n           x is inside 0 ... n-1
+      ROWS, COLS           the board's size
+    count and step
+      plain arithmetic: + and +=
+    the opposite direction
+      plain arithmetic: - flips a number's sign
+    each of the four directions
+      for a, b in pairs    unpacks two numbers per direction
+      return True / False  leave early with an answer
   nudge: Any new four has to run through the piece that was just dropped. From that piece, which ways can a line go, and where does each walk have to stop?
   concept: "run_length walks from (row, col) one step of (dr, dc) at a time, counting cells that hold the same player, and stops at the first cell that's off the board or isn't theirs. Check both edges: `board[r][-1]` quietly reads the last column instead of failing. is_win adds the runs on both sides of the new piece, plus 1 for the piece itself, for each of the four directions, and wins at 4 or more."
+  example: |
+    Trace the starter board. Row 5 is the bottom row; X holds columns 0, 1 and 3, O sits on top of each, and X just dropped into column 2, so the piece is at `(5, 2)`:
+
+    - Direction `(0, 1)`, to the right: `(5, 3)` is X, so the count is 1. `(5, 4)` is empty, stop. `run_length` gives `1`.
+    - Opposite direction `(0, -1)`, to the left: `(5, 1)` and `(5, 0)` are X, then column −1 is off the board, stop. `run_length` gives `2`.
+    - Total: 2 + 1 + 1 for the new piece = `4`, so `is_win` returns `True`.
+
+    The other directions give less: going up, `(4, 2)` is empty, so the run is 0 and the total is just 1.
   skeleton: |
     # run_length
     player = board[row][col]
@@ -263,8 +299,48 @@ alternatives:
   - fast_rollouts/alternatives/undo_any_order.py
   - fast_rollouts/alternatives/copy_rows.py
 hints:
+  logic: |
+    undo(col):
+      look down column col, from the top row
+      first cell that isn't empty?
+        → set it back to empty → stop
+
+    rollout:
+      played = empty list, p = player, result = 0
+      while nobody has won AND some column is open:
+        pick a random open column → drop p's piece there
+        add the column to played
+        that piece made four?
+          yes → result = 1 if the starting player made it, else -1
+        hand the turn to the other side
+      undo each column in played, newest first
+      → hand back result   (1 win, -1 loss, 0 draw)
+  tools: |
+    undo: find the top piece
+      range(n)             0, 1, ... n-1
+      board[r][c]          read or set one cell
+      return               leave the function early
+    pick and drop a random move
+      legal_moves(board)   the open columns
+      rng.choice(lst)      a random item of lst
+      drop(board, c, p)    puts p's piece in c, returns its row
+      lst.append(x)        adds x at the end
+    did it win?
+      is_win(board, r, c)  did the piece at r, c make four?
+      a if cond else b     picks a or b
+    take everything back
+      reversed(lst)        lst from last item to first
+      undo(board, c)       takes the top piece out of c
   nudge: drop puts a piece in the lowest empty cell of a column. Which piece should undo take out? For rollout, keep a list of every column you play, so you can take them all back at the end.
   concept: "undo scans column col from the top (row 0) down and clears the first piece it meets. rollout drops random legal moves, remembers each column in `played`, checks is_win only at the new piece, and stops at a win or a full board. Then it undoes `played` newest first and returns the result for the player who started: 1 if they made the winning move, −1 if the other side did, 0 for a draw."
+  example: |
+    Trace a short rollout from an empty board with `player = 1` (X). Say the random picks are columns `0, 1, 0, 1, 0, 1, 0`:
+
+    - X drops into column 0 and lands in row 5. O goes in column 1, row 5. X column 0, row 4. O column 1, row 4. X column 0, row 3. O column 1, row 3.
+    - X's 4th piece in column 0 lands in row 2, and `is_win` finds four in a column. `p` is X, the player who started, so `result = 1`.
+    - `played` is `[0, 1, 0, 1, 0, 1, 0]`. Undo it in reverse: column 0, then 1, then 0, and so on. Each `undo` clears the topmost piece, so the board ends up empty.
+
+    If it were O who made the four, the same rollout would return `-1`. A rollout that fills the board with no four returns `0`.
   skeleton: |
     # undo
     for row in range(______):
@@ -338,8 +414,43 @@ alternatives:
   - self_play_data/alternatives/loops.py
   - self_play_data/alternatives/deepcopy.py
 hints:
+  logic: |
+    snapshot(board, player):
+      build NEW rows, each cell turned to the mover's view
+        (X keeps its signs, O's view flips them)
+      → return the copy
+
+    to_examples(history, result):
+      for each (state, player, pi) in history:
+        z = the game's result, seen from that player's side
+          (+1 the mover won, -1 lost, 0 draw)
+        → make (state, pi, z)
+      → return the list, same order as history
+  tools: |
+    copy the board in the mover's view
+      [f(x) for x in row]   builds a new list from row
+      [... for row in rows] one new row per old row
+      plain arithmetic: * multiplies, so -1 flips a sign
+    one example per move
+      for a, b, c in lst   unpacks three items per entry
+      (a, b, c)            a tuple of three items
+      plain arithmetic: *
   nudge: The net always sees the board from the side of the player to move. How do you turn the board into O's view? And when X wins, what did the game mean for the positions where O was to move?
   concept: "Multiplying every cell by the player gives the mover's view: for X (1) the board stays as it is, for O (−1) every piece flips sign. Building new rows with a comprehension makes it a real copy at the same time. The label uses the same trick: `result * player` is +1 where the mover went on to win, −1 where they lost, and 0 in a draw."
+  example: |
+    Trace `snapshot` on a row `[0, 1, -1]`:
+
+    - `player = 1`: the row stays `[0, 1, -1]`.
+    - `player = -1`: every cell flips sign, so the row becomes `[0, -1, 1]`. O's pieces now look like 1.
+    - Change the live board afterwards: the snapshot must not change.
+
+    Now `to_examples` on a 3-move history, `players = [1, -1, 1]`:
+
+    - `result = 1` (X won): the labels are `z = [1, -1, 1]`.
+    - `result = -1` (O won): `z = [-1, 1, -1]`.
+    - `result = 0` (draw): `z = [0, 0, 0]`.
+
+    Each tuple keeps its `state` and `pi` and drops the `player`. The order is `(state, pi, z)`.
   skeleton: |
     # snapshot
     return [[cell * ______ for cell in row] for row in ______]
@@ -385,8 +496,39 @@ alternatives:
   - minimax/alternatives/if_else.py
   - minimax/alternatives/try_finally.py
 hints:
+  logic: |
+    for each open column col:
+      drop player's piece into col → keep the row
+      did that piece complete four?
+        yes → score = 1000 + depth   (sooner win, higher)
+        no  → ask the opponent's best score, one level
+              shallower (the opponent moves next)
+              → flip its sign   (it's their view)
+              → that is score
+      take the piece back out of col
+      (the stub keeps the best score and column)
+  tools: |
+    try the piece
+      drop(board, c, p)    puts p's piece in c, returns its row
+      is_win(board, r, c)  did the piece at r, c make four?
+    score it
+      a if cond else b     picks a or b
+      negamax(board, d, p) (score, column) for p to move, d deep
+      plain arithmetic: - flips a number's sign
+    take it back
+      undo(board, c)       takes the top piece out of c
   nudge: For each column, try it, score it, take it back. When the move doesn't win on the spot, its score comes from the opponent's best reply. Whose view is that score from?
   concept: "Drop the piece and keep its row. If is_win says it completed a four, the move scores 1000 + depth (more depth left means a sooner win). Otherwise call `negamax(board, depth - 1, -player)`, the opponent to move one level shallower. Its score is from the opponent's view, so negate it. Then undo the piece before the loop tries the next column."
+  example: |
+    Trace the starter position. X has the bottom row at columns 2, 3 and 4, and O has columns 1 and 3 (one piece each, O's second on top of column 3).
+
+    - X to move, `depth = 1`: dropping in column 5 completes a four, so `score = 1000 + 1 = 1001`. `negamax` returns `(1001, 5)`.
+    - O to move, `depth = 2`. Each column is dropped, scored, and undone:
+      - Column 5 blocks X. It doesn't win, so X's best reply at `depth = 1` is scored by the heuristic as 5. Flipped: `-5`.
+      - Every other column leaves column 5 open, so X's best reply is the win, 1001. Flipped: `-1001`.
+    - The best of those is `-5`, so `negamax` returns `(-5, 5)`: O plays column 5.
+
+    Check your own run: after `negamax` returns, the board should look exactly as before.
   skeleton: |
     row = drop(board, col, ______)
     score = 1000 + depth if is_win(board, row, col) else ___negamax(board, depth - ___, ______)[0]

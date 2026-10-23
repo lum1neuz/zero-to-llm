@@ -283,8 +283,33 @@ alternatives:
   - fertility/alternatives/loop.py
   - fertility/alternatives/one_line.py
 hints:
+  logic: |
+    split text into words → ws
+    for each word in ws:
+      encode it with vocab → count the tokens it makes
+    add the counts → n_tokens
+      → return n_tokens ÷ number of words
+  tools: |
+    split text into words
+      words(text)                  the helper in the file
+    tokens per word
+      encode(w, vocab)             list of tokens for one word
+      len(x)                       how many items are in x
+    add up over all words
+      sum(expr for w in seq)       adds one value per word
+    tokens per word, overall
+      plain arithmetic: /
   nudge: Three numbers in a row. The words, the tokens all those words turn into, and one divided by the other. Which goes on top?
   concept: "`words(text)` gives the list of words, split the same way the corpus is. `encode(w, vocab)` gives the list of tokens for one word, so its `len` is that word's token count. Add those up over every word, then divide by the number of words. Use the `vocab` you're given, so the same function measures any tokenizer."
+  example: |
+    Trace it on `text = "Цай, байна."` with `BASE_VOCAB`:
+
+    - `words(text)` lowercases and drops punctuation: `["цай", "байна"]`. Two words.
+    - `encode("цай", BASE_VOCAB)` is `["ц", "ай"]`, 2 tokens.
+    - `encode("байна", BASE_VOCAB)` is `["ба", "й", "на"]`, 3 tokens.
+    - `n_tokens` = 2 + 3 = 5. Fertility = 5 / 2 = `2.5`.
+
+    Now add `"байна"` to the vocab. It encodes as a single piece, so `n_tokens` = 2 + 1 = 3 and fertility drops to `1.5`. Same function, different `vocab`.
   skeleton: |
     ws = _____(text)
     n_tokens = sum(len(______(w, _____)) for w in ws)
@@ -340,8 +365,42 @@ alternatives:
   - pick_new_tokens/alternatives/tie_break.py
   - pick_new_tokens/alternatives/no_filter.py
 hints:
+  logic: |
+    for each token t in counts:
+      already in base_vocab?
+        yes → skip it
+        no  → it's a candidate
+    for each candidate:
+      pieces = how many tokens base_vocab splits it into
+      saved = counts[t] × (pieces − 1)   (it costs 1 once added)
+    sort the candidates by saved, biggest first
+      → return the first k
+  tools: |
+    keep tokens the base vocab lacks
+      x not in coll                membership test
+      [t for t in d if cond]       list filtered while it is built
+    base pieces per candidate
+      encode(t, vocab)             list of tokens for t
+      len(x)                       how many items are in x
+    saved per candidate
+      {k: expr for k in seq}       dict, one entry per key
+      plain arithmetic: * -        uses × (pieces − 1)
+    best k first
+      sorted(seq, key=fn, reverse=flag)   a new sorted list
+      d.get                        looks up a key in dict d
+      seq[:n]                      the first n items
   nudge: Three steps. Throw out what the base already has, give everything left a score, keep the best k. What should the score measure?
   concept: "A candidate `t` that the base vocab encodes as `len(encode(t, base_vocab))` pieces costs 1 token once it's added, so each use saves that many minus 1. Multiply by `counts[t]`, how often it appears. Then `sorted(saved, key=saved.get, reverse=True)` lists the tokens from the biggest saver down, and `[:k]` keeps the first k."
+  example: |
+    Take `counts = {"байна": 3, "ай": 4, "сургууль": 1, "цай": 2}` and `base_vocab = BASE_VOCAB`.
+
+    - `"ай"` is already in the base vocab, so it is dropped. That's the most frequent token, but it saves nothing.
+    - `"байна"` encodes as 3 pieces: saves 2 per use × 3 uses = `6`.
+    - `"сургууль"` encodes as 6 pieces: saves 5 per use × 1 use = `5`.
+    - `"цай"` encodes as 2 pieces: saves 1 per use × 2 uses = `2`.
+    - Ranked: `["байна", "сургууль", "цай"]`. With `k = 2` you return `["байна", "сургууль"]`.
+
+    Check: sorting by `counts` alone would put `"ай"` first, which is why the saving matters.
   skeleton: |
     candidates = [t for t in counts if t not in __________]
     saved = {t: counts[t] * (len(encode(t, __________)) - _) for t in candidates}

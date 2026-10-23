@@ -236,8 +236,38 @@ alternatives:
   - local_grads/alternatives/exp_form.py
   - local_grads/alternatives/out_data.py
 hints:
+  logic: |
+    multiplication, out = self × other:
+      d_self  = the other input's number
+      d_other = self's number
+      (each gets multiplied by out.grad for you)
+    tanh:
+      t = tanh of self's number
+        → local slope = 1 − t²   (reuse t, not the input)
+        → multiplied by out.grad for you
+  tools: |
+    read the numbers
+      v.data            the plain number stored in a Value v
+    tanh of a number
+      math.tanh(x)      tanh of a plain number
+    the tanh slope
+      plain arithmetic: - and ** (power)
   nudge: "For a product, nudge one input and watch the output. For tanh, the derivative is neatest when you write it with tanh's own output."
   concept: "If out = a·b, a tiny change h in a changes out by b·h, so d(out)/da = b and d(out)/db = a. For tanh, d/dx tanh(x) = 1 − tanh(x)², and you already have tanh(x) in t. `math.tanh` computes the forward pass."
+  example: |
+    Multiplication, with `self.data = 3.0`, `other.data = -2.0`, and `out.grad = 0.5` arriving from above:
+
+    - `out.data` is `3.0 * -2.0 = -6.0`.
+    - `d_self` is `-2.0` (the other input) and `d_other` is `3.0`.
+    - `self.grad` gets `-2.0 * 0.5 = -1.0`. `other.grad` gets `3.0 * 0.5 = 1.5`.
+
+    tanh, with `self.data = 0.5` and `out.grad = 1.0`:
+
+    - `t` is about `0.4621`.
+    - The local derivative is `1 - 0.4621² ≈ 0.7864`.
+    - `self.grad` gets `0.7864 * 1.0 = 0.7864`.
+
+    Sanity check: at `self.data = 0.0`, `t` is `0.0` and the slope is exactly `1`. Far from zero, tanh flattens out and the slope shrinks toward `0`.
   skeleton: |
     d_self = _____.data
     d_other = ____.data
@@ -282,8 +312,39 @@ alternatives:
   - topo_backward/alternatives/iterative.py
   - topo_backward/alternatives/visited_list.py
 hints:
+  logic: |
+    visited = empty set, order = empty list
+    visit(v):
+      v already in visited?
+        yes → do nothing
+        no  → add v to visited
+              → visit each child of v
+              → only then add v to the end of order
+    visit(root)
+      → return order
+  tools: |
+    remember what was visited
+      set()             an empty set
+      s.add(x)          put x in s
+      x in s            is x already in s?
+    the inputs of a Value
+      v._prev           the Values that v was built from
+    go through them, then list v last
+      for c in items:   loop over a collection
+      lst.append(x)     add x to the end of lst
+    a helper that calls itself
+      def visit(x):     a function may call itself
   nudge: "A depth-first search does it: before a Value joins the list, everything it was built from has to be in the list already. And one Value can be reached along more than one path."
   concept: "Write a helper that visits a Value: if it hasn't been seen, mark it seen, visit each of its `_prev` children, and *then* append it. Appending after the children puts every Value after its inputs. The seen-set stops a reused Value from being listed twice."
+  example: |
+    Trace it on `a = 2.0`, `b = 3.0`, `c = a * b`, `d = c + a`. Here `a` is used twice:
+
+    - Start at `d`. Its children are `c` and `a`.
+    - Say it visits `c` first: its children are `a` and `b`. Both have no children, so `a` then `b` are appended. Then `c` is appended.
+    - Back in `d`: `a` is already visited, so it's skipped. Then `d` is appended.
+    - `order` ends as `[a, b, c, d]`. The two children can come out in either order, but `d` is last and `c` comes after both `a` and `b`.
+
+    Why it matters: `backward()` walks that list reversed. `d` pushes 1 into `c` and `a`. Then `c` pushes `b.data = 3.0` more into `a`, so `a.grad = 1 + 3 = 4`, and `b.grad = 2`. If `c` ran before `d`, its `grad` would still be 0 and `a.grad` would stay 1.
   skeleton: |
     visited = ___()
 
@@ -331,8 +392,36 @@ solution: more_ops/solution.py
 alternatives:
   - more_ops/alternatives/math_exp.py
 hints:
+  logic: |
+    power, out = x raised to k   (x is self's number):
+      local slope = k × x raised to (k − 1)
+    exp, out = e raised to x:
+      local slope = out's own number   (e**x is its own slope)
+    both:
+      slope × out.grad is added to self.grad   (already written)
+  tools: |
+    slope of the power op
+      v.data            the plain number stored in a Value v
+      plain arithmetic: * - and ** (power)
+    slope of the exp op
+      out.data          the number this op already computed
   nudge: "The power rule for x**k, and e**x, which is its own slope."
   concept: "d/dx x**k = k·x**(k − 1), for any constant k, including −1 and 0.5. d/dx e**x = e**x, and `out.data` already holds e**x, so you don't need to compute it again."
+  example: |
+    Power, with `self.data = 2.0`, `k = 3`:
+
+    - `out.data` is `2.0**3 = 8.0`.
+    - The local derivative is `3 * 2.0**2 = 12.0`.
+
+    Power with `self.data = 4.0`, `k = -1` (this is how division by 4 works):
+
+    - `out.data` is `0.25`.
+    - The local derivative is `-1 * 4.0**-2 = -0.0625`. Bigger `x` means smaller `1/x`, so the sign is negative.
+
+    Exp, with `self.data = 1.0`:
+
+    - `out.data` is `e ≈ 2.7183`, and the local derivative is the same `2.7183`.
+    - At `self.data = 0.0` both are exactly `1.0`.
   skeleton: |
     d_pow = _ * self.data**(_ - 1)
     d_exp = ___.____

@@ -201,8 +201,36 @@ alternatives:
   - subblocks/alternatives/no_clamp.py
   - subblocks/alternatives/sub_method.py
 hints:
+  logic: |
+    for each sub-block (lo = lowest, hi = highest):
+      scale = the gap from lo to hi, cut into 15 equal steps
+      for each weight:
+        count how many steps it sits above lo → round to a whole number
+        outside 0…15?
+          yes → pull it back to the edge
+          no  → keep it
+      store the codes in one unsigned byte each
+    return codes, scale, lo
+  tools: |
+    step size from the range
+      plain arithmetic: - /
+    count the steps above lo
+      plain arithmetic: - /
+      torch.round(t)   nearest whole number
+    keep the codes in range
+      t.clamp(lo, hi)  squeezes values into [lo, hi]
+    store in one unsigned byte
+      t.to(dtype)      converts; torch.uint8 is 1 unsigned byte
   nudge: "Code 0 should decode to lo and code 15 to hi. How big does each step have to be, and how do you count steps up from lo?"
   concept: "16 codes means 15 steps between lo and hi, so `scale = (hi - lo) / 15`. A weight's code is how many steps it sits above lo: subtract lo, divide by scale, round to the nearest whole number, keep it in 0…15, and store it in one unsigned byte, `torch.uint8`."
+  example: |
+    Trace it on two sub-blocks of 4 weights (the real ones have 32), `wb = [[-0.10, 0.045, 0.20, 0.00], [0.30, 0.50, 0.38, 0.35]]`:
+
+    - `lo = [[-0.10], [0.30]]`, `hi = [[0.20], [0.50]]`.
+    - `scale = [[0.02], [0.01333]]`, since 0.30 / 15 and 0.20 / 15.
+    - Steps above `lo`: `[[0, 7.25, 15, 5], [0, 15, 6, 3.75]]`.
+    - Rounded: `q = [[0, 7, 15, 5], [0, 15, 6, 4]]`. The lowest weight of each block is code 0 and the highest is code 15.
+    - The way back, `q * scale + lo`: `[[-0.10, 0.04, 0.20, 0.00], [0.30, 0.50, 0.38, 0.3533]]`. Each is within half a step of `wb`.
   skeleton: |
     scale = (__ - __) / __
     q = torch.round((wb - __) / _____).clamp(_, __).to(torch._____)
@@ -241,8 +269,35 @@ alternatives:
   - superblock/alternatives/amax.py
   - superblock/alternatives/no_clamp.py
 hints:
+  logic: |
+    find the largest value in v   (all positive)
+      → d = that value ÷ 63   (one for all the values)
+    for each value:
+      value ÷ d → round to a whole number
+      outside 0…63?
+        yes → pull it back to the edge
+        no  → keep it
+    store the whole numbers in one byte each
+      → return them and d
+  tools: |
+    find the largest value
+      t.max()          the biggest value in t
+    one super-scale
+      plain arithmetic: /
+    whole numbers of d
+      t / x            divides every value by x
+      torch.round(t)   nearest whole number
+    keep them in range
+      t.clamp(lo, hi)  squeezes values into [lo, hi]
   nudge: "It's 3.1's absmax again, on 8 positive numbers instead of weights. Which number lands on the top of a 6-bit range, and what is that top?"
   concept: "6 bits hold 0…63. One super-scale d covers all the values, chosen so the largest lands on exactly 63: `d = v.max() / 63`. Each value becomes the nearest whole number of d's, kept inside 0…63. The values here are scales and mins, all positive, so no negative side is needed."
+  example: |
+    Trace it on four scales, `v = [0.020, 0.015, 0.010, 0.025]` (the real one has 8):
+
+    - The largest is `0.025`, so `d = 0.025 / 63 ≈ 0.000397`.
+    - `v / d ≈ [50.4, 37.8, 25.2, 63.0]`. The largest lands exactly on 63.
+    - Rounded: `q = [50, 38, 25, 63]`.
+    - Decoded, `q * d ≈ [0.01984, 0.01508, 0.00992, 0.02500]`. Each is within half a step (`d / 2 ≈ 0.0002`) of `v`.
   skeleton: |
     d = v.___() / __
     q = torch.round(v / _).clamp(_, __)

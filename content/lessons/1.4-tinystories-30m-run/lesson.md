@@ -191,8 +191,34 @@ alternatives:
   - count_params/alternatives/with_names.py
   - count_params/alternatives/factored.py
 hints:
+  logic: |
+    embeddings = two tables, d numbers per row
+      token table: one row per vocab entry (V)
+      position table: one row per position (T)
+    blocks = L blocks, each the count from 1.2
+    final = the last LayerNorm: gain + bias, d each
+    embeddings + blocks + final
+      → return the total
+    lm_head shares the token table: it adds nothing
+    n_head never enters the count
+  tools: |
+    the two embedding tables
+      plain arithmetic: * +   (rows × d, for each table)
+    L blocks
+      plain arithmetic: * +   (one block's count × L)
+    the final LayerNorm
+      plain arithmetic: *     (gain and bias, d each)
   nudge: Three groups. The two embedding tables, the stack of blocks, and the LayerNorm at the very end. How big is each table, and what does one block hold?
   concept: "wte is a [vocab_size, d] table and wpe a [block_size, d] table. Each block is 1.2's 12·d² + 13·d, and there are n_layer of them. The final LayerNorm has a gain and a bias. lm_head reuses wte's matrix, so it adds nothing."
+  example: |
+    Trace it on a tiny config: `V = 10`, `T = 4`, `L = 2`, `d = 3`:
+
+    - `embeddings`: 10 × 3 + 4 × 3 = 42.
+    - One block: 12 × 9 + 13 × 3 = 147. Two blocks: `blocks = 294`.
+    - `final`: 2 × 3 = 6.
+    - Total: 42 + 294 + 6 = `342`.
+
+    Now the real config. If you print the three parts: `embeddings` = 11,272,192, `blocks` = 18,914,304, `final` = 1,024. They add up to 30,187,520.
   skeleton: |
     embeddings = _ * d + _ * d
     blocks = _ * (___ * d * d + ___ * d)
@@ -233,8 +259,33 @@ alternatives:
   - run_budget/alternatives/named_speed.py
   - run_budget/alternatives/split_passes.py
 hints:
+  logic: |
+    flops = FLOPs per parameter per token
+      × n_params × tokens
+    peak speed = peak_tflops, in plain FLOPs per second
+      (a tera is a trillion)
+    real speed = peak speed × mfu
+      (you only get a fraction of the peak)
+    seconds = flops ÷ real speed
+      → return flops and the time in hours
+  tools: |
+    total training compute
+      plain arithmetic: *
+    the speed you really get
+      1eN                 scientific notation: 1e3 is 1000
+      plain arithmetic: *
+    time in seconds
+      plain arithmetic: /
   nudge: Two lines. FLOPs per parameter per token, times the parameters, times the tokens. Then divide by the FLOPs per second the GPU really delivers.
   concept: "The forward pass costs about 2 FLOPs per parameter per token, a multiply and an add, and the backward pass about twice that: 6·N·D. A GPU rated at peak_tflops does at most peak_tflops × 10¹² FLOPs per second, and real training gets a fraction mfu of that."
+  example: |
+    Trace it with round numbers: `n_params = 1e6`, `tokens = 1e9`, `peak_tflops = 100`, `mfu = 0.5`:
+
+    - `flops` = 6 × 1e6 × 1e9 = `6e15`.
+    - Peak speed: 100 × 1e12 = 1e14 FLOPs per second. Real speed: 1e14 × 0.5 = `5e13`.
+    - `seconds` = 6e15 / 5e13 = `120`. The function returns 120 / 3600 ≈ `0.033` hours.
+
+    The real run: `tokens` = 245,760,000 and `n_params` = 30,187,520 give about 4.45e16 FLOPs. At 71e12 × 0.30 = 2.13e13 FLOPs per second that's about 2,090 seconds, or 0.58 hours.
   skeleton: |
     flops = _ * ________ * ______
     seconds = flops / (___________ * 1e__ * ___)

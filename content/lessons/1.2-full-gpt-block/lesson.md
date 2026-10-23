@@ -196,8 +196,34 @@ alternatives:
   - multi_head/alternatives/contiguous_view.py
   - multi_head/alternatives/flatten.py
 hints:
+  logic: |
+    for each of q, k, v:
+      cut its C features into n_head chunks of hs
+        → move the head axis in front of T
+        → [B, n_head, T, hs]
+    attention runs once per head   (given)
+    put the heads back:
+      move the head axis behind T again
+        → merge n_head × hs into C
+        → y is [B, T, C]
+  tools: |
+    cut the features into heads
+      t.view(a, b, c, d)    same data, new shape
+    move the head axis in front of T
+      t.transpose(i, j)     swaps axes i and j of t
+    put the heads back, merge into C
+      t.transpose(i, j)     swaps axes i and j of t
+      t.reshape(a, b, c)    same data, new shape
   nudge: "Each of q, k and v is [B, T, C], and C is really n_head slices of hs features. Make the slices an axis of their own, then move that axis in front of T so attention runs once per head."
   concept: "`view(B, T, n_head, hs)` splits each token's C features into n_head chunks of hs, keeping every token's features together. `transpose(1, 2)` then swaps T and the head axis: [B, n_head, T, hs], so attention treats each head like a batch entry. On the way back, swap them again and merge the last two axes into C."
+  example: |
+    Trace it on a tiny case: `B = 1`, `T = 2`, `C = 4`, `n_head = 2`, so `hs = 2`. Let `q` be `[[0,1,2,3], [4,5,6,7]]`, one row per token:
+
+    - Cut into heads: token 0 is `[0,1]` and `[2,3]`, token 1 is `[4,5]` and `[6,7]`. Shape `[1, 2, 2, 2]`.
+    - Swap `T` and the head axis: head 0 sees `[[0,1], [4,5]]` (both tokens, first 2 features), head 1 sees `[[2,3], [6,7]]`. Shape `[1, 2, 2, 2]` again, but now it reads `[B, n_head, T, hs]`.
+    - Coming back, swap again, then merge: `[[0,1,2,3], [4,5,6,7]]`, shape `[1, 2, 4]`.
+
+    Check: if you skip the swap-back, the merge glues the wrong things together. Token 0 would come out as `[0,1,4,5]`. Print the shape after each step.
   skeleton: |
     q = q.____(B, T, self.n_head, __).transpose(_, _)
     k = k.____(B, T, self.n_head, __).transpose(_, _)
@@ -237,8 +263,34 @@ alternatives:
   - block/alternatives/named_steps.py
   - block/alternatives/tuple_shape.py
 hints:
+  logic: |
+    when the block is built:
+      ln_1 = a LayerNorm for the attention side
+      ln_2 = a LayerNorm for the MLP side
+    when x comes in:
+      normalise a copy of x with ln_1 → attn
+        → add the result onto x   (x itself stays raw)
+      normalise a copy of the new x with ln_2 → mlp
+        → add the result onto x
+      → return x   (same shape as the input)
+  tools: |
+    build the two LayerNorms
+      nn.LayerNorm(n)     normalises each token's n features
+    run a sublayer on a normalised copy
+      layer(x)            applies a layer or sublayer to x
+    add the result onto x
+      plain arithmetic: +
   nudge: "Two lines, the same pattern twice. Each sublayer gets a normalised copy of x, and whatever it returns is *added* to x. Which LayerNorm goes with which sublayer?"
   concept: "`nn.LayerNorm(n_embd)` normalises each token's n_embd features and learns a gain and a bias. The residual stream x is never normalised itself: `x + self.attn(self.ln_1(x))` leaves a direct path from the block's input to its output, which is what lets deep stacks train."
+  example: |
+    Trace one token with 4 features, `x = [1, 2, 3, 4]`. Pretend the sublayers return fixed numbers:
+
+    - `ln_1(x)` ≈ `[−1.342, −0.447, 0.447, 1.342]`: mean 0, spread 1. This copy goes into `attn`, and `x` itself stays untouched.
+    - Say `attn` returns `[0.5, 0, 0, −0.5]`. Added onto the original: `x = [1.5, 2, 3, 3.5]`.
+    - `ln_2(x)` ≈ `[−1.265, −0.632, 0.632, 1.265]`. This copy goes into `mlp`.
+    - Say `mlp` returns `[0.1, 0.1, 0.1, 0.1]`. Added onto `x`: `[1.6, 2.1, 3.1, 3.6]`.
+
+    Check: the output is never a normalised vector. It's the raw `x` plus two small corrections. For `Block(32, 4)` the printed shape is the input's shape, `(2, 8, 32)`.
   skeleton: |
     self.ln_1 = nn.________(______)
     self.ln_2 = nn.________(______)
@@ -283,8 +335,35 @@ alternatives:
   - block_params/alternatives/collected.py
   - block_params/alternatives/powers.py
 hints:
+  logic: |
+    for each linear layer, count weights + biases:
+      weights = in × out
+      biases  = out
+    attn = c_attn (d → 3d) + c_proj (d → d)
+    mlp  = c_fc (d → 4d) + c_proj (4d → d)
+    for each of the 2 LayerNorms:
+      gain d + bias d
+    norms = both LayerNorms added up
+    attn + mlp + norms
+      → return the total   (the script compares it to the built block)
+  tools: |
+    weights + biases of each linear layer
+      plain arithmetic: * +   (in × out, then + out)
+    the two LayerNorms
+      plain arithmetic: * +   (gain d, bias d, twice)
+    add attn + mlp + norms
+      plain arithmetic: +
   nudge: "Every nn.Linear(in, out) holds in × out weights plus out biases. Every LayerNorm(d) holds a gain and a bias, d each. List the six layers and add them up."
   concept: "Attention: c_attn is Linear(d, 3d), c_proj is Linear(d, d). MLP: c_fc is Linear(d, 4d), c_proj is Linear(4d, d). Then two LayerNorms of width d. Write each layer as its weights plus its biases."
+  example: |
+    Trace it with a tiny width, `d = 4`:
+
+    - `c_attn`: 4 × 12 weights + 12 biases = 60. `c_proj`: 4 × 4 weights + 4 biases = 20. So `attn = 80`.
+    - `c_fc`: 4 × 16 weights + 16 biases = 80. `c_proj`: 16 × 4 weights + 4 biases = 68. So `mlp = 148`.
+    - Two LayerNorms of 4 + 4 each: `norms = 16`.
+    - Total: 80 + 148 + 16 = `244`.
+
+    Check: that's 12·4² + 13·4 = 192 + 52 = 244. At `d = 32` the same count gives `12,704`, the number the script's `built` column should match.
   skeleton: |
     attn = _ * d * d + _ * d + d * d + ___  # c_attn and c_proj
     mlp = d * _ * d + _ * d + _ * d * d + ___  # c_fc and c_proj

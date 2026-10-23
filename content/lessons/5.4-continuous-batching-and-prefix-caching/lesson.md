@@ -189,8 +189,44 @@ alternatives:
   - scheduler/alternatives/explicit_loop.py
   - scheduler/alternatives/index_queue.py
 hints:
+  logic: |
+    each step:
+      admit: while the oldest waiting request has arrived
+             and running has a free slot (fewer than max_batch):
+        move it from waiting into running, with 0 tokens made
+      make: for each slot in running:
+        made = made + 1
+      retire: for each slot in running:
+        made equals the request's out?
+          yes → done[request id] = this step
+          no  → nothing
+      keep only the slots that still need tokens
+    when nothing is waiting or running → return done
+  tools: |
+    admit while the oldest has arrived and a slot is free
+      lst[0][key]          a field of the first item of lst
+      len(lst)             how many items lst holds
+      lst.pop(i)           removes and returns item i
+      lst.append(x)        adds x at the end
+    make one token for each slot
+      for x in lst         visit every item
+      slot[i] += 1         adds 1 to item i of a list
+    record finished requests
+      for a, b in lst      unpacks two items per entry
+      d[key] = value       stores value under key in d
+    keep only slots that still need tokens
+      [x for x in lst if cond]   keeps items where cond holds
   nudge: Each step does three things in order. Let new requests into free slots, make one token for everyone running, and let finished requests go. Which of these does static batching never do mid-batch?
   concept: "`waiting` is sorted by arrival, so `waiting[0]` is the oldest. Admit in a `while` loop as long as it has arrived (`waiting[0][\"arrive\"] <= step`) and a slot is free (`len(running) < max_batch`): `running.append([waiting.pop(0), 0])`. Each slot is `[request, made]`, so add 1 to `slot[1]` for every slot. A request is done when `made == r[\"out\"]`: record `done[r[\"id\"]] = step`, then keep only the slots that still need tokens."
+  example: |
+    Trace it with 2 slots and three requests: `p` (arrives 0, wants 3), `q` (arrives 0, wants 1), `r` (arrives 1, wants 2).
+
+    - Step 0: `p` and `q` are admitted, both make 1 token. `q` has `made == out`, so `done["q"] = 0`, and it leaves. `running` holds `p` with 1 made.
+    - Step 1: `r` has arrived and a slot is free, so it joins. `p` makes its 2nd token, `r` its 1st. Nobody is done.
+    - Step 2: `p` makes its 3rd, `r` its 2nd. Both are done: `done["p"] = 2`, `done["r"] = 2`.
+    - Final `done`: `{"q": 0, "p": 2, "r": 2}`.
+
+    Check: `q` freed its slot after one step, so `r` didn't have to wait for `p` to finish.
   skeleton: |
     while waiting and waiting[0]["arrive"] <= ____ and len(running) < _________:
         running.append([waiting.___(0), 0])
@@ -245,8 +281,53 @@ alternatives:
   - prefix_cache/alternatives/while_walk.py
   - prefix_cache/alternatives/range_step.py
 hints:
+  logic: |
+    block_hashes:
+      parent = nothing yet
+      for each FULL block of block_size tokens (skip leftovers):
+        turn the block into a tuple
+        hash (parent, block) together → that is the new parent
+        add it to hashes
+      return hashes
+
+    cached_prefix_len:
+      n = 0
+      for each block hash of the prompt, in order:
+        is it in cache?
+          no  → stop looking
+          yes → n = n + block_size
+      return n
+  tools: |
+    count the full blocks
+      len(lst) // n        how many whole times n fits
+      range(n)             0, 1, ... n-1
+    cut out one block
+      lst[i:j]             items i up to j of lst
+      tuple(lst)           a fixed copy that Python can hash
+    hash with the parent
+      hash(x)              a number that stands for x
+      lst.append(x)        adds x at the end
+    look up in cache
+      x in s, x not in s   is x one of the set's items
+      break                leave the loop at once
+      plain arithmetic: +=
   nudge: A block's KV depends on every token before it, so it can be reused only when its tokens and everything before them match. How can one hash stand for all of that?
   concept: "Chain the hashes: `parent = hash((parent, block))`, starting from `None`. Each hash then depends on the block's own tokens and, through `parent`, on every block before it. `block` must be a tuple, because Python won't hash a list, and only `len(tokens) // block_size` blocks are full. To look up, walk the hashes from the start, add `block_size` for each hit, and `break` at the first miss."
+  example: |
+    Trace it with `block_size = 4`. Prompt `A = [1, 2, 3, 4, 5, 6, 7, 8, 9, 9]` has 10 tokens.
+
+    - Full blocks: 10 // 4 = 2, so the blocks are `(1, 2, 3, 4)` and `(5, 6, 7, 8)`. The leftover `[9, 9]` is skipped.
+    - `hashes` has 2 entries. `h0` covers block 0 alone. `h1` covers `h0` plus block 1, so it stands for all 8 tokens.
+    - Put both in `cache`.
+
+    Now look up `B = [1, 2, 3, 4, 5, 6, 0, 0, 7, 7, 7, 7]`:
+
+    - Its blocks are `(1, 2, 3, 4)`, `(5, 6, 0, 0)`, `(7, 7, 7, 7)`: 3 hashes.
+    - Block 0 matches `h0`, which is in `cache`, so `n = 4`.
+    - Block 1 has different tokens, so its hash isn't in `cache`. Stop there.
+    - The answer is `4`. The third block is never checked, even though it would also be a miss.
+
+    Your own `hashes` will be big integers. Check the first one matches across `A` and `B`, and the second one doesn't.
   skeleton: |
     for i in range(len(tokens) __ block_size):
         block = _____(tokens[i * block_size:(i + 1) * block_size])

@@ -239,8 +239,35 @@ alternatives:
   - left_pad/alternatives/negative_slice.py
   - left_pad/alternatives/start_var.py
 hints:
+  logic: |
+    T = length of the longest prompt
+    idx starts full of pad ids, mask starts all False
+    for each prompt p, in row b:
+      first column = T − len(p)   (so p ends at the last column)
+      write p into row b from that column to the end
+      mark those same columns True in mask
+    return idx and mask
+  tools: |
+    find where the prompt starts
+      len(x)             how many items in x
+      plain arithmetic: -
+    write the prompt into the last columns
+      t[row, n:] = x     assigns x to row, from column n to the end
+    mark the same columns
+      t[row, n:] = v     the same slice, set to one value v
   nudge: Row b is T wide and prompt p is len(p) long. Which column does p have to start in so that it ends at the last column?
   concept: "Prompt p starts at column `T - len(p)` and runs to the end, so slice `idx[b, T - len(p):]` and assign p to it. Mark the same columns True in `mask`. Mark them by position, never by checking the ids for the pad id: a real token can share that id."
+  example: |
+    Trace it on three tiny prompts, `[5, 6, 7]`, `[8, 9]` and `[4]`, with `pad_id = 0`:
+
+    - The longest has 3 ids, so `T = 3` and both tensors are `[3, 3]`.
+    - Prompt `[5, 6, 7]`: `T - len(p)` = 0, so it fills the whole row.
+    - Prompt `[8, 9]`: `T - len(p)` = 1, so it starts in column 1.
+    - Prompt `[4]`: `T - len(p)` = 2, so it sits in the last column only.
+    - `idx` = `[[5, 6, 7], [0, 8, 9], [0, 0, 4]]`.
+    - `mask` = `[[True, True, True], [False, True, True], [False, False, True]]`.
+
+    Every row ends in a real token, so the next token always goes in the same column for the whole batch.
   skeleton: |
     idx[b, _ - ______:] = p
     mask[b, T - len(p)__] = ____
@@ -277,8 +304,36 @@ alternatives:
   - batch_mask/alternatives/where.py
   - batch_mask/alternatives/expand.py
 hints:
+  logic: |
+    pos: count the real tokens along each row, minus 1
+      below 0? (a leading pad)
+        yes → raise it to 0
+        no  → keep it
+    keep: for each query t and key s in each row:
+      s is not after t, AND key s is a real token?
+        yes → query t may attend to key s
+        no  → hidden
+    return pos and keep   (keep is [B, T, T])
+  tools: |
+    count the real tokens along each row
+      t.cumsum(dim)      running total along dim
+    start at 0, raise negatives to 0
+      plain arithmetic: -
+      t.clamp(min=lo)    raises values below lo up to lo
+    line up the two yes/no tables
+      t[:, None, :]      adds a size-1 dimension in the middle
+      a & b              True where both a and b are True
   nudge: "For pos: what running count is 1, 2, 3 on the real tokens and 0 on the leading pads? For keep: two conditions must both hold. What shape is each, and how do they broadcast to [B, T, T]?"
   concept: "`mask.cumsum(dim=-1)` counts real tokens as it goes. Subtract 1 so the first real token is 0, and clamp the pads up to 0. For keep, `causal` is [T, T] (query, key) and `mask[:, None, :]` is [B, 1, T]: one row of key flags per sequence, the same for every query. Combine them with `&`."
+  example: |
+    Trace it on a batch of two rows, `T = 4`: `mask = [[False, False, True, True], [True, True, True, True]]`.
+
+    - Running count: row 0 `[0, 0, 1, 2]`, row 1 `[1, 2, 3, 4]`.
+    - Minus 1: row 0 `[-1, -1, 0, 1]`, row 1 `[0, 1, 2, 3]`.
+    - Clamped, that's `pos`: row 0 `[0, 0, 0, 1]`, row 1 `[0, 1, 2, 3]`. Row 0's first real token (column 2) is position 0.
+    - Row 0's last query (`t = 3`): causal allows keys 0 to 3, the real-token flags allow keys 2 and 3. Both together: `keep[0, 3] = [False, False, True, True]`.
+    - Row 0's query `t = 2`: causal allows keys 0 to 2, flags allow 2 and 3. Both: `[False, False, True, False]`.
+    - Row 1 has no pads, so `keep[1]` is just the plain causal triangle.
   skeleton: |
     pos = (mask.______(dim=-1) - _).clamp(min=_)
     keep = causal _ mask[:, ____, :]

@@ -199,8 +199,48 @@ alternatives:
   - spec_greedy/alternatives/count_accepted.py
   - spec_greedy/alternatives/argmax_rows.py
 hints:
+  logic: |
+    repeat k times:
+      draft's best next token after tokens + proposal so far
+        → add it to proposal
+    one target pass over tokens + proposal → logits
+    for i in 0 … k:
+      choice = target's best token from row n − 1 + i
+        → append choice to tokens
+      i is k, or choice differs from proposal[i]?
+        yes → end this round
+        no  → the draft was right, check the next one
+  tools: |
+    the draft proposes k tokens, one at a time
+      range(n)       counts 0 … n-1
+      draft(toks)    next-token logits for every position
+      t[-1]          the last row of t
+      t.argmax()     index of the biggest value
+      int(x)         tensor → plain Python int
+      lst.append(x)  adds x to the end of lst
+    one target pass
+      target(toks)   logits, one row per position
+      a + b          joins two lists
+    check the rows
+      len(lst)       how many items
+      t[i]           row i of t
+      break          leaves the loop
   nudge: Three moves per round. The draft guesses k tokens, the target scores all of them in one pass, and you keep the guesses it agrees with. Which row of the target's logits checks which guess?
   concept: "Build `proposal` one token at a time: `draft(tokens + proposal)[-1].argmax()` is the draft's next guess after the ones so far. Then call `target(tokens + proposal)` once. With `n = len(tokens)`, row `n - 1 + i` holds what the target itself would put at position `n + i`, where `proposal[i]` sits. Append the target's choice each time. If it matches the guess, you've kept the guess. If it doesn't, you've corrected it, so stop. If all k match, the last row is a free extra token."
+  example: |
+    Trace one round with `tokens = [3, 1]` (so `n = 2`) and `k = 2`. The draft proposes `proposal = [5, 2]`. The target gets `[3, 1, 5, 2]` and returns 4 rows. Row 0 isn't used.
+
+    Suppose the target's best token in rows 1, 2 and 3 is `5`, `7` and `4`:
+
+    - `i = 0`: row 1 says `5`. The draft guessed `5`. Append `5`, keep going.
+    - `i = 1`: row 2 says `7`. The draft guessed `2`. Append `7`, the target's token, and stop.
+    - `tokens = [3, 1, 5, 7]`. Two new tokens from one target pass.
+
+    If rows 1, 2 and 3 had said `5`, `2` and `4` instead:
+
+    - `i = 0` and `i = 1` agree, so append `5` and `2`.
+    - `i = 2` is the extra row, so append `4` and stop.
+    - `tokens = [3, 1, 5, 2, 4]`. Three new tokens from one pass, the most a round can give with `k = 2`.
   skeleton: |
     proposal = []
     for _ in range(_):
@@ -260,8 +300,41 @@ alternatives:
   - verify/alternatives/where_residual.py
   - verify/alternatives/maximum.py
 hints:
+  logic: |
+    for each drafted token x at position i:
+      random number < p ÷ q for x?   (keeps with chance min(1, p/q))
+        yes → keep x, go to the next draft
+        no  → fix = sample from (p − q), negatives set to 0
+                → add fix to out
+                → stop and return out
+    every draft survived:
+      bonus = sample from the target's last row of p
+        → add bonus to out
+        → return out
+  tools: |
+    the keep-or-reject coin
+      torch.rand(1, generator=gen)  uniform number in [0, 1)
+      t[i, x]        the entry at row i, column x
+      plain arithmetic: /   and compare: a < b
+    what the target wants more of
+      t.clamp(min=lo)  raises values under lo up to lo
+    sampling a token
+      torch.multinomial(w, 1, generator=gen)
+                     one index, chance in proportion to w
+                     (w needn't sum to 1)
+      int(x)         tensor → plain Python int
+    the target's last row
+      t[-1]          the last row of t
   nudge: "Three draws, all from gen: a coin that says keep with probability p(x) / q(x), a replacement from what the target wants more than the draft offered, and a bonus from the target's last row."
   concept: "`torch.rand(1, generator=gen)` is uniform in [0, 1), so `rand < p[i, x] / q[i, x]` is True with probability min(1, p/q). On a rejection, `(p[i] - q[i]).clamp(min=0)` keeps the tokens the draft under-proposes, and `torch.multinomial(weights, 1, generator=gen)` samples one of them (the weights needn't sum to 1). The bonus is `torch.multinomial(p[-1], 1, generator=gen)`. Wrap the samples in `int(...)`."
+  example: |
+    Trace one position over 3 tokens. Say `p[i] = [0.2, 0.5, 0.3]` and `q[i] = [0.5, 0.3, 0.2]`.
+
+    - Draft token `x = 0`: `p / q = 0.2 / 0.5 = 0.4`. The draw is `rand < 0.4`: a draw of `0.35` keeps it, a draw of `0.7` rejects it.
+    - Draft token `x = 1`: `p / q = 0.5 / 0.3 ≈ 1.67`. Every draw in [0, 1) is below that, so it is always kept.
+    - On a rejection, `p[i] - q[i] = [-0.3, 0.2, 0.1]`. Clamped at 0: `[0, 0.2, 0.1]`. The weights add up to 0.3, which is fine.
+    - Sampling from those weights gives token 1 about two times in three and token 2 about one time in three. It never gives token 0, the one just rejected.
+    - If all drafts survive, the bonus comes from the last row of `p`, whatever the drafts were.
   skeleton: |
     keep = torch.rand(1, generator=gen) < p[i, x] / _______
     fix = int(torch.multinomial((p[i] - ____).clamp(min=_), 1, generator=gen))
@@ -308,8 +381,35 @@ alternatives:
   - speedup/alternatives/loop.py
   - speedup/alternatives/named_cost.py
 hints:
+  logic: |
+    expected_tokens:
+      draft j survives with chance alpha^j, for j = 1 … k
+        → add them up
+        → plus 1 for the token the target always adds
+    speedup:
+      cost = k draft passes at c each + 1 target pass
+        → expected_tokens ÷ cost
+        → return that
+  tools: |
+    chance that draft j survives
+      x ** n         x to the power n
+    add them up (a geometric series has a closed form)
+      plain arithmetic: + - /
+    cost of a round
+      plain arithmetic: * +
+    tokens per round over cost
+      expected_tokens(alpha, k)  your function above
+      plain arithmetic: /
   nudge: Draft j only counts if drafts 1 through j all survive. And a round's cost has two parts, the draft's k passes and the target's one.
   concept: "Draft j survives with probability α^j, so the drafts that survive average α + α² + … + α^k. The target always adds one token, a replacement or the bonus, giving 1 + α + … + α^k = (1 − α^(k+1)) / (1 − α). A round costs k draft passes at c each, plus one target pass: k·c + 1. Plain decoding makes 1 token per target pass, so the speedup is tokens per round over that cost."
+  example: |
+    Trace `alpha = 0.5`, `c = 0.2`, with `k = 2`:
+
+    - Draft 1 survives with chance `0.5`, draft 2 with `0.25`. Plus the target's own token: 1 + 0.5 + 0.25 = `1.75`. The closed form gives (1 − 0.125) / 0.5 = `1.75`, the same.
+    - Cost: 2 × 0.2 + 1 = `1.4` target passes.
+    - `speedup` = 1.75 / 1.4 = `1.25`.
+
+    With `k = 3`: tokens per round `1.875`, cost `1.6`, speedup about `1.17`. A third draft adds only 0.125 tokens but 0.2 of cost, so it makes things worse.
   skeleton: |
     return (1 - alpha ** (k + _)) / (1 - _____)
     return expected_tokens(alpha, k) / (k * _ + _)

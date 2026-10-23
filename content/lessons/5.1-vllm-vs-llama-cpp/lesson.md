@@ -189,8 +189,38 @@ alternatives:
   - roofline/alternatives/seconds_first.py
   - roofline/alternatives/flops_per_token.py
 hints:
+  logic: |
+    step_ms:
+      mem_ms = bytes of weights ÷ BANDWIDTH   (batch doesn't matter)
+      compute_ms = 2 FLOPs × n_params × batch ÷ PEAK_FLOPS
+      (both in ms: seconds × 1000)
+      mem_ms bigger than compute_ms?
+        yes → the step lasts mem_ms     (waiting on memory)
+        no  → the step lasts compute_ms (waiting on math)
+    tokens_per_s:
+      each step makes batch tokens
+        → batch ÷ step time, per second
+  tools: |
+    time to read the weights
+      plain arithmetic: * /   (bytes, bandwidth, ms = s * 1000)
+    time for the math
+      plain arithmetic: * /   (FLOPs, peak rate, ms)
+    the step lasts as long as the slower one
+      max(a, b)               the bigger of a and b
+    tokens per second
+      step_ms(...)            your function above
+      plain arithmetic: * /
   nudge: Two clocks run at once, one for moving bytes and one for doing math. Work out each in ms, then ask which one the GPU waits for.
   concept: "Reading the weights moves `n_params × bytes_per_param` bytes at `BANDWIDTH` bytes per second, and the batch doesn't change it: every sequence uses the same weights. The math is a multiply and an add per parameter per token, so `2 × n_params` FLOPs per sequence, times the batch, at `PEAK_FLOPS`. Seconds × 1000 gives ms. The step takes the larger of the two, and each step makes `batch` tokens."
+  example: |
+    Trace a 1-billion-parameter model in fp16 (2 bytes each) on the script's GPU:
+
+    - Memory: 2e9 bytes / 936e9 bytes per second ≈ `2.14` ms, whatever the batch.
+    - Batch 1 math: 2e9 FLOPs / 71e12 ≈ `0.028` ms. Memory is slower, so the step is `2.14` ms and `tokens_per_s` ≈ 1 × 1000 / 2.14 ≈ `468`.
+    - Batch 8 math: ≈ `0.23` ms. Still under the memory time. Step `2.14` ms, so 8 × 1000 / 2.14 ≈ `3,744` tok/s. Eight times batch 1.
+    - Batch 512 math: ≈ `14.4` ms. Now math is slower, so the step is `14.4` ms and throughput is 512 × 1000 / 14.4 ≈ `35,500` tok/s.
+
+    Check: the step time only starts growing once the math time passes the memory time.
   skeleton: |
     mem_ms = n_params * _______________ / BANDWIDTH * ____
     compute_ms = ___ * n_params * _____ / PEAK_FLOPS * 1000
@@ -240,8 +270,42 @@ alternatives:
   - bench_stats/alternatives/loops.py
   - bench_stats/alternatives/named_parts.py
 hints:
+  logic: |
+    for each request:
+      ttft = first-token time − its own arrival time
+      tpot = (done − first) ÷ (tokens after the first)
+             → in ms
+    tok_per_s = all tokens of all requests
+                ÷ (latest done − earliest arrive)
+    ttft_p50 = the middle ttft once sorted
+    return ttft_p50, mean tpot, tok_per_s
+  tools: |
+    one value per request
+      [f(r) for r in rs]     builds a list, one item per request
+      r["key"]               reads a field of a request
+      plain arithmetic: - / *
+    start and end of the whole run
+      min(f(r) for r in rs)  the smallest f(r)
+      max(f(r) for r in rs)  the biggest f(r)
+    all tokens made
+      sum(f(r) for r in rs)  adds up f(r) over the requests
+    the typical wait
+      statistics.median(xs)  the middle value once sorted
   nudge: "Each number has its own start and stop. TTFT runs from arriving to the first token. TPOT runs from the first token to the last. Throughput covers the whole run."
   concept: "`r[\"first\"] - r[\"arrive\"]` is one request's TTFT. After the first token, `tokens − 1` more arrive between `first` and `done`, so TPOT is `(done − first) / (tokens − 1)`, × 1000 for ms. Requests overlap, so throughput divides all the tokens by the run's wall-clock span (last `done` minus first `arrive`), not by the sum of their durations. p50 is the median: `statistics.median`."
+  example: |
+    Trace three requests:
+
+    - A: arrive 0.0, first 0.2, done 1.2, 11 tokens
+    - B: arrive 0.5, first 1.0, done 2.0, 6 tokens
+    - C: arrive 1.0, first 1.1, done 2.6, 16 tokens
+
+    Then:
+
+    - `ttft` = `[0.2, 0.5, 0.1]`.
+    - `tpot`: A is 1.0 s over 10 gaps = `100` ms. B is 1.0 s over 5 gaps = `200` ms. C is 1.5 s over 15 gaps = `100` ms. Their mean is about `133.3` ms.
+    - `tok_per_s`: 11 + 6 + 16 = 33 tokens over 2.6 − 0.0 = 2.6 s, about `12.7`.
+    - `ttft_p50`: sorted `[0.1, 0.2, 0.5]`, so `0.2`. The middle of the list in arrival order would be 0.5, which is the wrong one.
   skeleton: |
     ttft = [r["_____"] - r["______"] for r in requests]
     tpot = [(r["____"] - r["_____"]) / (r["tokens"] - _) * ____ for r in requests]

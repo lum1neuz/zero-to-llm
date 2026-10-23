@@ -7,8 +7,14 @@ import type { LiteCourse, LiteLesson } from "./course.ts";
 export const KEY = "z2l.progress.v1";
 export const REVIEW_DAYS = [1, 3, 7];
 export const XP = { card: 5, learnBonus: 10, challengeFull: 30, review: 2 };
+/** The Build hint ladder, in unlock order. `ChallengeRec.hints` counts how many are open. */
+export const RUNGS = ["logic", "tools", "nudge", "concept", "example", "skeleton", "solution"] as const;
+/** Logic and tools are the approach (high-level flow, then what to tackle it with), so they open
+ *  without a test run. Every later rung needs another run first. */
+export const FREE_RUNGS = 2;
 
-export interface ChallengeRec { phase: "intro" | "challenge" | "solved"; t: number; code: string | null; runs: number; hints: number; lastHintRun: number; peek: boolean; xp: number; at: number }
+/** `ladder: 7` marks `hints` as counted on the seven-rung ladder; older records counted four rungs. */
+export interface ChallengeRec { phase: "intro" | "challenge" | "solved"; t: number; code: string | null; runs: number; hints: number; lastHintRun: number; peek: boolean; xp: number; at: number; ladder?: 7 }
 export interface LessonRec {
   learn?: { done: boolean; bestXp: number; correct: number; total: number; at: number };
   session?: { ci: number; gained: number; correct: number; scored?: number[]; at: number };
@@ -36,7 +42,26 @@ export const addDays = (day: string, n: number) => { const d = new Date(day + "T
 export const daysBetween = (a: string, b: string) => Math.round((new Date(b + "T12:00:00").getTime() - new Date(a + "T12:00:00").getTime()) / 864e5);
 
 export const fresh = (): Progress => ({ v: 1, startDate: today(), startSetAt: 0, cut: 0, cutAt: 0, activeDays: [], lessons: {}, review: {} });
-export const blankChallenge = (): ChallengeRec => ({ phase: "intro", t: 0, code: null, runs: 0, hints: 0, lastHintRun: -1, peek: false, xp: 0, at: 0 });
+export const blankChallenge = (): ChallengeRec => ({ phase: "intro", t: 0, code: null, runs: 0, hints: 0, lastHintRun: -1, peek: false, xp: 0, at: 0, ladder: 7 });
+/** Old ladder was nudge, concept, skeleton, solution. Logic and tools now come first and example
+ *  sits before skeleton, so every old count keeps the same rungs open: 1→3, 2→4, 3→6, 4→7.
+ *  ponytail: a client still on the old cached bundle reads new counts on the old ladder until the
+ *  service worker updates it; acceptable for a one-off transition. */
+const OLD_TO_NEW = [0, 3, 4, 6, 7];
+export function upgradeLadder(c: ChallengeRec): ChallengeRec {
+  if (c.ladder === 7) return c;
+  return { ...c, hints: OLD_TO_NEW[Math.min(4, Math.max(0, Math.floor(Number(c.hints) || 0)))], ladder: 7 };
+}
+const isRec = (v: unknown): v is Record<string, any> => typeof v === "object" && v !== null && !Array.isArray(v);
+/** Runs inside load(): it must never throw on odd stored data, or the catch would start fresh and wipe progress. */
+function upgradeAll(p: Progress): Progress {
+  if (!isRec(p.lessons)) return p;
+  for (const l of Object.values(p.lessons)) {
+    if (!isRec(l) || !isRec(l.challenges)) continue;
+    for (const [id, c] of Object.entries(l.challenges)) if (isRec(c)) l.challenges[id] = upgradeLadder(c as ChallengeRec);
+  }
+  return p;
+}
 const blankLesson = (): LessonRec => ({ challenges: {}, checks: {} });
 
 // ---------- store ----------
@@ -46,7 +71,7 @@ const listeners = new Set<() => void>();
 function load(): Progress {
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) { const p = JSON.parse(raw); if (p && p.v === 1) return { ...fresh(), ...p }; }
+    if (raw) { const p = JSON.parse(raw); if (p && p.v === 1) return upgradeAll({ ...fresh(), ...p }); }
   } catch { /* private mode or corrupt: start fresh */ }
   return fresh();
 }
@@ -188,8 +213,10 @@ export function parseImport(text: string): Progress {
       scored: Array.isArray(l.session.scored) ? l.session.scored.filter((x: unknown) => Number.isInteger(x) && (x as number) >= 0) : undefined, at: num(l.session.at) };
     for (const [cid, c] of Object.entries(isObj(l.challenges) ? l.challenges : {})) {
       if (!isObj(c) || !["intro", "challenge", "solved"].includes(c.phase)) continue;
-      rec.challenges[cid] = { phase: c.phase, t: num(c.t), code: typeof c.code === "string" ? c.code : null, runs: num(c.runs), hints: Math.min(4, Math.max(0, num(c.hints))),
-        lastHintRun: num(c.lastHintRun, -1), peek: !!c.peek, xp: Math.min(XP.challengeFull, Math.max(0, num(c.xp))), at: num(c.at) };
+      const ladder = c.ladder === 7 ? 7 : undefined;
+      rec.challenges[cid] = upgradeLadder({ phase: c.phase, t: num(c.t), code: typeof c.code === "string" ? c.code : null, runs: num(c.runs),
+        hints: Math.min(ladder ? RUNGS.length : 4, Math.max(0, Math.floor(num(c.hints)))), lastHintRun: num(c.lastHintRun, -1), peek: !!c.peek,
+        xp: Math.min(XP.challengeFull, Math.max(0, num(c.xp))), at: num(c.at), ladder });
     }
     for (const [k, v] of Object.entries(isObj(l.checks) ? l.checks : {})) { const s2 = stamped(v); if (s2) rec.checks[k] = s2; }
     if (isObj(l.metrics) && isObj(l.metrics.values)) {
@@ -220,6 +247,7 @@ function mergeChallenge(a: ChallengeRec, b: ChallengeRec): ChallengeRec {
     runs: Math.max(a.runs, b.runs),
     lastHintRun: Math.max(a.lastHintRun, b.lastHintRun),
     peek: a.peek || b.peek,
+    ladder: 7,
     // Never let a merge raise earned XP: if both sides solved, keep the smaller award.
     xp: solvedXp.length ? Math.min(...solvedXp) : 0,
   };

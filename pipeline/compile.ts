@@ -434,6 +434,14 @@ function compileStep(
     if (!base.has(n) && !answer.has(n)) at(`${c.solution} line "${line}" is neither in the setup nor in hints.solution`);
   }
   if (!/_{3,}/.test(c.hints.skeleton)) at("hints.skeleton needs ____ blanks");
+  // Logic, tools and example sit below the skeleton on the ladder, so none may quote a whole answer
+  // line, even in prose maths (× ÷ − ²). Very short lines ("return q") are skipped: they can appear
+  // in prose without giving anything away.
+  const maths = (s: string) => s.replace(/×/g, "*").replace(/÷/g, "/").replace(/[−–]/g, "-").replace(/²/g, "**2").replace(/'/g, '"').replace(/\s+/g, "");
+  for (const k of ["logic", "tools", "example"] as const) {
+    const flat = maths(c.hints[k]);
+    for (const [n, line] of answer) if (n.length >= 12 && flat.includes(maths(n))) at(`hints.${k} gives away the answer line "${line}"`);
+  }
   for (const alt of c.alternatives) read(alt);
   for (const m of c.mistakes) {
     read(m.file);

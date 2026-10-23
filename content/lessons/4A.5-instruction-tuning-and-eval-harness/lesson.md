@@ -205,8 +205,44 @@ alternatives:
   - loss_mask/alternatives/default_ignore.py
   - loss_mask/alternatives/manual_mean.py
 hints:
+  logic: |
+    build_labels:
+      start from a separate copy of ids
+      for each position:
+        said by the assistant?
+          no  → label = −100 (the loss skips it)
+          yes → keep its id
+      → return labels
+    sft_loss:
+      position t predicts position t + 1: pair each logits row
+        with the label one step later
+      average the loss over labels that aren't −100
+        → return it
+  tools: |
+    separate copy of ids
+      t.clone()                    a copy that shares no memory
+    mark positions not said by the assistant
+      [expr for r in roles]        a list, one item per position
+      x != y                       True when different
+      torch.tensor(list)           a tensor from a list of bools
+    overwrite them
+      t[mask] = v                  writes v where mask is True
+    next-token loss that skips a label
+      x[a:b]                       slice of rows or labels
+      F.cross_entropy(x, y, ignore_index=v)
+                                   mean loss, skipping label v
   nudge: The labels are a copy of the ids with every non-assistant position overwritten. The loss is the usual next-token cross-entropy, skipping those positions.
   concept: "`ids.clone()` makes a separate tensor, so writing into it leaves the model's input alone. A bool tensor built from `roles` picks the positions to overwrite, `labels[mask] = -100`. Template pieces have the role None and the system and user turns have their own roles, so mask every position whose role isn't \"assistant\". In the loss, position t predicts the label at t + 1, and `ignore_index=-100` averages over only the positions that count."
+  example: |
+    Trace it on 5 toy tokens: `ids = [0, 1, 2, 3, 2]` and `roles = [None, "user", "assistant", "assistant", "assistant"]`.
+
+    - Marked positions: the first two, since `None` and `"user"` aren't `"assistant"`.
+    - `labels = [-100, -100, 2, 3, 2]`. `ids` itself is unchanged.
+    - Pairing: `logits[:-1]` has 4 rows, `labels[1:]` is `[-100, 2, 3, 2]`.
+    - The first pair is skipped, so 3 positions count.
+    - With all-zero logits over a vocabulary of 4, each counted position costs ln 4 ≈ 1.386. The mean over the 3 is `1.386`.
+
+    Check: your printed count in the last line should equal the number of non-`-100` labels after the first position.
   skeleton: |
     labels = ids._____()
     labels[torch.tensor([r ___ "assistant" for r in roles])] = ____
@@ -251,8 +287,40 @@ alternatives:
   - eval_scoring/alternatives/regex.py
   - eval_scoring/alternatives/zip_max.py
 hints:
+  logic: |
+    normalize_answer:
+      lowercase everything
+        → drop every character that isn't a letter, digit or space
+        → squeeze runs of spaces into one, trim the ends
+        → return the text
+    pick_option:
+      for each option i:
+        score = logprobs[i] ÷ characters in options[i]
+      → return the index of the highest score (not the score)
+  tools: |
+    lowercase
+      s.lower()                    lowercase copy of s
+    keep letters, digits, spaces
+      c.isalnum()                  True for a letter or digit
+      c.isspace()                  True for whitespace
+      "".join(chars)               glues characters into a string
+    squeeze spaces, trim the ends
+      s.split()                    words, split on any whitespace
+      " ".join(words)              glues words with single spaces
+    score per character, best index
+      len(x)                       how many characters
+      plain arithmetic: /          log-probability ÷ length
+      max(seq, key=fn)             the item with the biggest fn(item)
+      range(n)                     indexes 0 up to n − 1
   nudge: "`normalize_answer`: lowercase, filter the characters, then split and rejoin. `pick_option`: compare each option's log-probability divided by its length."
   concept: "`s.lower()` handles Cyrillic capitals too. Keep a character if `c.isalnum() or c.isspace()`, so letters and digits stay and punctuation goes. `\" \".join(text.split())` collapses runs of whitespace and trims the ends. An option's log-probability is a sum over its tokens, so a longer option scores lower just for being longer. Dividing by `len(option)` compares them per character. `max(range(n), key=...)` returns the index with the largest key."
+  example: |
+    Trace both on small inputs.
+
+    - `normalize_answer(" Орхон  ГОЛ!, ")`: lowercase gives `" орхон  гол!, "`. Dropping `!` and `,` gives `" орхон  гол "`. Splitting and rejoining gives `"орхон гол"`.
+    - `pick_option(["Богд", "Хангайн нуруу"], [-6.0, -9.1])`: the options have 4 and 13 characters.
+    - Per character: -6.0 / 4 = `-1.5` and -9.1 / 13 = `-0.7`. The higher one is the second option, so the answer is `1`.
+    - On the raw sums, -6.0 beats -9.1 and you would pick `0` just because that option is shorter.
   skeleton: |
     return " ".join("".join(c for c in s._____() if c._______() or c.isspace())._____())
     return ___(range(len(options)), key=lambda i: logprobs[i] / ___(options[i]))

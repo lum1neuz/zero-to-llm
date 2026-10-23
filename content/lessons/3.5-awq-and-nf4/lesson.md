@@ -210,8 +210,34 @@ alternatives:
   - awq_scale/alternatives/pow_method.py
   - awq_scale/alternatives/explicit_steps.py
 hints:
+  logic: |
+    for each input channel:
+      average size of its activations over the tokens
+        → s = that average ^ alpha   (alpha 0 → s = 1)
+    stretch each weight column by its s
+      → quantize every row to int4
+    shrink each column back by its s
+      → return the weights
+  tools: |
+    average size per channel
+      t.abs()          each value without its sign
+      t.mean(dim)      the average along dim
+    raise to alpha
+      t ** x           every value to the power x
+    stretch, quantize, shrink
+      plain arithmetic: * /   (a [channels] vector applies to
+                               every row)
+      quantize_rows_int4(t)   the helper typed above
   nudge: "Two moves. Measure how big each input channel's activations are, and use that to stretch the weight columns before quantizing. What has to happen afterwards so X @ W_hat.T still means the same thing?"
   concept: "`X.abs().mean(dim=0)` is the average |x| per input channel, shape [8]. Raise it to `alpha` for s. W is [out, in], so `W * s` stretches each column j by s_j. Quantize that with `quantize_rows_int4`, then divide by s to bring the weights back to their own scale. In a real model the 1 / s is folded into the previous layer instead."
+  example: |
+    Trace it on 2 tokens and 3 channels, with one row of weights: `X = [[1, 4, 0.5], [-2, -6, 1]]`, `W = [[0.7, 0.11, 0.3]]`, `alpha = 0.5`.
+
+    - Mean |x| per channel: `[1.5, 5.0, 0.75]`. Channel 1 is the salient one.
+    - `s = √[1.5, 5.0, 0.75] ≈ [1.225, 2.236, 0.866]`.
+    - Stretched: `W * s ≈ [0.857, 0.246, 0.260]`. The row's largest is now 0.857, so one int4 step is 0.857 / 7 ≈ 0.122, and the codes are `[7, 2, 2]`.
+    - Back on the grid and divided by `s`: `≈ [0.700, 0.110, 0.283]`.
+    - With `alpha = 0`, the step is 0.1 and the middle weight 0.11 rounds to 0.1, a 0.01 error on the channel with the biggest activations. With `alpha = 0.5` that weight comes back as 0.1095, an error of about 0.0005, and the output error drops from about 0.0026 to 0.00016.
   skeleton: |
     s = X.___().____(dim=___) ** _____
     return quantize_rows_int4(W _ s) _ s
@@ -258,8 +284,42 @@ alternatives:
   - nf4/alternatives/min_indices.py
   - nf4/alternatives/int_index.py
 hints:
+  logic: |
+    quantize, for each block:
+      divide the block by its absmax → values in −1…1
+      for each weight:
+        distance to each of the 16 levels
+          → code = position of the closest one (0…15)
+      return codes and absmax
+    dequantize:
+      level for each code → times its block's absmax
+        → flatten to one row
+  tools: |
+    squeeze each block into -1…1
+      t / x            divides every value by x
+    distance to each of the 16 levels
+      t[..., None]     adds a new last axis of size 1
+      a - b            subtracts, broadcasting over the new axis
+      t.abs()          each value without its sign
+    position of the closest level
+      t.argmin(dim)    the index of the smallest value along dim
+    look the levels up again
+      table[idx]       one table entry per code in idx
+      t.long()         converts to a normal integer type
+    undo the scaling and flatten
+      t * x            multiplies every value by x
+      t.reshape(-1)    flattens to one row
   nudge: "Three moves. Squeeze each block into [−1, 1], find each weight's closest level in the table, and on the way back look the levels up again. Which tensor goes inside the square brackets?"
   concept: "`wb / absmax` puts every block in [−1, 1], since absmax is a [blocks, 1] column. `wn[..., None] - NF4` broadcasts a new last axis against the 16 levels, giving a [blocks, block, 16] table of gaps; `.abs().argmin(dim=-1)` picks the closest. On the way back, `NF4[idx.long()]` looks the levels up (a uint8 index would be read as a mask), times `absmax`, then `reshape(-1)`."
+  example: |
+    Trace it with `block = 4` on 8 weights, `w = [0.10, -0.04, 0.02, -0.20, 0.03, 0.01, -0.05, 0.06]`:
+
+    - Two blocks. `absmax = [[0.20], [0.06]]`.
+    - `wn = [[0.5, -0.2, 0.1, -1.0], [0.5, 0.167, -0.833, 1.0]]`.
+    - The table is [2, 4, 16]. For 0.5 the closest levels are 0.4407 (gap 0.059) and 0.5626 (gap 0.063), so it takes the first, code 12.
+    - `idx = [[12, 5, 8, 0], [12, 9, 1, 15]]`, shape [2, 4].
+    - Levels: `[[0.4407, -0.1848, 0.0796, -1.0], [0.4407, 0.1609, -0.6962, 1.0]]`.
+    - Times `absmax` and flattened: `[0.0881, -0.0370, 0.0159, -0.2000, 0.0264, 0.0097, -0.0418, 0.0600]`. Shape [8], close to `w`.
   skeleton: |
     wn = wb / ______
     idx = (wn[..., ____] - NF4).___().______(dim=___)

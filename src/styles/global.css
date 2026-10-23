@@ -309,6 +309,18 @@ p code, li code, .why code, .fb code, .hintbox code, .tier code { font-size: .88
 .rail details summary { cursor: pointer; font-weight: 700; }
 .rail details ul { padding-left: 18px; margin: 8px 0 2px; }
 .stage { padding: 20px 22px 24px; min-width: 0; display: grid; gap: 14px; align-content: start; }
+.logic { margin: 0; white-space: pre-wrap; font: 12.5px/1.55 var(--f-mono); font-variant-ligatures: none; background: var(--surface-2); color: var(--ink); border-radius: 10px; padding: 10px 12px; }
+.logic .tool { display: flex; flex-wrap: wrap; column-gap: 1.5ch; margin: 1px 0; }
+.logic .tool code { font: inherit; color: var(--accent); background: none; padding: 0; }
+.logic .tool span { flex: 1 1 18ch; color: var(--ink-2); font-family: var(--f-body); font-size: 13px; }
+.recap { border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px; background: var(--surface); min-width: 0; }
+.recap summary { cursor: pointer; font-weight: 700; }
+.recap summary span { font-weight: 400; color: var(--ink-2); font-size: 13px; margin-left: 8px; }
+.recap .idea { border-top: 1px solid var(--line); margin-top: 10px; padding-top: 8px; }
+.recap .idea summary { font-weight: 400; }
+.recap .idea summary .key { display: block; margin: 2px 0 0; color: var(--ink-2); font-size: 14px; line-height: 1.45; }
+.recap .idea[open] summary .key { color: var(--ink); }
+.recap .idea .md { margin-top: 8px; }
 .stage-h { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 .stage-h h2 { font-size: 20px; }
 .complete { display: flex; gap: 12px; align-items: center; padding: 12px 16px; border-radius: 14px; background: var(--good-soft); color: var(--good); font-weight: 700; }

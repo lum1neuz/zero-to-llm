@@ -194,8 +194,40 @@ alternatives:
   - kv_budget/alternatives/loop.py
   - kv_budget/alternatives/k_and_v.py
 hints:
+  logic: |
+    kv_bytes_per_token:
+      2 (K and V) × layers × kv_heads × head_dim
+        × bytes_per_value
+    waste_pct:
+      contiguous: every request reserves max_len slots
+        → requests × max_len
+      paged: round each request's length up to whole blocks
+             (an exact fit adds nothing)
+        → add up the reserved slots
+  tools: |
+    bytes per token
+      cfg["key"]            reads one number from the config
+      plain arithmetic: *   (K and V, layers, heads, dims, bytes)
+    contiguous: slots for every request
+      len(xs)               how many items in xs
+      plain arithmetic: *
+    paged: round each length up to whole blocks
+      x // y                divides, drops the remainder
+      plain arithmetic: + - *
+      sum(f(n) for n in xs) adds up f(n) over a list
   nudge: For each token, every layer stores one key and one value per KV head. For the waste, ask how many slots each scheme sets aside before the tokens arrive.
   concept: "Bytes per token are 2 (K and V) × layers × kv_heads × head_dim × bytes per value. Use `kv_heads`: with grouped-query attention several query heads share one K/V head, and only K and V are cached. Contiguous: each request reserves `max_len`. Paged: each request reserves its length rounded *up* to a multiple of `block_size`, and `(n + block_size − 1) // block_size` counts its blocks."
+  example: |
+    Trace a tiny model: `layers = 2`, `kv_heads = 2`, `head_dim = 4`, `bytes_per_value = 2`.
+
+    - Per token: 2 (K and V) × 2 layers × 2 heads × 4 dims × 2 bytes = `64` bytes.
+
+    Now three requests with `lengths = [5, 16, 17]`, `max_len = 32`, `block_size = 8`. They use 38 slots in total.
+
+    - Contiguous: 3 × 32 = `96` reserved. Waste: 1 − 38 / 96, about `60.4%`.
+    - Paged: 5 needs 1 block (8 slots). 16 needs exactly 2 blocks (16 slots). 17 needs 3 blocks (24 slots). Total `48` reserved. Waste: 1 − 38 / 48, about `20.8%`.
+
+    Check: the 16-token request wastes nothing, because it fills its blocks exactly. Don't give it a third block.
   skeleton: |
     return _ * cfg["______"] * cfg["________"] * cfg["head_dim"] * _______________
     contiguous_reserved = ___(lengths) * _______
@@ -247,8 +279,43 @@ alternatives:
   - block_table/alternatives/index_select.py
   - block_table/alternatives/divmod.py
 hints:
+  logic: |
+    slot_of(block_table, pos):
+      logical block = whole BLOCKs that fit before pos
+        → physical = look it up in block_table
+      offset = what's left over inside that block
+        → return physical and offset
+    gather_kv(pool, block_table, length):
+      take the request's blocks from pool, in table order
+        → lay them end to end, one row per token
+        → cut to length   (last block may be half empty)
+  tools: |
+    which logical block, and where inside it
+      x // y         whole blocks that fit, remainder dropped
+      x % y          the remainder
+    look up the physical block
+      lst[i]         item i of a list
+    take the request's blocks, in table order
+      t[idx_list]    picks slices of t along dim 0, in that order
+    lay them end to end
+      t.reshape(a, b)  same values, new shape; -1 is worked out
+      t.shape[i]     the size of dimension i
+    cut to length
+      t[:n]          the first n rows
   nudge: Each position raises two questions. Which of the request's blocks is it in, and where inside that block? The block table turns the first answer into a physical block.
   concept: "With `BLOCK` tokens per block, position `pos` is in logical block `pos // BLOCK`, at offset `pos % BLOCK`, and `block_table[logical]` is the physical block. To gather, index the pool with the whole table: `pool[block_table]` gives `[blocks, BLOCK, d]` in the request's order. `reshape(-1, d)` lays the blocks end to end, and `[:length]` drops the empty tail of the last block."
+  example: |
+    Trace `BLOCK = 4` with `block_table = [2, 0, 3]` and a request of `length = 10`.
+
+    - `pos = 6`: logical block 6 // 4 = `1`, so `physical = block_table[1] = 0`. Offset 6 % 4 = `2`. So `(0, 2)`.
+    - `pos = 9`: logical block `2`, so `physical = 3`. Offset `1`. So `(3, 1)`.
+    - `pos = 3`: logical block `0`, so `physical = 2`. Offset `3`. So `(2, 3)`.
+
+    For `gather_kv` with `d = 2`:
+
+    - Picking the table's blocks from the pool gives shape `[3, 4, 2]`: blocks 2, 0, 3 in that order.
+    - Flattened: `[12, 2]`. Rows 0–3 come from block 2, rows 4–7 from block 0, rows 8–11 from block 3.
+    - Cut to length 10: `[10, 2]`. Rows 10 and 11, the empty offsets 2 and 3 of block 3, are gone.
   skeleton: |
     physical = block_table[pos __ BLOCK]
     offset = pos _ BLOCK
@@ -294,8 +361,34 @@ alternatives:
   - paged_attention/alternatives/transpose.py
   - paged_attention/alternatives/math_sqrt.py
 hints:
+  logic: |
+    gather this request's keys from k_pool   → k
+    gather its values from v_pool            → v
+    for each cached token:
+      score = its key row · q ÷ √d
+    weights = softmax of the scores   (positive, sum to 1)
+      → mix the rows of v by those weights
+      → return the mixed vector
+  tools: |
+    gather keys and values
+      gather_kv(pool, table, n)  your function from step 1
+    score each cached token, scaled
+      t @ x          dot product of every row of t with x
+      t.shape[i]     the size of dimension i
+      x ** y         x to the power y (a root is a power)
+    scores → weights
+      torch.softmax(t, dim)  weights that sum to 1
   nudge: Attention doesn't care where the keys lived. Get them into one tensor, in order, with the function you just wrote. Then it's the attention from lesson 1.1.
   concept: "`gather_kv(k_pool, block_table, length)` gives the `[length, d]` keys, and the same call on `v_pool` gives the values. `k @ q` is one score per cached token. Divide by √d, where d is `k.shape[-1]`, and `torch.softmax(..., dim=-1)` turns the scores into weights. `weights @ v` mixes the value rows."
+  example: |
+    Trace a tiny request: `d = 2`, 3 cached tokens, after gathering.
+
+    - `k = [[1, 0], [0, 1], [1, 1]]`, `v = [[10, 0], [0, 10], [5, 5]]`, `q = [1, 0]`.
+    - Scores `k @ q`: `[1, 0, 1]`. Divided by √2: about `[0.707, 0, 0.707]`.
+    - Softmax: about `[0.401, 0.198, 0.401]`. They add up to 1, and the middle token, with the smaller score, gets the smaller weight.
+    - Mixed: `0.401 × [10, 0] + 0.198 × [0, 10] + 0.401 × [5, 5]` is about `[6.02, 3.98]`.
+
+    Check: the output is one vector of size `d`, the shape of `q`.
   skeleton: |
     k = gather_kv(______, block_table, ______)
     v = gather_kv(______, block_table, length)
