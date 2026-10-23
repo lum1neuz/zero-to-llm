@@ -14,7 +14,6 @@ const SPEEDS = [1, 1.5, 2];
 const RUNGS = ["nudge", "concept", "skeleton", "solution"] as const;
 const RUNG_LABEL = { nudge: "Nudge", concept: "Concept", skeleton: "Skeleton", solution: "Solution" };
 
-export const stepXp = (c: Pick<ChallengeRec, "hints">) => (c.hints >= 4 ? XP.solutionCap : XP.challengeFull - XP.hintCost * c.hints);
 export function stepNote(c: ChallengeRec | undefined, locked: string | null, minutes?: number) {
   if (c?.phase === "solved") return c.hints >= 4 ? "Solved · solution shown" : c.hints ? `Solved · ${plural(c.hints, "hint")}` : "Solved · no hints";
   if (locked) return locked;
@@ -153,7 +152,7 @@ export function Challenge({ lessonId, step, startCode, runtime }: Props) {
       // Only a run that actually executed the tests counts as another try (unlocks the next hint).
       if (out.kind === "ok") c.runs++;
       if (passed && c.phase !== "solved") {
-        c.phase = "solved"; c.xp = stepXp(c);
+        c.phase = "solved"; c.xp = XP.challengeFull;
         solvedNow = c.xp;
         touchDay(d);
       }
@@ -270,7 +269,7 @@ function HintLadder({ step, rec: c, intro, running, solAsk, setSolAsk, openHint,
   step: ChallengeStep; rec: ChallengeRec; intro: boolean; running: boolean; solAsk: boolean; setSolAsk: (v: boolean) => void; openHint: () => void; peek: () => void;
 }) {
   const solved = c.phase === "solved";
-  const xpLine = solved ? `earned ${c.xp} XP` : intro ? "opens on your turn" : `${stepXp(c)} XP if solved now`;
+  const xpLine = solved ? `earned ${c.xp} XP` : intro ? "opens on your turn" : `${XP.challengeFull} XP if solved now`;
   const block = (e: { preventDefault: () => void }) => e.preventDefault();
   return (
     <div className="pnl">
@@ -299,10 +298,10 @@ function HintLadder({ step, rec: c, intro, running, solAsk, setSolAsk, openHint,
         } else if (intro) body = <span className="lockr">{I.lock} Opens on your turn</span>;
         else if (i === c.hints && running) body = <span className="lockr">Wait for the tests to finish.</span>;
         else if (i === c.hints && (i === 0 || c.runs > c.lastHintRun)) {
-          body = !isSol ? <button className="btn sm" onClick={openHint}>Show hint {i + 1} <span className="cost">−{XP.hintCost} XP</span></button>
+          body = !isSol ? <button className="btn sm" onClick={openHint}>Show hint {i + 1}</button>
             : solAsk ? (
               <>
-                <p>Showing the solution marks this step as assisted and caps it at {XP.solutionCap} XP. You'll still type it yourself.</p>
+                <p>Showing the solution marks this step as assisted. You'll still type it yourself.</p>
                 <div className="confirm-row"><button className="btn sm warnbtn" onClick={openHint}>Show solution</button><button className="btn sm" onClick={() => setSolAsk(false)}>Not yet</button></div>
               </>
             ) : <button className="btn sm" onClick={() => setSolAsk(true)}>Show solution…</button>;

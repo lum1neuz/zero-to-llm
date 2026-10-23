@@ -1,5 +1,5 @@
-// Learn: Mimo-style card deck. One optional hint per exercise (a correct answer after the hint
-// earns 3 XP instead of 5). Check never silently disables: when it's not ready, it says why.
+// Learn: Mimo-style card deck. One optional hint per exercise (free: it doesn't change the
+// XP). Check never silently disables: when it's not ready, it says why.
 import { useEffect, useState } from "react";
 import type { Card, Lesson } from "../../lib/course.ts";
 import { lessonRec, scheduleMiss, streak, touchDay, update, useProgress, XP } from "../../lib/progress.ts";
@@ -95,7 +95,7 @@ export default function Player({ lesson }: { lesson: Lesson }) {
     const r = grade(c, a);
     const practice = scored.includes(ci);
     let g = gained, cr = correct;
-    if (r.ok && !practice) { g += a.hint ? XP.cardWithHint : XP.card; cr++; setGained(g); setCorrect(cr); }
+    if (r.ok && !practice) { g += XP.card; cr++; setGained(g); setCorrect(cr); }
     if (!r.ok && c.type === "quiz" && !practice) { setMissed(missed + 1); update((d) => scheduleMiss(d, lesson.id, c.ref)); }
     setFb({ ok: r.ok, title: r.ok ? RIGHT[ci % RIGHT.length] : "Not quite", why: r.why, practice });
     // Once a card is scored, a reload resumes after it and going back to it is practice, so its XP can't be earned twice.
@@ -191,7 +191,7 @@ export default function Player({ lesson }: { lesson: Lesson }) {
           {reason && <p className={`reason ${flash ? "flash" : ""}`} aria-live="polite">{reason}</p>}
           <div className={hasHint ? "row" : ""}>
             {hasHint && (
-              <button className="btn" onClick={() => setA({ ...a, hint: true })} aria-disabled={a.hint} title={a.hint ? "Hint shown. A correct answer now earns 3 XP." : "Show a hint. A correct answer then earns 3 XP instead of 5."}>
+              <button className="btn" onClick={() => setA({ ...a, hint: true })} aria-disabled={a.hint} title={a.hint ? "Hint shown." : "Show a hint."}>
                 {I.bulb} {a.hint ? "Hint shown" : "Hint"}
               </button>
             )}

@@ -106,7 +106,7 @@ A lesson is Markdown with YAML frontmatter. Stubs have frontmatter only. A ready
 
 `## Goal` · `## Learn` · `## Build steps` · `## Hints` (optional) · `## Done when`
 
-**Learn** holds only ` ```card ` blocks of YAML, 5–8 cards including quiz cards. Every card has `id`, optional `eyebrow` and `title`. Exercises take one optional `hint`. With the hint used, a correct answer earns 3 XP instead of 5.
+**Learn** holds only ` ```card ` blocks of YAML, 5–8 cards including quiz cards. Every card has `id`, optional `eyebrow` and `title`. Exercises take one optional `hint`. Hints are free and don't change the XP.
 
 | `type` | Fields |
 |---|---|

@@ -6,7 +6,7 @@ import type { LiteCourse, LiteLesson } from "./course.ts";
 
 export const KEY = "z2l.progress.v1";
 export const REVIEW_DAYS = [1, 3, 7];
-export const XP = { card: 5, cardWithHint: 3, learnBonus: 10, challengeFull: 30, hintCost: 5, solutionCap: 10, review: 2 };
+export const XP = { card: 5, learnBonus: 10, challengeFull: 30, review: 2 };
 
 export interface ChallengeRec { phase: "intro" | "challenge" | "solved"; t: number; code: string | null; runs: number; hints: number; lastHintRun: number; peek: boolean; xp: number; at: number }
 export interface LessonRec {

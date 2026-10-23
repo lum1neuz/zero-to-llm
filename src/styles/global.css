@@ -371,7 +371,6 @@ p code, li code, .why code, .fb code, .hintbox code, .tier code { font-size: .88
 .tier p { margin: 0; line-height: 1.45; }
 .lockr { color: var(--ink-2); font-size: 12.5px; display: inline-flex; gap: 6px; align-items: center; }
 .lockr svg { width: 13px; height: 13px; }
-.cost { font-weight: 400; color: var(--gold); font-size: 12px; }
 .confirm-row { display: flex; gap: 8px; flex-wrap: wrap; }
 .warnbtn { border-color: var(--gold); color: var(--gold); }
 .hint-code { margin: 0; width: 100%; background: var(--code-bg); color: var(--code-fg); border-radius: 10px; padding: 10px 12px; font: 12.5px/1.6 var(--f-mono); overflow-x: auto; white-space: pre; }
