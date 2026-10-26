@@ -290,6 +290,13 @@ function HintLadder({ step, rec: c, intro, running, solAsk, setSolAsk, openHint,
   const solved = c.phase === "solved";
   const xpLine = solved ? `earned ${c.xp} XP` : intro ? "opens on your turn" : `${XP.challengeFull} XP if solved now`;
   const block = (e: { preventDefault: () => void }) => e.preventDefault();
+  // Opened rungs fold to their header so the console stays in view. Only the newest one starts
+  // expanded; opening another folds the rest.
+  const newest = () => new Set(Array.from({ length: Math.max(0, c.hints - 1) }, (_, i) => i));
+  const [shut, setShut] = useState(newest);
+  const [seen, setSeen] = useState(`${step.id}:${c.hints}`);
+  if (seen !== `${step.id}:${c.hints}`) { setSeen(`${step.id}:${c.hints}`); setShut(newest()); }
+  const toggle = (i: number) => setShut((s) => { const n = new Set(s); n.has(i) ? n.delete(i) : n.add(i); return n; });
   return (
     <div className="pnl">
       <div className="pnl-h">Help<span>{xpLine}</span></div>
@@ -327,7 +334,14 @@ function HintLadder({ step, rec: c, intro, running, solAsk, setSolAsk, openHint,
               </>
             ) : <button className="btn sm" onClick={() => setSolAsk(true)}>Show solution…</button>;
         } else body = <span className="lockr">{I.lock} {i > c.hints ? `Open hint ${i} first` : "Run the tests once more to unlock"}</span>;
-        return <div key={k} className={`tier ${open ? "open" : ""}`}><b>{label}</b>{body}</div>;
+        if (!open) return <div key={k} className="tier"><b>{label}</b>{body}</div>;
+        const folded = shut.has(i);
+        return (
+          <div key={k} className={`tier open ${folded ? "folded" : ""}`}>
+            <button type="button" className="tier-h" aria-expanded={!folded} onClick={() => toggle(i)}><span className="chev">▸</span>{label}</button>
+            {!folded && body}
+          </div>
+        );
       })}
       <p className="fine pnl-foot">Start with the logic, then the tools to build it with. After that, the tests point at your actual mistake, and each further hint unlocks after another run.</p>
     </div>

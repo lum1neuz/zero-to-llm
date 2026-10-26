@@ -379,7 +379,11 @@ p code, li code, .why code, .fb code, .hintbox code, .tier code { font-size: .88
 .tier { padding: 10px 14px; border-top: 1px solid var(--line); display: grid; gap: 7px; justify-items: start; font-size: 13.5px; }
 .tier:first-of-type { border-top: 0; }
 .tier > b { font-size: 12px; font-family: var(--f-mono); letter-spacing: .04em; color: var(--ink-2); }
-.tier.open > b { color: var(--gold); }
+.tier-h { all: unset; cursor: pointer; display: flex; align-items: center; gap: 6px; width: 100%; font: 700 12px var(--f-mono); letter-spacing: .04em; color: var(--gold); }
+.tier-h:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; border-radius: 4px; }
+.tier-h .chev { display: inline-block; transition: transform .15s; transform: rotate(90deg); }
+.tier.folded .tier-h .chev { transform: rotate(0deg); }
+.tier.folded { padding-block: 8px; }
 .tier p { margin: 0; line-height: 1.45; }
 .lockr { color: var(--ink-2); font-size: 12.5px; display: inline-flex; gap: 6px; align-items: center; }
 .lockr svg { width: 13px; height: 13px; }
