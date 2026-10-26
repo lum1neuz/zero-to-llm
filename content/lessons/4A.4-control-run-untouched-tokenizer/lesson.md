@@ -187,6 +187,15 @@ alternatives:
   - heldout_eval/alternatives/loop.py
   - heldout_eval/alternatives/log2.py
 hints:
+  start:
+    try: |
+      text, logits, ids = CONTROL[0]
+      print(len(ids), len(text), logits.shape)
+      print(round(F.cross_entropy(logits[0:1], ids[1:2]).item(), 3))
+    see: |
+      33 76 torch.Size([33, 64])
+      1.494
+    next: "That's one prediction: row 0 of the logits scored against the id that comes after it, `ids[1]`, a loss of about 1.49. This document has 33 ids, so 32 predictions, and `doc_nll` needs their total. Slice both sides so row t meets id t + 1, and ask the loss to add them up rather than average them."
   logic: |
     doc_nll:
       each position predicts the next token

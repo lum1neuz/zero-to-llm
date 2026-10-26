@@ -189,6 +189,15 @@ alternatives:
   - roofline/alternatives/seconds_first.py
   - roofline/alternatives/flops_per_token.py
 hints:
+  start:
+    try: |
+      weights_bytes = 8e9 * 2
+      print(round(weights_bytes / BANDWIDTH * 1000, 2))
+      print(round(2 * 8e9 / PEAK_FLOPS * 1000, 2))
+    see: |
+      17.09
+      0.23
+    next: "At batch 1, reading the 16 GB of fp16 weights takes 17.09 ms and the math takes 0.23 ms, so memory sets the pace. The math grows with every extra sequence in the batch and the reading doesn't. Put both times in `step_ms`, with the batch in the math one, and the step lasts as long as the slower."
   logic: |
     step_ms:
       mem_ms = bytes of weights ÷ BANDWIDTH   (batch doesn't matter)
@@ -270,6 +279,15 @@ alternatives:
   - bench_stats/alternatives/loops.py
   - bench_stats/alternatives/named_parts.py
 hints:
+  start:
+    try: |
+      r = requests[0]
+      print(round(r["first"] - r["arrive"], 2))
+      print(round(r["done"] - r["first"], 2), r["tokens"] - 1)
+    see: |
+      0.18
+      2.4 120
+    next: "The first request waited 0.18 s for its first token, then streamed 120 more tokens in 2.4 s. Do the first line for every request with a list comprehension. Time per token is the second line's time divided by its count, in ms. Throughput is different: every token over one stretch of the clock."
   logic: |
     for each request:
       ttft = first-token time − its own arrival time

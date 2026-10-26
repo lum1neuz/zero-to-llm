@@ -209,6 +209,16 @@ alternatives:
   - nf4_memory/alternatives/if_else.py
   - nf4_memory/alternatives/bits_first.py
 hints:
+  start:
+    try: |
+      print(n_linear, n_embed)
+      print(32 / BLOCK)
+      print(n_linear * 4 / 8 / 1e9)
+    see: |
+      6979321856 1050673152
+      0.5
+      3.489660928
+    next: "That's the two weight counts, the absmax cost per weight when every 64 weights share one fp32 absmax (32 / 64 bits), and the 4-bit weights alone in GB. `scale_bits` is that 0.5 in the plain case, and double quantization makes it smaller by storing each absmax in 8 bits. Get the plain total working first, then the double-quant version."
   logic: |
     scale_bits = absmax overhead per weight, in bits
     double_quant on?
@@ -280,6 +290,15 @@ alternatives:
   - lora_budget/alternatives/loop.py
   - lora_budget/alternatives/spelled_out.py
 hints:
+  start:
+    try: |
+      i, o = SHAPES[1]
+      print(i, o)
+      print(16 * i, o * 16)
+    see: |
+      4096 1024
+      65536 16384
+    next: "That's the key projection, 4096 in and 1024 out. With `r = 16`, `A` holds 16 × 4096 numbers and `B` holds 1024 × 16. `lora_params` adds those two for each of the seven Linear layers of a block, then multiplies by the number of layers. Do it for this one layer, then ask how to cover all seven."
   logic: |
     lora_params:
       for each (in, out) Linear layer in shapes:

@@ -191,6 +191,15 @@ alternatives:
   - count_params/alternatives/with_names.py
   - count_params/alternatives/factored.py
 hints:
+  start:
+    try: |
+      V, d = config["vocab_size"], config["n_embd"]
+      print(V, "tokens, each a row of", d, "numbers")
+      print(f"{V * d:,}")
+    see: |
+      21504 tokens, each a row of 512 numbers
+      11,010,048
+    next: "That's the token table alone: one row of 512 numbers per token, 11,010,048 numbers in all. `embeddings` also has the position table, one row per place in the context. Then each of the 6 blocks costs the same amount, and the final LayerNorm has a scale and a shift per feature."
   logic: |
     embeddings = two tables, d numbers per row
       token table: one row per vocab entry (V)
@@ -259,6 +268,14 @@ alternatives:
   - run_budget/alternatives/named_speed.py
   - run_budget/alternatives/split_passes.py
 hints:
+  start:
+    try: |
+      print(f"{n:,} params, {tokens:,} tokens")
+      print(f"{71e12 * 0.30:.2e} FLOPs per second really achieved")
+    see: |
+      30,187,520 params, 245,760,000 tokens
+      2.13e+13 FLOPs per second really achieved
+    next: "Those are the two sizes you multiply, and the speed you divide by: 30% of the card's 71 TFLOPs peak. `flops` is 6 for every parameter for every token. `seconds` is `flops` over that real speed, and the return already turns seconds into hours."
   logic: |
     flops = FLOPs per parameter per token
       × n_params × tokens

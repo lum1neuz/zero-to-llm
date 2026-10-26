@@ -191,6 +191,15 @@ alternatives:
   - uniform_baseline/alternatives/sum_over_n.py
   - uniform_baseline/alternatives/neg.py
 hints:
+  start:
+    try: |
+      probs = torch.tensor([0.5, 0.25])
+      print(probs.log())
+      print(probs.log().mean())
+    see: |
+      tensor([-0.6931, -1.3863])
+      tensor(-1.0397)
+    next: "That's two predictions, the log of each, and the average of the logs. It's negative, because a log of a chance below 1 is negative. A loss should be positive, and lower for a better model. Fix the sign, then return that one number."
   logic: |
     probs holds one probability per prediction
     take the log of each probability   (0 if sure, very negative if wrong)

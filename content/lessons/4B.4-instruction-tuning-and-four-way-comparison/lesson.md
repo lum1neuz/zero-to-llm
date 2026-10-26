@@ -234,6 +234,16 @@ alternatives:
   - macro_scores/alternatives/statistics_mean.py
   - macro_scores/alternatives/explicit_loop.py
 hints:
+  start:
+    try: |
+      g = by(ROWS, "model", "task")
+      print(len(g))
+      rows = g["base", "mn_mc"]
+      print(len(rows), [r.correct for r in rows])
+    see: |
+      8
+      8 [1, 0, 1, 0, 1, 0, 1, 0]
+    next: "There are 8 (model, task) pairs, and this one holds 8 answers, 4 of them right, so its accuracy is 0.5. Do that for every pair. Then each model averages the accuracies of its own tasks, so a small task counts as much as a big one."
   logic: |
     for each (model, task) group:
       acc = right answers ÷ rows in the group   (0 to 1)
@@ -301,6 +311,15 @@ solution: answer_cost/solution.py
 alternatives:
   - answer_cost/alternatives/loops.py
 hints:
+  start:
+    try: |
+      rows = by(ROWS, "model")["control"]
+      print([r.tokens for r in rows])
+      print([r.correct for r in rows])
+    see: |
+      [10, 9, 13, 8, 8, 10, 7, 11, 9, 12, 6, 9]
+      [1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1]
+    next: "That's every answer the control gave: how long each was, and whether it was right. Tokens per answer averages the first list. Tokens per right answer charges all of those tokens against the 1s in the second. Get both for the control, then wrap them in a dict over every model."
   logic: |
     for each model (its rows are group):
       total = tokens of every answer, right or wrong

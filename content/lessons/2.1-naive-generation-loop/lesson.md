@@ -249,6 +249,15 @@ alternatives:
   - greedy_loop/alternatives/tolist.py
   - greedy_loop/alternatives/softmax_first.py
 hints:
+  start:
+    try: |
+      logits = model(prompt)
+      print(logits.shape)
+      print(logits[-1].argmax())
+    see: |
+      torch.Size([4, 15])
+      tensor(14)
+    next: "That's one run of the model on the 4-token prompt: a row of logits for each position, and the biggest logit of the last row, which is the id greedy would pick next. `generate` repeats this: run the model on everything so far, take the last row, pick from it, add the pick to the ids."
   logic: |
     greedy(logits):
       → return the position of the largest logit
@@ -328,6 +337,15 @@ alternatives:
   - temperature/alternatives/num_samples.py
   - temperature/alternatives/exp_normalise.py
 hints:
+  start:
+    try: |
+      row = model(prompt)[-1]
+      print(row.shape)
+      print(F.softmax(row, dim=-1).max())
+    see: |
+      torch.Size([15])
+      tensor(0.3040)
+    next: "That's the last row as chances: one per id, the biggest one printed. `sample` first reshapes these chances with the temperature, then draws one id from them instead of always taking the biggest."
   logic: |
     divide logits by temperature
       (below 1 sharpens, above 1 flattens)

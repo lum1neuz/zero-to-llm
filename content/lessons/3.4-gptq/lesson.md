@@ -210,6 +210,16 @@ alternatives:
   - hessian/alternatives/eye_sum.py
   - hessian/alternatives/no_constant.py
 hints:
+  start:
+    try: |
+      print(X.shape)
+      print((X[:, 0] * X[:, 1]).sum())
+      print((X[:, 0] * X[:, 0]).sum())
+    see: |
+      torch.Size([64, 8])
+      tensor(368.3354)
+      tensor(243.7676)
+    next: "That's the shape of X (64 tokens, 8 features) and two entries of XᵀX: features 0 and 1 together, and feature 0 with itself. `H` holds this number for every pair of features, so it is 8 by 8. One matrix product of X with itself gives the whole grid, with the 64 tokens as the part that gets added up. Then scale by 2 over the token count."
   logic: |
     for every pair of features:
       multiply them token by token, add up over all tokens
@@ -285,6 +295,15 @@ alternatives:
   - gptq/alternatives/next_columns.py
   - gptq/alternatives/unsqueeze.py
 hints:
+  start:
+    try: |
+      U = upper_cholesky(inverse(H))
+      print(W[:, 0] / scale)
+      print(U[0, 0])
+    see: |
+      tensor([3.7592, 0.0506, 2.9851, 0.2696])
+      tensor(2.8465)
+    next: "That's column 0 of W measured in steps of each row's scale, and the first diagonal entry of `U`. Round those four numbers, clamp them to ±7 and multiply back, and you have `q` for column 0. `err` is how far column 0 moved, divided by that `U[0, 0]`. Do column 0 by hand before you think about the loop."
   logic: |
     for each column j, left to right:
       divide column j by each row's scale → round to a whole number

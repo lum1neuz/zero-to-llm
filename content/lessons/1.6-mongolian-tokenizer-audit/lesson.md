@@ -243,6 +243,15 @@ alternatives:
   - fertility/alternatives/loop.py
   - fertility/alternatives/joined.py
 hints:
+  start:
+    try: |
+      s = mongolian_test[0]
+      print(len(s.split()), "words")
+      print(len(encode(s, mn_merges)), "tokens")
+    see: |
+      6 words
+      29 tokens
+    next: "That's one sentence: 6 words that cost 29 tokens. `fertility` is tokens divided by words over all the sentences together. Do the sentence-sized count in a sum over `sentences`, once for tokens and once for words."
   logic: |
     for each sentence in sentences:
       encode it with the merges given → count the ids   (tokens)
@@ -305,6 +314,14 @@ alternatives:
   - partial/alternatives/bare_except.py
   - partial/alternatives/counter.py
 hints:
+  start:
+    try: |
+      print(en_vocab[211], en_vocab[168])
+      print((en_vocab[211] + en_vocab[168]).decode("utf-8"))
+    see: |
+      b'\xd3' b'\xa8'
+      Ө
+    next: "Each byte alone is half a letter, and the two together are the letter Ө. A half-letter can't be turned back into text. In the editor, ask Python to decode a lone `b'\\xd3'` as utf-8 and read what it does. `is_partial` answers True exactly when that happens."
   logic: |
     is_partial(piece):
       try to decode piece as UTF-8   (no replacing, let it fail)
@@ -380,6 +397,14 @@ alternatives:
   - cyrillic/alternatives/loop.py
   - cyrillic/alternatives/range_ids.py
 hints:
+  start:
+    try: |
+      print(ord("a"), ord("а"), ord("ө"))
+      print(len(mn_vocab) - 256, "merged tokens")
+    see: |
+      97 1072 1257
+      40 merged tokens
+    next: "Every character has a code number: Latin `a` is 97, and the Cyrillic letters, Mongolian ө among them, sit together in one block of much bigger numbers. `has_cyrillic` can ask a character for its number and check whether it is inside that block. Look up where Cyrillic starts and ends."
   logic: |
     has_cyrillic(text):
       for each character in text:

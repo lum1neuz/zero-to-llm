@@ -206,6 +206,15 @@ alternatives:
   - rules/alternatives/enumerate_all.py
   - rules/alternatives/loops.py
 hints:
+  start:
+    try: |
+      print(board[3] == 0, board[4] == 0)
+      a, b, c = LINES[4]
+      print(board[a], board[b], board[c])
+    see: |
+      True False
+      -1 -1 1
+    next: "That's cell 3 tested for empty (yes), cell 4 (no), and the three cells of line `(1, 4, 7)` read off the board: -1, -1, 1, not all the same. `legal_moves` runs the empty test on every index 0 to 8 and keeps the ones that pass. `winner` reads every line of `LINES` this way."
   logic: |
     legal_moves:
       keep each cell index whose cell is empty (0)
@@ -301,6 +310,15 @@ alternatives:
   - select_child/alternatives/inline_q.py
   - select_child/alternatives/max_key.py
 hints:
+  start:
+    try: |
+      child = root.children[0]
+      print(child.n, child.q(), child.prior)
+      print(root.n)
+    see: |
+      9 0.1 0.5
+      10
+    next: "That's move 0's child: 9 visits, an average value Q of 0.1 and a prior of 0.5, plus the parent's 10 visits. Those are the four numbers the PUCT score needs. Work out the score for this one child by hand first, then write the same expression for `score`."
   logic: |
     for each (move, child) of node:
       Q = child's average value per visit
@@ -369,6 +387,15 @@ alternatives:
   - backup/alternatives/index_loop.py
   - backup/alternatives/sign_from_depth.py
 hints:
+  start:
+    try: |
+      leaf = Node(0.5)
+      path = [Node(1.0), leaf]
+      leaf.n += 1
+      print([(nd.n, nd.w) for nd in path])
+    see: |
+      [(0, 0.0), (1, 0.0)]
+    next: "That's a two-node path after one visit was counted on the leaf: the leaf shows 1, the parent still 0. `backup` has to walk the whole path from the leaf up and give every node its visit and a value. The leaf's `value` is for the player to move there, but each `w` counts for whoever moved into that node, so work out the parent's sign before coding."
   logic: |
     value = result for the player to move at the leaf
     for each node in path, from the leaf up to the root:
@@ -437,6 +464,13 @@ alternatives:
   - visit_policy/alternatives/loop_and_normalise.py
   - visit_policy/alternatives/child_visits.py
 hints:
+  start:
+    try: |
+      root = run_mcts([0] * 9, 1, 50, random.Random(0))
+      print({m: c.n for m, c in sorted(root.children.items())})
+    see: |
+      {0: 1, 1: 1, 2: 26, 3: 1, 4: 4, 5: 1, 6: 12, 7: 2, 8: 1}
+    next: "That's how many visits each of the nine first moves got from a 50-simulation search. On a later board some cells have no child, and `visit_policy` has to give those 0. The policy is these counts turned into nine shares of their total. Start by building just the list of nine counts."
   logic: |
     visits = for cells 0 to 8: the child's n
              (0 if the root has no child there)

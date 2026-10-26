@@ -277,6 +277,15 @@ alternatives:
   - extend_rows/alternatives/index_select.py
   - extend_rows/alternatives/loop.py
 hints:
+  start:
+    try: |
+      pieces = [BASE.index(p) for p in encode(NEW_TOKENS[1], BASE_VOCAB)]
+      print(NEW_TOKENS[1], pieces)
+      print(E[pieces].shape)
+    see: |
+      байна [18, 37, 47]
+      torch.Size([3, 16])
+    next: "That's the new token `байна` and the three base pieces it splits into today: three rows of 16 numbers each. The new token needs one row of 16 built from those three. Build it for this one token first, then for all 20."
   logic: |
     for each new token in pieces:
       take the rows of weight for its base pieces
@@ -346,6 +355,15 @@ alternatives:
   - step0_loss/alternatives/embedding_linear.py
   - step0_loss/alternatives/log_softmax.py
 hints:
+  start:
+    try: |
+      ids = to_ids(HELD_OUT, BASE)
+      print(len(ids), E[ids[0]].shape, H.shape)
+      print((H @ E[ids[0]]).shape)
+    see: |
+      128 torch.Size([16]) torch.Size([102, 16])
+      torch.Size([102])
+    next: "That's one position: its embedding row is 16 numbers, and against the 102 rows of the head it gives one score per token, 102 scores. `step0_loss` needs that for every position except the last, then the loss against the token that really comes next."
   logic: |
     drop the last id (nothing follows it)
       → look up its embedding row for each remaining id

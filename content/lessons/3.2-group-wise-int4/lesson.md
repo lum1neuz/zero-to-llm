@@ -214,6 +214,14 @@ alternatives:
   - quantize_groups/alternatives/explicit_rows.py
   - quantize_groups/alternatives/no_clamp.py
 hints:
+  start:
+    try: |
+      print(w[:4])
+      print(w[:4].abs().max(), w[4:8].abs().max())
+    see: |
+      tensor([0.1200, -0.3100, 0.0500, 0.2200])
+      tensor(0.3100) tensor(2.4000)
+    next: "The first group of 4 has largest magnitude 0.31 and the second has 2.40, so each group needs its own scale to put its largest weight on 7. `quantize_groups` does that for every group at once: lay `w` out so each group is a row, then take the largest magnitude per row."
   logic: |
     wg = w laid out as rows of g weights   (one group per row)
     for each group (row of wg):
@@ -298,6 +306,15 @@ alternatives:
   - dequantize_groups/alternatives/flatten.py
   - dequantize_groups/alternatives/int_times_scale.py
 hints:
+  start:
+    try: |
+      q, scale = quantize_groups(w, 4)
+      print(q.shape, scale.shape)
+      print(q[1].float() * scale[1])
+    see: |
+      torch.Size([4, 4]) torch.Size([4, 1])
+      tensor([-0.3429, 0.0000, 2.4000, -0.3429])
+    next: "`q` has one row per group and `scale` has one entry per group, so row 1 meets `scale[1]`. That's group 1 back in floats: each value is within half a step (about 0.17) of the matching `w[4:8]`. `dequantize_groups` does all four rows at once, then lays the 16 values back into one row."
   logic: |
     take q (whole numbers, one row per group)
       and scale (one per row)

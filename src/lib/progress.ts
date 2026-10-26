@@ -8,13 +8,14 @@ export const KEY = "z2l.progress.v1";
 export const REVIEW_DAYS = [1, 3, 7];
 export const XP = { card: 5, learnBonus: 10, challengeFull: 30, review: 2 };
 /** The Build hint ladder, in unlock order. `ChallengeRec.hints` counts how many are open. */
-export const RUNGS = ["logic", "tools", "nudge", "concept", "example", "skeleton", "solution"] as const;
-/** Logic and tools are the approach (high-level flow, then what to tackle it with), so they open
- *  without a test run. Every later rung needs another run first. */
-export const FREE_RUNGS = 2;
+export const RUNGS = ["start", "logic", "tools", "nudge", "concept", "example", "skeleton", "solution"] as const;
+/** Start here (a first line to run), logic and tools (the high-level flow, then what to tackle it
+ *  with) open without a test run. Every later rung needs another run first. */
+export const FREE_RUNGS = 3;
 
-/** `ladder: 7` marks `hints` as counted on the seven-rung ladder; older records counted four rungs. */
-export interface ChallengeRec { phase: "intro" | "challenge" | "solved"; t: number; code: string | null; runs: number; hints: number; lastHintRun: number; peek: boolean; xp: number; at: number; ladder?: 7 }
+/** `ladder: 8` marks `hints` as counted on the eight-rung ladder (Start here first); `ladder: 7`
+ *  records predate Start here, and records without a ladder counted four rungs. */
+export interface ChallengeRec { phase: "intro" | "challenge" | "solved"; t: number; code: string | null; runs: number; hints: number; lastHintRun: number; peek: boolean; xp: number; at: number; ladder?: 7 | 8 }
 export interface LessonRec {
   learn?: { done: boolean; bestXp: number; correct: number; total: number; at: number };
   session?: { ci: number; gained: number; correct: number; scored?: number[]; at: number };
@@ -42,15 +43,20 @@ export const addDays = (day: string, n: number) => { const d = new Date(day + "T
 export const daysBetween = (a: string, b: string) => Math.round((new Date(b + "T12:00:00").getTime() - new Date(a + "T12:00:00").getTime()) / 864e5);
 
 export const fresh = (): Progress => ({ v: 1, startDate: today(), startSetAt: 0, cut: 0, cutAt: 0, activeDays: [], lessons: {}, review: {} });
-export const blankChallenge = (): ChallengeRec => ({ phase: "intro", t: 0, code: null, runs: 0, hints: 0, lastHintRun: -1, peek: false, xp: 0, at: 0, ladder: 7 });
-/** Old ladder was nudge, concept, skeleton, solution. Logic and tools now come first and example
- *  sits before skeleton, so every old count keeps the same rungs open: 1→3, 2→4, 3→6, 4→7.
- *  ponytail: a client still on the old cached bundle reads new counts on the old ladder until the
- *  service worker updates it; acceptable for a one-off transition. */
-const OLD_TO_NEW = [0, 3, 4, 6, 7];
+export const blankChallenge = (): ChallengeRec => ({ phase: "intro", t: 0, code: null, runs: 0, hints: 0, lastHintRun: -1, peek: false, xp: 0, at: 0, ladder: 8 });
+/** The four-rung ladder was nudge, concept, skeleton, solution; the seven-rung one added logic and
+ *  tools first and example before skeleton (1→3, 2→4, 3→6, 4→7). Start here now leads, so any
+ *  opened hint also counts it as open (n→n+1). Every old count keeps the same rungs open.
+ *  ponytail: a tab still on an old bundle re-maps `ladder: 8` records as four-rung ones and can write
+ *  that back (a few extra hints shown open, solution included). Hints are free and no code or XP is
+ *  lost, so this one-off transition is accepted; the upgrade path is tracking Start here in its own
+ *  field so old bundles never see a changed `hints` meaning. */
+const FOUR_TO_SEVEN = [0, 3, 4, 6, 7];
 export function upgradeLadder(c: ChallengeRec): ChallengeRec {
-  if (c.ladder === 7) return c;
-  return { ...c, hints: OLD_TO_NEW[Math.min(4, Math.max(0, Math.floor(Number(c.hints) || 0)))], ladder: 7 };
+  if (c.ladder === 8) return c;
+  const n = Math.max(0, Math.floor(Number(c.hints) || 0));
+  const seven = c.ladder === 7 ? Math.min(7, n) : FOUR_TO_SEVEN[Math.min(4, n)];
+  return { ...c, hints: seven ? seven + 1 : 0, ladder: 8 };
 }
 const isRec = (v: unknown): v is Record<string, any> => typeof v === "object" && v !== null && !Array.isArray(v);
 /** Runs inside load(): it must never throw on odd stored data, or the catch would start fresh and wipe progress. */
@@ -213,9 +219,9 @@ export function parseImport(text: string): Progress {
       scored: Array.isArray(l.session.scored) ? l.session.scored.filter((x: unknown) => Number.isInteger(x) && (x as number) >= 0) : undefined, at: num(l.session.at) };
     for (const [cid, c] of Object.entries(isObj(l.challenges) ? l.challenges : {})) {
       if (!isObj(c) || !["intro", "challenge", "solved"].includes(c.phase)) continue;
-      const ladder = c.ladder === 7 ? 7 : undefined;
+      const ladder = c.ladder === 8 || c.ladder === 7 ? c.ladder : undefined;
       rec.challenges[cid] = upgradeLadder({ phase: c.phase, t: num(c.t), code: typeof c.code === "string" ? c.code : null, runs: num(c.runs),
-        hints: Math.min(ladder ? RUNGS.length : 4, Math.max(0, Math.floor(num(c.hints)))), lastHintRun: num(c.lastHintRun, -1), peek: !!c.peek,
+        hints: Math.min(ladder ?? 4, Math.max(0, Math.floor(num(c.hints)))), lastHintRun: num(c.lastHintRun, -1), peek: !!c.peek,
         xp: Math.min(XP.challengeFull, Math.max(0, num(c.xp))), at: num(c.at), ladder });
     }
     for (const [k, v] of Object.entries(isObj(l.checks) ? l.checks : {})) { const s2 = stamped(v); if (s2) rec.checks[k] = s2; }
@@ -247,7 +253,7 @@ function mergeChallenge(a: ChallengeRec, b: ChallengeRec): ChallengeRec {
     runs: Math.max(a.runs, b.runs),
     lastHintRun: Math.max(a.lastHintRun, b.lastHintRun),
     peek: a.peek || b.peek,
-    ladder: 7,
+    ladder: 8,
     // Never let a merge raise earned XP: if both sides solved, keep the smaller award.
     xp: solvedXp.length ? Math.min(...solvedXp) : 0,
   };

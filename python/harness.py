@@ -250,8 +250,33 @@ def run(code, tests_src, filename="main.py"):
     }
 
 
+def try_snippet(code, snippet, filename="main.py"):
+    """The "Start here" hint's Run button: run the learner's file quietly (its output and any error
+    from an unfinished stub are dropped), then the snippet in the same namespace. Only the snippet's
+    output and error come back."""
+    _WARNINGS.clear()
+    ns = {"__name__": "__main__"}
+    try:
+        with contextlib.redirect_stdout(io.StringIO()):
+            exec(compile(code, filename, "exec"), ns)
+    except BaseException:  # noqa: BLE001 - a half-written stub is expected to stop early
+        pass
+    out = io.StringIO()
+    err = None
+    try:
+        with contextlib.redirect_stdout(out):
+            exec(compile(snippet, "snippet.py", "exec"), ns)
+    except BaseException as exc:  # noqa: BLE001
+        err = explain(exc, snippet, "snippet.py")
+    return {"stdout": out.getvalue(), "scriptError": err, "tests": [], "warnings": list(_WARNINGS), "snippet": True}
+
+
 def run_json(code, tests_src, filename="main.py"):
     return json.dumps(run(code, tests_src, filename))
+
+
+def try_json(code, snippet, filename="main.py"):
+    return json.dumps(try_snippet(code, snippet, filename))
 
 
 if __name__ == "__main__":  # python harness.py learner.py tests.py

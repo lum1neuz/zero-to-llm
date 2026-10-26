@@ -192,6 +192,14 @@ alternatives:
   - get_lr/alternatives/halved.py
   - get_lr/alternatives/min_lr_first.py
 hints:
+  start:
+    try: |
+      print(f"max {max_lr:.1e}  min {min_lr:.1e}")
+      print("step 30 is", 30 - warmup_steps, "steps into a decay of", max_steps - warmup_steps)
+    see: |
+      max 6.0e-04  min 6.0e-05
+      step 30 is 20 steps into a decay of 40
+    next: "That's step 30 sitting 20 steps into a 40-step decay, halfway down. `progress` is that fraction, running from 0 to 1. Write it for step 30 first and check you get 0.5, then `coeff` is half a cosine of that progress, falling from 1 to 0."
   logic: |
     step < warmup_steps?
       yes → climb in a straight line
@@ -267,6 +275,15 @@ alternatives:
   - clip/alternatives/norms_of_norms.py
   - clip/alternatives/if_branch.py
 hints:
+  start:
+    try: |
+      p = params[0]
+      print(tuple(p.grad.shape))
+      print((p.grad ** 2).sum() ** 0.5)
+    see: |
+      (16, 4)
+      tensor(172.8638)
+    next: "That's the length of the first parameter's gradient on its own. `total_norm` is the same measure over all the parameters laid end to end, so the squares of every parameter get added up before the root. Then `scale` shrinks everything when that length is above `max_norm`, and leaves it alone otherwise."
   logic: |
     total_norm = length of ALL the gradients
       laid end to end as one long vector

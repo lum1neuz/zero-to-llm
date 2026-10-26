@@ -251,6 +251,14 @@ alternatives:
   - cached_step/alternatives/transpose.py
   - cached_step/alternatives/stack_rows.py
 hints:
+  start:
+    try: |
+      x = model.embed(prompt[0], 0)
+      k = x @ model.Wk
+      print(k.shape, torch.zeros(0, model.C).shape)
+    see: |
+      torch.Size([16]) torch.Size([0, 16])
+    next: "`k` is one row of 16 numbers, and the cache is a table with one row per token, empty so far. To add `k` it needs to be a one-row table first, then it can be joined under the cache's rows. `v` gets the same treatment."
   logic: |
     embed the token at pos → q, k, v   (one row of C numbers each)
     make k and v one-row tables
@@ -325,6 +333,14 @@ solution: cached_generate/solution.py
 alternatives:
   - cached_generate/alternatives/shape_pos.py
 hints:
+  start:
+    try: |
+      cache = {"k": torch.zeros(0, model.C), "v": torch.zeros(0, model.C)}
+      logits = step(model, prompt[0], 0, cache)
+      print(logits.shape, cache["k"].shape)
+    see: |
+      torch.Size([15]) torch.Size([1, 16])
+    next: "One call: one token and its position go in, the logits for the next token come out, and the cache gains a row. The prefill makes that call for every prompt token, and the loop makes it once per new token. For each call, work out which token it gets and which position that token sits at."
   logic: |
     cache starts empty
     prefill, for each prompt position pos:
@@ -397,6 +413,15 @@ alternatives:
   - kv_bytes/alternatives/named.py
   - kv_bytes/alternatives/true_div.py
 hints:
+  start:
+    try: |
+      cfg = llama31_8b
+      print(cfg["hidden_size"] // cfg["num_attention_heads"])
+      print(cfg["num_key_value_heads"])
+    see: |
+      128
+      8
+    next: "That's the width of one attention head, and how many K/V heads the cache keeps (8, not the 32 query heads). One position in one layer stores a K vector and a V vector for each of those heads. Count the numbers for that, then scale up by layers, positions and bytes per number."
   logic: |
     head_dim = hidden_size ÷ number of query heads
     per position, in one layer, the cache holds:

@@ -202,6 +202,15 @@ alternatives:
   - normalize/alternatives/loop.py
   - normalize/alternatives/regex.py
 hints:
+  start:
+    try: |
+      word = RAW[0].split()[0]
+      print(word, len(word))
+      print([hex(ord(c)) for c in word if ord(c) < 128])
+    see: |
+      Улаанбаатaр 11
+      ['0x61']
+    next: "That word looks all Cyrillic, but one letter is a Latin `a` (0x61) in disguise. `normalize` recomposes split letters, splits on whitespace, and repairs look-alikes, but only inside words that contain Cyrillic. Try `has_cyrillic` on this word, then use the `LOOKALIKES` table to repair it."
   logic: |
     put split-up letters back together (й from и + breve)
       → split the text into words on any whitespace
@@ -268,6 +277,15 @@ alternatives:
   - keep_filter/alternatives/sets.py
   - keep_filter/alternatives/one_return.py
 hints:
+  start:
+    try: |
+      for i in (11, 2):
+          d = DOCS[i]
+          print(len(d.split()), len([c for c in d if c.isalpha()]), len(d.replace(" ", "")))
+    see: |
+      13 14 38
+      10 58 59
+    next: "Each line is words, letters, and non-space characters. The page counter has 13 words but only 14 letters in 38 characters, while the Mongolian line has 10 words and almost all letters. Each rule compares one of these numbers with a threshold and returns False when the document fails, so write the first rule and try it on both."
   logic: |
     fewer than 6 words?
       yes → drop it
@@ -354,6 +372,17 @@ alternatives:
   - shingles/alternatives/zip_words.py
   - shingles/alternatives/set_methods.py
 hints:
+  start:
+    try: |
+      words = kept[0].split()
+      print(len(words))
+      print(" ".join(words[0:3]))
+      print(" ".join(words[1:4]))
+    see: |
+      16
+      Улаанбаатар хотод өнөөдөр
+      хотод өнөөдөр цас
+    next: "That's how many words the first kept document has, and its first two shingles: runs of 3 words, sliding forward one word each time. `shingles` collects every such run into a set. Work out how many start positions leave room for 3 words, then collect them all."
   logic: |
     shingles:
       split the text into words
@@ -430,6 +459,15 @@ alternatives:
   - minhash_dedup/alternatives/loop.py
   - minhash_dedup/alternatives/mean_of_bools.py
 hints:
+  start:
+    try: |
+      sh = sorted(sets[0])[:3]
+      print([h(0, s) for s in sh])
+      print([h(1, s) for s in sh])
+    see: |
+      [1862524983, 286220485, 967348132]
+      [1655852596, 2759937690, 657646283]
+    next: "That's three shingles of one document hashed with seed 0, then with seed 1: the same shingles get different numbers, because each seed is a different random order. The signature entry for a seed is the lowest hash over the whole shingle set. Do it for seed 0, then repeat for every seed up to `k`."
   logic: |
     minhash:
       for each seed from 0 to k − 1:

@@ -210,6 +210,14 @@ alternatives:
   - awq_scale/alternatives/pow_method.py
   - awq_scale/alternatives/explicit_steps.py
 hints:
+  start:
+    try: |
+      print(X[:, 0].abs().mean())
+      print(X[:, 2].abs().mean())
+    see: |
+      tensor(0.7271)
+      tensor(3.4993)
+    next: "That's the average activation size of channel 0 and of the salient channel 2. `s` is that average to the power `alpha`, one number per channel, so its shape is [8]. Get the average for all eight channels at once, then stretch the weight columns by `s`, quantize, and shrink them back."
   logic: |
     for each input channel:
       average size of its activations over the tokens
@@ -284,6 +292,15 @@ alternatives:
   - nf4/alternatives/min_indices.py
   - nf4/alternatives/int_index.py
 hints:
+  start:
+    try: |
+      wb = w.reshape(-1, 64)
+      print(wb.shape, wb[0].abs().max())
+      print(wb[0, 0] / wb[0].abs().max())
+    see: |
+      torch.Size([8, 64]) tensor(0.1163)
+      tensor(0.0541)
+    next: "That's 8 blocks of 64, the first block's absmax, and its first weight squeezed into −1…1. `wn` does that for every weight with its own block's absmax, which has to keep a column shape. Then ask which of the 16 NF4 levels a squeezed value is nearest to."
   logic: |
     quantize, for each block:
       divide the block by its absmax → values in −1…1

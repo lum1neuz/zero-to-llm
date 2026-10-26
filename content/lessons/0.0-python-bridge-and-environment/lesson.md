@@ -190,6 +190,15 @@ alternatives:
   - encode_decode/alternatives/map_get.py
   - encode_decode/alternatives/loops.py
 hints:
+  start:
+    try: |
+      word = "emma"
+      print("." + word + ".")
+      print(stoi["e"])
+    see: |
+      .emma.
+      5
+    next: "That's the word with its markers, and one letter turned into its number. `encode` does that lookup for every character of the dotted word. A plain `for` loop that appends to a list is fine."
   logic: |
     encode(word):
       put a "." at the front and at the back of word
@@ -269,6 +278,14 @@ alternatives:
   - probs_of/alternatives/gather.py
   - probs_of/alternatives/arange_rows.py
 hints:
+  start:
+    try: |
+      print(xs[0], ys[0])
+      print(P[xs[0], ys[0]])
+    see: |
+      tensor(0) tensor(1)
+      tensor(0.6000)
+    next: "That's the first pair: row `xs[0]`, column `ys[0]`, and the one number of `P` it picks. `probs_of` needs that number for all four pairs, in one tensor. Try it for one pair first, then ask what goes inside the brackets to do all four at once."
   logic: |
     pair i means: row xs[i], column ys[i] of P
     read the cell of P for every pair, all at once (no loop)
@@ -324,6 +341,16 @@ alternatives:
   - normalize_rows/alternatives/unsqueeze.py
   - normalize_rows/alternatives/transpose.py
 hints:
+  start:
+    try: |
+      print(N[0])
+      print(N[0].sum())
+      print(N[0] / N[0].sum())
+    see: |
+      tensor([3, 1, 0, 4])
+      tensor(8)
+      tensor([0.3750, 0.1250, 0.0000, 0.5000])
+    next: "That's row 0 turned into chances that add up to 1. Now every row at once: print `N.sum(1)` and its `.shape`. Each row has to meet its own total, so check which way that shape stretches."
   logic: |
     add up each row of N along the row   (one total per row)
       → keep the totals as a column, not a flat list

@@ -189,6 +189,14 @@ alternatives:
   - scheduler/alternatives/explicit_loop.py
   - scheduler/alternatives/index_queue.py
 hints:
+  start:
+    try: |
+      waiting = sorted(requests, key=lambda r: r["arrive"])
+      running = []
+      print(waiting[0]["id"], waiting[0]["arrive"] <= 0, len(running) < MAX_BATCH)
+    see: |
+      a True True
+    next: "That's the question the admit step asks at step 0: has the oldest waiting request arrived, and is a slot free? Both yes, so `a` moves from `waiting` into `running` with 0 tokens made. Admitting is a `while` that keeps asking this until one answer is no."
   logic: |
     each step:
       admit: while the oldest waiting request has arrived
@@ -281,6 +289,16 @@ alternatives:
   - prefix_cache/alternatives/while_walk.py
   - prefix_cache/alternatives/range_step.py
 hints:
+  start:
+    try: |
+      print(first[:BLOCK] == second[:BLOCK])
+      print(first[8:12] == second[8:12])
+      print(first[12:16], second[12:16])
+    see: |
+      True
+      True
+      [17, 2, 40, 40] [99, 8, 12]
+    next: "Blocks 0 and 2 match in both prompts; block 3 doesn't, and the second prompt's last block has only 3 tokens, so it isn't full. `block_hashes` cuts `tokens` into full blocks with slices like these, one per loop pass, and turns each into one number to remember. Write the cutting loop first and print what it cuts."
   logic: |
     block_hashes:
       parent = nothing yet

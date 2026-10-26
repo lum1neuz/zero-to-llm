@@ -33,7 +33,9 @@ self.onmessage = async (e) => {
       py.globals.set("_code", m.code);
       py.globals.set("_tests", m.tests);
       py.globals.set("_file", m.file);
-      const json = py.runPython("harness.run_json(_code, _tests, _file)");
+      // A "Start here" snippet runs after the learner's file instead of the lesson tests.
+      if (m.snippet !== undefined) py.globals.set("_snippet", m.snippet);
+      const json = py.runPython(m.snippet !== undefined ? "harness.try_json(_code, _snippet, _file)" : "harness.run_json(_code, _tests, _file)");
       self.postMessage({ type: "result", id: m.id, json });
     } catch (err) {
       self.postMessage({ type: "result", id: m.id, error: String((err && err.message) || err) });

@@ -394,6 +394,8 @@ p code, li code, .why code, .fb code, .hintbox code, .tier code { font-size: .88
 .console { border-radius: 14px; border: 1px solid var(--line); overflow: hidden; }
 .con-h { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding: 8px 14px; background: var(--surface-2); font: 600 12px var(--f-mono); }
 .con-h span { color: var(--ink-2); font-weight: 400; }
+.hint-out { margin: 0; width: 100%; box-sizing: border-box; border: 1px dashed var(--line); border-radius: 10px; padding: 8px 12px; font: 12.5px/1.6 var(--f-mono); white-space: pre-wrap; overflow-wrap: anywhere; }
+.hint-out.err { color: var(--bad); }
 .console pre { margin: 0; padding: 12px 14px; min-height: 96px; max-height: 280px; overflow: auto; font: 13px/1.6 var(--f-mono); white-space: pre-wrap; background: var(--surface); }
 .console .err { color: var(--bad); }
 .console .warn { color: var(--gold); }

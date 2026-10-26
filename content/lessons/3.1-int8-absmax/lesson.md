@@ -214,6 +214,14 @@ alternatives:
   - quantize_absmax/alternatives/no_clamp.py
   - quantize_absmax/alternatives/to_dtype_kwarg.py
 hints:
+  start:
+    try: |
+      print(w.abs().max())
+      print(w[0] / w.abs().max() * 127)
+    see: |
+      tensor(2.1000)
+      tensor(25.4000)
+    next: "The biggest magnitude is 2.10, so 2.10 should land on 127. The first weight, 0.42, scales to about 25.4, which rounds to 25. The `scale` is the number you divide by to make that happen. Work it out, then round, clamp and convert."
   logic: |
     find the weight with the largest size (ignore the sign)
       → scale = that size ÷ 127   (what one int8 step is worth)
@@ -285,6 +293,14 @@ solution: dequantize/solution.py
 alternatives:
   - dequantize/alternatives/int_times_scale.py
 hints:
+  start:
+    try: |
+      print(q[5], scale)
+      print(w[5])
+    see: |
+      tensor(127, dtype=torch.int8) tensor(0.0165)
+      tensor(2.1000)
+    next: "`q[5]` is the whole number stored for the biggest weight, `scale` is the size of one step, and `w[5]` is what we need to get back. Which operation turns 127 steps of that size into 2.10? Do it on one number first, then on all of `q`."
   logic: |
     take q (int8 whole numbers) and its scale
       → turn q into floats first   (int8 math overflows)

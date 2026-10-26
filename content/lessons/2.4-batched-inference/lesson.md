@@ -239,6 +239,15 @@ alternatives:
   - left_pad/alternatives/negative_slice.py
   - left_pad/alternatives/start_var.py
 hints:
+  start:
+    try: |
+      T = max(len(p) for p in prompts)
+      print([len(p) for p in prompts], T)
+      print(T - len(prompts[1]))
+    see: |
+      [7, 5, 3] 7
+      2
+    next: "The longest prompt has 7 ids, so every row is 7 wide, and the 5-id prompt is 2 short. It needs 2 pads in front, so its real tokens start in column 2 and end at the last column. Write `p` into row `b` from its start column to the end, and mark those same columns in `mask`."
   logic: |
     T = length of the longest prompt
     idx starts full of pad ids, mask starts all False
@@ -304,6 +313,14 @@ alternatives:
   - batch_mask/alternatives/where.py
   - batch_mask/alternatives/expand.py
 hints:
+  start:
+    try: |
+      print(idx[1])
+      print(mask[1])
+    see: |
+      tensor([0, 0, 2, 0, 4, 11, 6])
+      tensor([False, False, True, True, True, True, True])
+    next: "Row 1 is the short prompt: two pad columns, then five real tokens. `pos` should count 0, 1, 2, 3, 4 from the first real token, not from column 0, so ask what running count of `mask[1]` gives 0 there. For `keep`, picture a grid of queries by keys for this row and ask which keys are real."
   logic: |
     pos: count the real tokens along each row, minus 1
       below 0? (a leading pad)

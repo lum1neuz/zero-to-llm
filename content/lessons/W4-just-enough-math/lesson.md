@@ -186,6 +186,14 @@ alternatives:
   - surprise/alternatives/times_minus_one.py
   - surprise/alternatives/log_of_inverse.py
 hints:
+  start:
+    try: |
+      print(round(math.log(0.5), 4))
+      print(round(math.log(1.0), 4))
+    see: |
+      -0.6931
+      0.0
+    next: "That's the log of a half, which is below zero, and the log of a sure thing, which is `0`. Surprise should be big and positive for a small chance. What one small change turns the first number into a positive one?"
   logic: |
     take the natural log of p   (zero or negative when p is 1 or less)
       → flip the sign           (a small chance becomes a big surprise)
@@ -238,6 +246,16 @@ alternatives:
   - average_surprise/alternatives/plus_equals.py
   - average_surprise/alternatives/minus_log_inline.py
 hints:
+  start:
+    try: |
+      print(round(surprise(0.5), 4))
+      print(round(surprise(0.25), 4))
+      print(round(surprise(0.5) + surprise(0.25), 4))
+    see: |
+      0.6931
+      1.3863
+      2.0794
+    next: "That's two guesses and their surprises added together. Your loop does this one guess at a time, keeping the running total in `total`. Inside the loop, make `total` bigger by the surprise of `p`."
   logic: |
     total starts at 0
     for each guess p in probs:

@@ -283,6 +283,15 @@ alternatives:
   - fertility/alternatives/loop.py
   - fertility/alternatives/one_line.py
 hints:
+  start:
+    try: |
+      w = words(HELD_OUT)[0]
+      print(w)
+      print(encode(w, BASE_VOCAB))
+    see: |
+      манай
+      ['ма', 'на', 'й']
+    next: "That's one word cut into base pieces, so its token count is the length of that list. `fertility` does this for every word of the text and divides by the number of words. Split the whole text with `words` first, then count tokens word by word."
   logic: |
     split text into words → ws
     for each word in ws:
@@ -365,6 +374,15 @@ alternatives:
   - pick_new_tokens/alternatives/tie_break.py
   - pick_new_tokens/alternatives/no_filter.py
 hints:
+  start:
+    try: |
+      t = "байна"
+      print(COUNTS[t], encode(t, BASE_VOCAB))
+      print(t in BASE_VOCAB)
+    see: |
+      7 ['ба', 'й', 'на']
+      False
+    next: "That's `байна`: 7 uses in the corpus, and the base vocab spends 3 tokens on it. A new `байна` token would be 1, so each use saves 2 tokens. Work out that saving for this one token, then for every candidate the base vocab doesn't already have."
   logic: |
     for each token t in counts:
       already in base_vocab?

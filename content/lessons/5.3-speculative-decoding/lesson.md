@@ -199,6 +199,15 @@ alternatives:
   - spec_greedy/alternatives/count_accepted.py
   - spec_greedy/alternatives/argmax_rows.py
 hints:
+  start:
+    try: |
+      tokens = [3, 1]
+      print(int(draft(tokens)[-1].argmax()))
+      print(int(target(tokens)[-1].argmax()))
+    see: |
+      2
+      3
+    next: "That's one draft step and the target's own choice after the same tokens: the draft says 2, the target says 3, so here they disagree. `proposal` is a list of draft guesses like the first one, each made after seeing the ones before it. Write the loop that makes `k` of them and print `proposal`."
   logic: |
     repeat k times:
       draft's best next token after tokens + proposal so far
@@ -300,6 +309,15 @@ alternatives:
   - verify/alternatives/where_residual.py
   - verify/alternatives/maximum.py
 hints:
+  start:
+    try: |
+      x = 0
+      print(p[0, x], q[0, x])
+      print(p[0, x] / q[0, x])
+    see: |
+      tensor(0.1000) tensor(0.4000)
+      tensor(0.2500)
+    next: "That's token 0 at the first position: the target gives it 0.10, the draft gave it 0.40, so the ratio is 0.25 and the token should survive about a quarter of the time. `keep` is one random number from `gen` compared with that ratio. Write that line first, then look at the replacement draw."
   logic: |
     for each drafted token x at position i:
       random number < p ÷ q for x?   (keeps with chance min(1, p/q))
@@ -381,6 +399,15 @@ alternatives:
   - speedup/alternatives/loop.py
   - speedup/alternatives/named_cost.py
 hints:
+  start:
+    try: |
+      alpha, c, k = 0.75, 0.15, 2
+      print([alpha ** j for j in range(1, k + 1)])
+      print(k * c)
+    see: |
+      [0.75, 0.5625]
+      0.3
+    next: "That's the chance that each of the first 2 drafted tokens survives (it shrinks with every step), and what 2 draft passes cost as a fraction of one target pass. `expected_tokens` needs the survival chances and the token the target always adds; `speedup` divides by the round's cost. Work out `expected_tokens` for `k = 2` by hand first."
   logic: |
     expected_tokens:
       draft j survives with chance alpha^j, for j = 1 … k

@@ -203,6 +203,17 @@ alternatives:
   - token_plan/alternatives/via_words.py
   - token_plan/alternatives/ceil_steps.py
 hints:
+  start:
+    try: |
+      words = CONTROL_TOKENS / FERT_LLAMA
+      print(round(words))
+      print(CONTROL_TOKENS // TOKENS_PER_STEP)
+      print(round(CONTROL_TOKENS / CONTROL_TOK_PER_S))
+    see: |
+      5917160
+      2441
+      25316
+    next: "The control's 20M tokens are about 5.9M Mongolian words, and each word costs your tokenizer `FERT_EXT` tokens. The control ran 2,441 whole steps, and 25,316 seconds is the control's time on the GPU. Turn words into extended tokens first, then steps and hours for those tokens."
   logic: |
     same_text_tokens:
       words = llama_tokens ÷ fert_llama   (how many words)
@@ -272,6 +283,15 @@ alternatives:
   - lr_at/alternatives/warmup_from_zero.py
   - lr_at/alternatives/coeff.py
 hints:
+  start:
+    try: |
+      step = 600
+      print(step - 50, 1170 - 50)
+      print(round(math.cos(0)), round(math.cos(math.pi / 2)), round(math.cos(math.pi)))
+    see: |
+      550 1120
+      1 0 -1
+    next: "Step 600 is 550 steps into a decay that lasts 1120, because warmup took the first 50. Half a cosine runs 1, 0, -1 as the angle goes from 0 to pi/2 to pi. So turn \"how far through the decay\" into an angle, then squeeze the 1 to -1 range into `max_lr` down to `min_lr`."
   logic: |
     step < warmup?
       yes → climb in a straight line, reaching max_lr

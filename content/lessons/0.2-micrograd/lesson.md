@@ -236,6 +236,16 @@ alternatives:
   - local_grads/alternatives/exp_form.py
   - local_grads/alternatives/out_data.py
 hints:
+  start:
+    try: |
+      print(x.data, w.data)
+      print(x.data * w.data)
+      print(round((x.data + 0.001) * w.data, 4))
+    see: |
+      2.0 -0.5
+      -1.0
+      -1.0005
+    next: "That's `x * w`, then the same product with `x` nudged up by 0.001. The product moved by 0.0005, which is `w.data` times the nudge. So the slope of the product with respect to `x` is a number you can read off. Find the matching number for `w`, then try the same nudge test on `math.tanh`."
   logic: |
     multiplication, out = self × other:
       d_self  = the other input's number
@@ -312,6 +322,16 @@ alternatives:
   - topo_backward/alternatives/iterative.py
   - topo_backward/alternatives/visited_list.py
 hints:
+  start:
+    try: |
+      print(round(o.data, 4), [c.data for c in o._prev])
+      print(sorted(c.data for c in n._prev))
+      print(sorted(c.data for c in xw._prev))
+    see: |
+      -0.2449 [-0.25]
+      [-1.0, 0.75]
+      [-0.5, 2.0]
+    next: "That's the neuron's graph walked backwards by hand: `o` was built from `n`, `n` from `xw` and `b`, and `xw` from `x` and `w`. `topo_order` has to make that walk for every Value, and list each one after the Values it was built from. Write the walk for one Value and its `_prev` first, then think about what to do when you reach the same Value twice."
   logic: |
     visited = empty set, order = empty list
     visit(v):
@@ -392,6 +412,15 @@ solution: more_ops/solution.py
 alternatives:
   - more_ops/alternatives/math_exp.py
 hints:
+  start:
+    try: |
+      a = 2.0
+      print(a**3)
+      print(round(((a + 0.0001)**3 - a**3) / 0.0001, 1))
+    see: |
+      8.0
+      12.0
+    next: "That's `2.0**3`, and how fast it grows at 2.0: about 12 for each 1 of `x`. Find a way to build 12 from the 2.0 and the 3. Check your idea on `2.0**2`, whose slope is about 4. Then the same question for `exp`: what number does the op already hold?"
   logic: |
     power, out = x raised to k   (x is self's number):
       local slope = k × x raised to (k − 1)

@@ -207,6 +207,15 @@ alternatives:
   - count_bigrams/alternatives/string.py
   - count_bigrams/alternatives/two_brackets.py
 hints:
+  start:
+    try: |
+      w = "emma"
+      print(list(zip(w, w[1:])))
+      print(stoi["e"], stoi["m"])
+    see: |
+      [('e', 'm'), ('m', 'm'), ('m', 'a')]
+      5 13
+    next: "That's the neighbouring pairs of `emma`, and the row and column numbers of the first pair. Each pair means: add 1 to the cell of `N` at that row and column. The word still needs a `.` at each end, so make `chs` first, then count every pair."
   logic: |
     for each name w:
       chs = "." + the letters of w + "."
@@ -268,6 +277,16 @@ alternatives:
   - sample_name/alternatives/method.py
   - sample_name/alternatives/int_cast.py
 hints:
+  start:
+    try: |
+      print(P[0].shape)
+      print(P[0][:3])
+      print(itos[P[0].argmax().item()])
+    see: |
+      torch.Size([27])
+      tensor([0.0093, 0.1111, 0.0185])
+      a
+    next: "That's row 0 of `P`: one chance for each of the 27 characters that can come first, then the single most likely one. Always taking the top one gives the same name every time. You need a random draw that follows these chances. Look at `torch.multinomial` in the tools hint and try it on `P[0]`."
   logic: |
     ix = 0   (the "." start marker)
     repeat, at most 50 times:
@@ -328,6 +347,14 @@ solution: bigram_nll/solution.py
 alternatives:
   - bigram_nll/alternatives/method_log.py
 hints:
+  start:
+    try: |
+      print(P[stoi["."], stoi["e"]])
+      print(P[stoi["e"], stoi["m"]])
+    see: |
+      tensor(0.0926)
+      tensor(0.0370)
+    next: "Those are the chances the model gave to two real pairs from `emma`: `.` then `e`, and `e` then `m`. The loss is built from the log of such a chance. Take `torch.log` of one of them and check it is below 0. Then do it for each pair in the loop, and divide at the end."
   logic: |
     log_likelihood = 0, n = 0
     for each name, for each pair (ch1, ch2):
@@ -415,6 +442,15 @@ alternatives:
   - neural_bigram/alternatives/nll_loss.py
   - neural_bigram/alternatives/no_grad.py
 hints:
+  start:
+    try: |
+      row = torch.tensor([0.0, 1.0, 2.0])
+      print(row.exp())
+      print(row.exp().sum())
+    see: |
+      tensor([1.0000, 2.7183, 7.3891])
+      tensor(11.1073)
+    next: "That's one row of logits made positive, and the total of those numbers. Divide each by the total and you have chances that add up to 1. In `forward` the same must happen to every row of an `[n, 27]` table at once. Check which way the sum must go, and what `keepdim=True` changes about the shape."
   logic: |
     forward:
       logits → make every number positive (counts)

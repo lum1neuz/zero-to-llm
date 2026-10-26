@@ -190,6 +190,14 @@ solution: row_totals/solution.py
 alternatives:
   - row_totals/alternatives/inner_loop.py
 hints:
+  start:
+    try: |
+      print(counts[0])
+      print(sum(counts[0]))
+    see: |
+      [2, 1, 1]
+      4
+    next: "That's the first row of the grid, and its total. Inside the loop, `row` is one of these rows. Put its total on the end of `totals`, and the loop does the rest."
   logic: |
     totals starts as an empty list
     for each row in grid:
@@ -243,6 +251,16 @@ solution: to_percentages/solution.py
 alternatives:
   - to_percentages/alternatives/times_first.py
 hints:
+  start:
+    try: |
+      row = [5, 3, 2]
+      total = sum(row)
+      print(total)
+      print(row[0] / total)
+    see: |
+      10
+      0.5
+    next: "That's the total, and the first value as a fraction of it: 5 out of 10 is `0.5`. A percent is that fraction times 100. Work out the percent for the first value by hand, then ask which loop variable stands for it."
   logic: |
     total = the whole row added up   (already done for you)
     percents starts as an empty list

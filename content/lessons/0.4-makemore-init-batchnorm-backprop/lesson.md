@@ -191,6 +191,15 @@ alternatives:
   - kaiming_init/alternatives/int_sizes.py
   - kaiming_init/alternatives/normal_.py
 hints:
+  start:
+    try: |
+      w = torch.randn((100, 100), generator=g)
+      print(round(x.std().item(), 2))
+      print(round((x @ w).std().item(), 2))
+    see: |
+      1.0
+      10.05
+    next: "That's the spread of the input, then the spread after one layer of plain random weights. It grew to about 10, which is the square root of the 100 inputs it adds up. Your weights must be scaled to cancel that, and then to include the `gain`. `linear_weights` should return the random table, already scaled."
   logic: |
     draw a fan_in × fan_out table of standard normal numbers
       (use the generator g, so a seed repeats)
@@ -254,6 +263,15 @@ alternatives:
   - batchnorm/alternatives/no_keepdim.py
   - batchnorm/alternatives/manual_var.py
 hints:
+  start:
+    try: |
+      col = h[:, 0]
+      print(round(col.mean().item(), 3), round(col.std(unbiased=False).item(), 3))
+      print(round(((col[0] - col.mean()) / col.std(unbiased=False)).item(), 3))
+    see: |
+      2.947 0.451
+      0.256
+    next: "That's the mean and std of the first feature down the batch, then the first example turned into units of that std. `batchnorm` does this for every example and every feature at once. Get the mean and variance of each column first (`dim` 0, with `keepdim=True`), then use them."
   logic: |
     for each feature (column of h), looking down the batch:
       mean = the average
@@ -329,6 +347,16 @@ alternatives:
   - manual_backprop/alternatives/karpathy.py
   - manual_backprop/alternatives/one_minus_tanh.py
 hints:
+  start:
+    try: |
+      print(Y[0])
+      print(F.softmax(logits, 1)[0].detach())
+      print(F.one_hot(Y, 5)[0])
+    see: |
+      tensor(4)
+      tensor([0.5097, 0.2989, 0.1271, 0.0214, 0.0430])
+      tensor([0, 0, 0, 0, 1])
+    next: "That's the right answer for example 0, the model's chances for it, and the right answer as a row of 0s and one 1. Subtract the second row from the first and print it: that's the gradient on row 0 of the logits. Then do the whole table at once, and divide by `n` because the loss is an average."
   logic: |
     dlogits: softmax of each row, minus the right answers
       → scaled because the loss is an average

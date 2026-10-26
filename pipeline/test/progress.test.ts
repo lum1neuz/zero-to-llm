@@ -59,14 +59,15 @@ describe("import", () => {
     p.lessons["3.1"] = { challenges: { q: { ...blankChallenge(), phase: "solved", xp: 25, at: 1 } }, checks: { m: { v: true, at: 1 } } };
     assert.deepEqual(parseImport(exportJson(p)).lessons, p.lessons);
   });
-  test("old four-rung hint counts move onto the seven-rung ladder", () => {
+  test("old four- and seven-rung hint counts move onto the eight-rung ladder", () => {
     const old = (hints: number) => ({ phase: "challenge", t: 0, code: null, runs: 3, hints, lastHintRun: 2, peek: false, xp: 0, at: 1 });
     const p = parseImport(JSON.stringify({ v: 1, activeDays: [], review: {},
-      lessons: { "3.1": { checks: {}, challenges: { a: old(2), b: old(3), c: old(4), d: { ...old(5), ladder: 7 } } } } }));
+      lessons: { "3.1": { checks: {}, challenges: { a: old(2), b: old(3), c: old(4), d: { ...old(5), ladder: 7 }, e: { ...old(0), ladder: 7 }, f: { ...old(3), ladder: 8 } } } } }));
     const ch = p.lessons["3.1"].challenges;
-    assert.deepEqual([ch.a.hints, ch.b.hints, ch.c.hints, ch.d.hints], [4, 6, 7, 5]); // the same rungs stay open
-    assert.ok(Object.values(ch).every((c) => c.ladder === 7));
-    assert.equal(parseImport(exportJson(p)).lessons["3.1"].challenges.b.hints, 6); // no double upgrade
+    // The same rungs stay open, and Start here counts as open once any hint was.
+    assert.deepEqual([ch.a.hints, ch.b.hints, ch.c.hints, ch.d.hints, ch.e.hints, ch.f.hints], [5, 7, 8, 6, 0, 3]);
+    assert.ok(Object.values(ch).every((c) => c.ladder === 8));
+    assert.equal(parseImport(exportJson(p)).lessons["3.1"].challenges.b.hints, 7); // no double upgrade
   });
   test("rejects files that aren't exports", () => {
     assert.throws(() => parseImport('{"hello": 1}'), /isn't a Zero to LLM progress export/);

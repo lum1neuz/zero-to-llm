@@ -217,6 +217,16 @@ alternatives:
   - int8_matmul/alternatives/float_acc.py
   - int8_matmul/alternatives/outer_scales.py
 hints:
+  start:
+    try: |
+      qx, sx = quantize_rows(X)
+      qw, sw = quantize_rows(W)
+      print(qx[0].int() @ qw[0].int())
+      print(sx[0], sw[0])
+    see: |
+      tensor(-1190, dtype=torch.int32)
+      tensor([0.1457]) tensor([0.0034])
+    next: "That's token 0 against output channel 0: one integer dot product, already far past 127, and the two scales that belong to exactly this pair. `acc` needs that product for all 4 tokens against all 3 channels, in int32 so nothing wraps. Check the shapes of `qx` and `qw` before you multiply: the rows of `qw` are channels."
   logic: |
     quantize X per token → whole numbers qx, one scale sx each
     quantize W per output channel → qw, one scale sw each
@@ -283,6 +293,15 @@ alternatives:
   - mixed_matmul/alternatives/amax_mask.py
   - mixed_matmul/alternatives/f_linear.py
 hints:
+  start:
+    try: |
+      grid = X.abs() > 6.0
+      print(grid.shape)
+      print(grid[1])
+    see: |
+      torch.Size([4, 6])
+      tensor([False, False, True, False, False, True])
+    next: "That's one True or False per entry, and token 1 has two Trues. `big` needs one flag per feature, True if any token passes, so its shape is [6] rather than [4, 6]. Collapse the tokens first, then use the flags to pick columns."
   logic: |
     for each feature column:
       does any token's size pass threshold?
@@ -358,6 +377,14 @@ alternatives:
   - smooth/alternatives/pow_method.py
   - smooth/alternatives/negative_power.py
 hints:
+  start:
+    try: |
+      for j in (0, 2):
+          print(X[:, j].abs().max(), W[:, j].abs().max())
+    see: |
+      tensor(0.8800) tensor(0.3000)
+      tensor(21.) tensor(0.0700)
+    next: "That's the largest size in X and then in W, for feature 0 and for the outlier feature 2. The factor `s` for a feature is the X number to the power `alpha`, divided by the W number to the power `1 - alpha`. Do feature 2 by hand, then ask how to get all six largest sizes at once, one per feature."
   logic: |
     for each feature:
       largest size of X in that feature (over tokens)

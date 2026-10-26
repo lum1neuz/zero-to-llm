@@ -194,6 +194,14 @@ alternatives:
   - kv_budget/alternatives/loop.py
   - kv_budget/alternatives/k_and_v.py
 hints:
+  start:
+    try: |
+      print(cfg["kv_heads"] * cfg["head_dim"])
+      print(612 // 16, 612 % 16)
+    see: |
+      1024
+      38 4
+    next: "1,024 is one K vector for one layer: 8 KV heads of 128 numbers. A cached token also keeps a V vector, in every layer, at 2 bytes a value. The second line says a 612-token request fills 38 whole blocks of 16 and 4 more tokens, so it needs a 39th block."
   logic: |
     kv_bytes_per_token:
       2 (K and V) × layers × kv_heads × head_dim
@@ -279,6 +287,15 @@ alternatives:
   - block_table/alternatives/index_select.py
   - block_table/alternatives/divmod.py
 hints:
+  start:
+    try: |
+      pos = 6
+      print(pos // BLOCK)
+      print(block_table[1])
+    see: |
+      1
+      0
+    next: "Position 6 sits in logical block 1, and the block table says logical block 1 lives in physical block 0. That finds the block. The second part of `slot_of` is the slot inside it: position 6 is the third token of its block, so work out which index that is."
   logic: |
     slot_of(block_table, pos):
       logical block = whole BLOCKs that fit before pos
@@ -361,6 +378,15 @@ alternatives:
   - paged_attention/alternatives/transpose.py
   - paged_attention/alternatives/math_sqrt.py
 hints:
+  start:
+    try: |
+      k = gather_kv(k_pool, block_table, 10)
+      print(k.shape, q.shape)
+      print((k @ q).shape)
+    see: |
+      torch.Size([10, 2]) torch.Size([2])
+      torch.Size([10])
+    next: "`gather_kv` hands back the 10 cached keys in order, and `k @ q` gives one score per cached token. Gather the values the same way. Then scale the scores by the square root of d and turn them into weights that add to 1 over the 10 tokens."
   logic: |
     gather this request's keys from k_pool   → k
     gather its values from v_pool            → v

@@ -196,6 +196,15 @@ alternatives:
   - multi_head/alternatives/contiguous_view.py
   - multi_head/alternatives/flatten.py
 hints:
+  start:
+    try: |
+      q, k, v = attn.c_attn(x).split(32, dim=2)
+      print(tuple(q.shape))
+      print(tuple(q[0, 3].view(4, 8).shape))
+    see: |
+      (2, 8, 32)
+      (4, 8)
+    next: "That's `q` as it arrives, then one token's 32 numbers cut into 4 heads of 8. Do that cut for every token at once, then move the heads axis in front of the tokens. The fused attention call wants `(2, 4, 8, 8)`: batch, heads, tokens, features."
   logic: |
     for each of q, k, v:
       cut its C features into n_head chunks of hs
@@ -263,6 +272,15 @@ alternatives:
   - block/alternatives/named_steps.py
   - block/alternatives/tuple_shape.py
 hints:
+  start:
+    try: |
+      ln = nn.LayerNorm(32)
+      print(tuple(ln(x).shape))
+      print(tuple(attn(ln(x)).shape))
+    see: |
+      (2, 8, 32)
+      (2, 8, 32)
+    next: "Both keep the shape `(2, 8, 32)`, the same as `x`. That's why a sublayer's result can be added straight back onto `x`. Write the attention line first: normalise a copy, run `attn`, add it onto `x`. The MLP line is the same pattern with its own LayerNorm."
   logic: |
     when the block is built:
       ln_1 = a LayerNorm for the attention side
@@ -335,6 +353,15 @@ alternatives:
   - block_params/alternatives/collected.py
   - block_params/alternatives/powers.py
 hints:
+  start:
+    try: |
+      c = block.attn.c_attn
+      print(tuple(c.weight.shape), tuple(c.bias.shape))
+      print(c.weight.numel() + c.bias.numel())
+    see: |
+      (96, 32) (96,)
+      3168
+    next: "That's one layer counted by hand: a weight grid plus one bias per output. With `d = 32` this layer maps 32 numbers to 96. Write that count with `d` in place of 32, then do the same for the other layers in `attn`, `mlp` and `norms`."
   logic: |
     for each linear layer, count weights + biases:
       weights = in × out

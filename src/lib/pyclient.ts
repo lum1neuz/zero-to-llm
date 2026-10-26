@@ -62,13 +62,16 @@ export function ensurePython(rt: Runtime) {
 }
 
 /** Runs are queued, so a run's timeout only counts its own execution time. */
-export function runTests(rt: Runtime, code: string, tests: string, file: string): Promise<RunOutcome> {
-  const job = queue.then(() => runNow(rt, code, tests, file));
+export function runTests(rt: Runtime, code: string, tests: string, file: string, snippet?: string): Promise<RunOutcome> {
+  const job = queue.then(() => runNow(rt, code, tests, file, snippet));
   queue = job.catch(() => {});
   return job;
 }
 
-async function runNow(rt: Runtime, code: string, tests: string, file: string): Promise<RunOutcome> {
+/** Runs the learner's file quietly, then `snippet`; the result holds only the snippet's output. */
+export const runSnippet = (rt: Runtime, code: string, snippet: string, file: string) => runTests(rt, code, "", file, snippet);
+
+async function runNow(rt: Runtime, code: string, tests: string, file: string, snippet?: string): Promise<RunOutcome> {
   try {
     await ensurePython(rt);
   } catch (e) {
@@ -89,6 +92,6 @@ async function runNow(rt: Runtime, code: string, tests: string, file: string): P
       if (m.error) resolve({ kind: "error", message: m.error });
       else resolve({ kind: "ok", result: JSON.parse(m.json!) });
     });
-    w.postMessage({ type: "run", id, code, tests, file });
+    w.postMessage({ type: "run", id, code, tests, file, snippet });
   });
 }

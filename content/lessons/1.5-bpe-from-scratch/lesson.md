@@ -198,6 +198,14 @@ alternatives:
   - pairs/alternatives/if_in.py
   - pairs/alternatives/slice_compare.py
 hints:
+  start:
+    try: |
+      print(ids)
+      print((ids[0], ids[1]), (ids[1], ids[2]), (ids[2], ids[3]))
+    see: |
+      [97, 97, 97, 98, 100, 97, 97, 97, 98, 97, 99]
+      (97, 97) (97, 97) (97, 98)
+    next: "Those are the first three neighbour pairs, and `(97, 97)` already shows up twice. `get_stats` walks every neighbour pair like this and keeps a count per pair in the dict: start a pair at 0 the first time you see it, then add 1."
   logic: |
     get_stats:
       for each pair of neighbours (ids[k], ids[k+1]):
@@ -280,6 +288,16 @@ alternatives:
   - train/alternatives/len_vocab.py
   - train/alternatives/unpacked.py
 hints:
+  start:
+    try: |
+      bs = list(text.encode("utf-8"))
+      stats = get_stats(bs)
+      print(len(bs), "bytes,", len(stats), "different pairs")
+      print("(32, 116) seen", stats[(32, 116)], "times")
+    see: |
+      792 bytes, 205 different pairs
+      (32, 116) seen 39 times
+    next: "That's the count table for the whole story: each pair and how often it appears. Each round needs the pair with the biggest count, not the biggest pair, so tell the function you use to pick the largest what to rank by. The first new token must be 256, the next 257, and so on."
   logic: |
     repeat for each of the vocab_size − 256 merges (i = 0, 1, …):
       count the pairs in ids → stats
@@ -349,6 +367,14 @@ alternatives:
   - encode/alternatives/rank_function.py
   - encode/alternatives/sorted_first.py
 hints:
+  start:
+    try: |
+      print(vocab[256], vocab[257])
+      print(vocab[256] + vocab[257])
+    see: |
+      b' t' b'e '
+      b' te '
+    next: "Each id looks up to some bytes, and bytes stick together end to end. `data` is that for every id in `ids`, joined into one bytes object. Later, for `pair` in `encode`: `merges` maps each pair to its new id, and a smaller id was merged earlier."
   logic: |
     decode:
       for each id in ids:

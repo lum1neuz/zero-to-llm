@@ -40,3 +40,13 @@ export async function runChallenge(code: string, tests: string, filename: string
   p.globals.set("_file", filename);
   return JSON.parse(p.runPython("harness.run_json(_code, _tests, _file)"));
 }
+
+/** Same as the "Start here" Run button: the learner's file quietly, then the snippet. */
+export async function trySnippet(code: string, snippet: string, filename: string): Promise<RunResult> {
+  py ??= boot();
+  const p = await py;
+  p.globals.set("_code", code);
+  p.globals.set("_snippet", snippet);
+  p.globals.set("_file", filename);
+  return JSON.parse(p.runPython("harness.try_json(_code, _snippet, _file)"));
+}

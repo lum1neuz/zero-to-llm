@@ -5,7 +5,7 @@
 import { fileURLToPath } from "node:url";
 import { challengeSources } from "./compile.ts";
 import { inLessons, onlyIds, readContent } from "./cli.ts";
-import { runChallenge, type RunResult } from "./pyrun.ts";
+import { runChallenge, trySnippet, type RunResult } from "./pyrun.ts";
 
 export async function checkChallenges(files: Record<string, string>, only: string[] | null = null) {
   const failures: string[] = [];
@@ -16,6 +16,12 @@ export async function checkChallenges(files: Record<string, string>, only: strin
     const tag = `${ch.lesson} › ${ch.id}`;
     const allPass = (r: RunResult) => r.tests.every((t) => t.status === "pass");
     const summary = (r: RunResult) => r.tests.map((t) => `${t.status === "pass" ? "✓" : "✗"} ${t.id}${t.message ? `: ${t.message}` : ""}`).join("\n      ");
+
+    // Start here: the snippet runs on the starting editor code and prints exactly what the hint says.
+    const t = await trySnippet(ch.editor, ch.start.try, ch.file);
+    checked++;
+    if (t.scriptError) failures.push(`${tag}: hints.start.try raised ${t.scriptError.type}: ${t.scriptError.message}`);
+    else if (t.stdout.trimEnd() !== ch.start.see.trimEnd()) failures.push(`${tag}: hints.start.see doesn't match what hints.start.try prints\n      expected: ${JSON.stringify(ch.start.see.trimEnd())}\n      printed:  ${JSON.stringify(t.stdout.trimEnd())}`);
 
     for (const rel of [ch.solution, ...ch.alternatives]) {
       const r = await run(rel);

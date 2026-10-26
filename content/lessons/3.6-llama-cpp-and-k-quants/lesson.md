@@ -201,6 +201,15 @@ alternatives:
   - subblocks/alternatives/no_clamp.py
   - subblocks/alternatives/sub_method.py
 hints:
+  start:
+    try: |
+      wb = w.reshape(-1, 32)
+      print(wb.shape)
+      print(wb[0].min(), wb[0].max())
+    see: |
+      torch.Size([8, 32])
+      tensor(-0.1163) tensor(0.0683)
+    next: "That's 8 sub-blocks of 32, and the lowest and highest weight of sub-block 0. `scale` is the gap between them cut into the 15 steps from code 0 to code 15, and a weight's code is how many steps it sits above the lowest. Do one weight of sub-block 0 first, then every block at once with one lowest and one highest per block, kept as columns."
   logic: |
     for each sub-block (lo = lowest, hi = highest):
       scale = the gap from lo to hi, cut into 15 equal steps
@@ -269,6 +278,14 @@ alternatives:
   - superblock/alternatives/amax.py
   - superblock/alternatives/no_clamp.py
 hints:
+  start:
+    try: |
+      print(scale.shape)
+      print(scale.reshape(-1))
+    see: |
+      torch.Size([8, 1])
+      tensor([0.0123, 0.0108, 0.0140, 0.0122, 0.0127, 0.0125, 0.0169, 0.0189])
+    next: "Those are the 8 sub-block scales, one per sub-block, all positive. `six_bit` stores each as a whole number from 0 to 63 times one shared `d`. Pick `d` so the biggest value becomes exactly 63, then divide every value by `d` and round."
   logic: |
     find the largest value in v   (all positive)
       → d = that value ÷ 63   (one for all the values)

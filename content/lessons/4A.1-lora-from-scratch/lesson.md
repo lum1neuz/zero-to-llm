@@ -209,6 +209,16 @@ alternatives:
   - lora_layer/alternatives/kaiming.py
   - lora_layer/alternatives/weight_shape.py
 hints:
+  start:
+    try: |
+      print(base.in_features, base.out_features)
+      print(base(x).shape)
+      print(base.weight.requires_grad)
+    see: |
+      6 10
+      torch.Size([3, 10])
+      True
+    next: "That's the base layer's size (6 in, 10 out), the shape its output has for 3 inputs, and that its weights can still train. The update from `A` and `B` must also come out [3, 10], so `A` is `r` by 6 and `B` is 10 by `r`. The first line to write freezes the base, so that last print becomes False."
   logic: |
     setup:
       freeze everything the base layer owns
@@ -299,6 +309,16 @@ alternatives:
   - train_lora/alternatives/filter.py
   - train_lora/alternatives/model_zero_grad.py
 hints:
+  start:
+    try: |
+      for name, p in model.named_parameters():
+          print(name, p.requires_grad)
+    see: |
+      A True
+      B True
+      base.weight False
+      base.bias False
+    next: "That's the model's four parameters: the base layer's weight and bias, frozen (False), and `A` and `B`, still training (True). `trainable` returns only the True ones, as a list. For `train_step`, compute the mean squared error of `model(X)` against `Y` and print it first, before anything touches the optimizer."
   logic: |
     trainable:
       for each parameter of the model:

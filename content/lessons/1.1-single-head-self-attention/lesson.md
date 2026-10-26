@@ -198,6 +198,16 @@ alternatives:
   - causal_weights/alternatives/where.py
   - causal_weights/alternatives/big_negative.py
 hints:
+  start:
+    try: |
+      print(q.shape)
+      print(q[2] @ k[0])
+      print(q[2] @ k[1])
+    see: |
+      torch.Size([5, 4])
+      tensor(1.5389)
+      tensor(1.0599)
+    next: "That's two single scores: query 2 against key 0, then against key 1. `scores` is every query against every key at once, a 5 by 5 grid, divided by `d ** 0.5`. Try one `@` between `q` and a flipped `k` and check its shape is 5 by 5."
   logic: |
     scores = every query against every key   (a T × T grid)
       → divide by √d
@@ -284,6 +294,14 @@ alternatives:
   - head/alternatives/positional_bias.py
   - head/alternatives/matmul.py
 hints:
+  start:
+    try: |
+      x = torch.randn(4, 8, 32)
+      proj = nn.Linear(32, 16, bias=False)
+      print(tuple(x.shape), "->", tuple(proj(x).shape))
+    see: |
+      (4, 8, 32) -> (4, 8, 16)
+    next: "That's one learned layer: every token's 32 numbers become 16. A head needs three of these side by side, one each for the key, the query and the value. Build them in `__init__`, then call each on `x` in `forward`."
   logic: |
     when the head is built:
       key, query, value = three learned layers

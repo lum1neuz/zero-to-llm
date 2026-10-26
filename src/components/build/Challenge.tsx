@@ -5,13 +5,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import type { ChallengeStep } from "../../../pipeline/schema.ts";
 import { blankChallenge, FREE_RUNGS, lessonRec, RUNGS, touchDay, update, useProgress, XP, type ChallengeRec } from "../../lib/progress.ts";
-import { isReady, pythonVersion, runTests, type RunOutcome, type Runtime } from "../../lib/pyclient.ts";
+import { isReady, pythonVersion, runSnippet, runTests, type RunOutcome, type Runtime } from "../../lib/pyclient.ts";
 import { blockMd, esc, fmtTime, hl, inlineMd, plural } from "../../lib/text.ts";
 import { Html, I, toast } from "../ui.tsx";
 
 const CPS = 26;
 const SPEEDS = [1, 1.5, 2];
-const RUNG_LABEL = { logic: "Logic", tools: "Tools", nudge: "Nudge", concept: "Concept", example: "Worked example", skeleton: "Skeleton", solution: "Solution" };
+const RUNG_LABEL = { start: "Start here", logic: "Logic", tools: "Tools", nudge: "Nudge", concept: "Concept", example: "Worked example", skeleton: "Skeleton", solution: "Solution" };
 
 export function stepNote(c: ChallengeRec | undefined, locked: string | null, minutes?: number) {
   if (c?.phase === "solved") return c.hints >= RUNGS.length ? "Solved · solution shown" : c.hints ? `Solved · ${plural(c.hints, "hint")}` : "Solved · no hints";
@@ -243,7 +243,8 @@ export function Challenge({ lessonId, step, startCode, runtime }: Props) {
             ))}
           </ul>
         </div>
-        <HintLadder step={step} rec={saved} intro={intro} running={!!running} solAsk={solAsk} setSolAsk={setSolAsk} openHint={openHint} peek={() => save({ peek: true })} />
+        <HintLadder step={step} rec={saved} intro={intro} running={!!running} solAsk={solAsk} setSolAsk={setSolAsk} openHint={openHint} peek={() => save({ peek: true })}
+          trySnippet={(s) => runSnippet(runtime, code, s, step.file)} />
       </div>
 
       <div className="console">
@@ -284,8 +285,40 @@ function LogicFlow({ text, tools }: { text: string; tools?: boolean }) {
   );
 }
 
-function HintLadder({ step, rec: c, intro, running, solAsk, setSolAsk, openHint, peek }: {
+/** Start here: a few lines that work on the file as it is now, what they print, and the next step.
+ *  Run it runs the learner's file quietly, then these lines, and shows their output in place. */
+function StartHere({ hint, run }: { hint: ChallengeStep["hints"]["start"]; run: (snippet: string) => Promise<RunOutcome> }) {
+  const [out, setOut] = useState<{ text: string; err: boolean } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const go = async () => {
+    if (busy) return;
+    setBusy(true);
+    const o = await run(hint.try);
+    setBusy(false);
+    if (o.kind === "timeout") setOut({ text: `Stopped after ${o.seconds} s.`, err: true });
+    else if (o.kind === "error") setOut({ text: o.message, err: true });
+    // A Python worker cached from before Start here existed runs the tests instead of the snippet.
+    else if (!(o.result as { snippet?: boolean }).snippet) setOut({ text: "The course was updated since this page loaded. Reload the page, then run it again.", err: true });
+    else {
+      const e = o.result.scriptError;
+      setOut({ text: o.result.stdout.replace(/\n$/, "") + (e ? `${o.result.stdout ? "\n" : ""}${e.diagnosis}` : ""), err: !!e });
+    }
+  };
+  return (
+    <>
+      <p>Run these lines on your file as it is now:</p>
+      <pre className="hint-code" dangerouslySetInnerHTML={{ __html: hl(hint.try.replace(/\n$/, "")) }} />
+      <button className="btn sm" onClick={go} aria-disabled={busy}>{busy ? "Running…" : out ? "Run it again" : "Run it"}</button>
+      <p className="fine">{out ? "Output:" : "It prints:"}</p>
+      <pre className={`hint-out ${out?.err ? "err" : ""}`}>{out ? out.text || "(nothing printed)" : hint.see.replace(/\n$/, "")}</pre>
+      <Html as="p" html={inlineMd(hint.next)} />
+    </>
+  );
+}
+
+function HintLadder({ step, rec: c, intro, running, solAsk, setSolAsk, openHint, peek, trySnippet }: {
   step: ChallengeStep; rec: ChallengeRec; intro: boolean; running: boolean; solAsk: boolean; setSolAsk: (v: boolean) => void; openHint: () => void; peek: () => void;
+  trySnippet: (snippet: string) => Promise<RunOutcome>;
 }) {
   const solved = c.phase === "solved";
   const xpLine = solved ? `earned ${c.xp} XP` : intro ? "opens on your turn" : `${XP.challengeFull} XP if solved now`;
@@ -304,9 +337,10 @@ function HintLadder({ step, rec: c, intro, running, solAsk, setSolAsk, openHint,
         const isSol = k === "solution";
         const open = i < c.hints;
         const label = isSol ? "Solution" : `Hint ${i + 1} · ${RUNG_LABEL[k]}`;
-        const text = step.hints[k];
+        const text = k === "start" ? step.hints.start.try : step.hints[k];
         let body;
-        if (open && (k === "nudge" || k === "concept")) body = <Html as="p" html={inlineMd(text)} />;
+        if (open && k === "start") body = <StartHere hint={step.hints.start} run={trySnippet} />;
+        else if (open && (k === "nudge" || k === "concept")) body = <Html as="p" html={inlineMd(text)} />;
         else if (open && (k === "logic" || k === "tools")) body = <LogicFlow text={text} tools={k === "tools"} />;
         else if (open && k === "example") body = <Html as="div" className="md" html={blockMd(text)} />;
         else if (open && !(isSol && solved)) {
@@ -343,7 +377,7 @@ function HintLadder({ step, rec: c, intro, running, solAsk, setSolAsk, openHint,
           </div>
         );
       })}
-      <p className="fine pnl-foot">Start with the logic, then the tools to build it with. After that, the tests point at your actual mistake, and each further hint unlocks after another run.</p>
+      <p className="fine pnl-foot">Stuck on where to begin? Start here gives you a first line to run. Then the logic, then the tools to build it with. After that, the tests point at your actual mistake, and each further hint unlocks after another run.</p>
     </div>
   );
 }

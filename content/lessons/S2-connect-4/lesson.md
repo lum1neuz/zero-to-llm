@@ -194,6 +194,14 @@ alternatives:
   - win_detection/alternatives/three_steps.py
   - win_detection/alternatives/any_direction.py
 hints:
+  start:
+    try: |
+      print(row, board[row][2])
+      print(board[row][3] == board[row][2])
+    see: |
+      5 1
+      True
+    next: "That's the new piece at row 5 holding player 1, and the cell one step to its right holding the same player. `run_length` keeps taking that step (`row + dr`, `col + dc`) and counts while the cell is on the board and matches. Write it for one direction first and try it on this board."
   logic: |
     run_length(row, col, dr, dc):
       player = who sits at (row, col)
@@ -299,6 +307,16 @@ alternatives:
   - fast_rollouts/alternatives/undo_any_order.py
   - fast_rollouts/alternatives/copy_rows.py
 hints:
+  start:
+    try: |
+      b = new_board()
+      row = drop(b, 3, 1)
+      print(row, is_win(b, row, 3))
+      print([b[r][3] for r in range(ROWS)])
+    see: |
+      5 False
+      [0, 0, 0, 0, 0, 1]
+    next: "That's one move played right on the board: the piece landed in row 5, made no four, and column 3 now holds it at the bottom. A rollout repeats this with random open columns and must put every piece back afterwards. Write `undo` first: the top piece is the first cell from the top of the column that isn't 0."
   logic: |
     undo(col):
       look down column col, from the top row
@@ -414,6 +432,14 @@ alternatives:
   - self_play_data/alternatives/loops.py
   - self_play_data/alternatives/deepcopy.py
 hints:
+  start:
+    try: |
+      history = [("s0", 1, "pi0"), ("s1", -1, "pi1")]
+      state, player, pi = history[1]
+      print(state, player, pi)
+    see: |
+      s1 -1 pi1
+    next: "That's one history entry taken apart: the position, who was to move, and the policy. `to_examples` makes one `(state, pi, z)` from each entry. `z` is `result` seen from that entry's player: if X won (`result` is 1), what is `z` for this entry, where `player` is -1? Settle that, then write the loop."
   logic: |
     snapshot(board, player):
       build NEW rows, each cell turned to the mover's view
@@ -496,6 +522,16 @@ alternatives:
   - minimax/alternatives/if_else.py
   - minimax/alternatives/try_finally.py
 hints:
+  start:
+    try: |
+      row = drop(puzzle, 5, 1)
+      print(row, is_win(puzzle, row, 5))
+      undo(puzzle, 5)
+      print(puzzle[5])
+    see: |
+      5 True
+      [0, -1, 1, 1, 1, 0, 0]
+    next: "That's column 5 tried for X on the puzzle board: the piece landed in row 5 and made four, so that move scores `1000 + depth`. Then `undo` took it back and the row is as it was. For a column that doesn't win, the score comes from the opponent's best reply one level deeper, and that score is from the opponent's view."
   logic: |
     for each open column col:
       drop player's piece into col → keep the row

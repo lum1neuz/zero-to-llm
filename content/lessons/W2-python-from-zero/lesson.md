@@ -186,6 +186,15 @@ alternatives:
   - count_letter/alternatives/plus_equals.py
   - count_letter/alternatives/builtin_count.py
 hints:
+  start:
+    try: |
+      word = "banana"
+      print(word[0], word[0] == "a")
+      print(word[1], word[1] == "a")
+    see: |
+      b False
+      a True
+    next: "That's the first two letters of `banana`, each checked against `\"a\"`: `False` for `b`, `True` for `a`. A `for` loop gives you each letter in turn, so you can do this check for every one. Make a counter before the loop, and make it bigger only when the check is `True`."
   logic: |
     count starts at 0   (nothing counted yet)
     for each letter ch in word:
@@ -255,6 +264,15 @@ solution: average/solution.py
 alternatives:
   - average/alternatives/loop_sum.py
 hints:
+  start:
+    try: |
+      numbers = [2, 4, 9]
+      print(sum(numbers))
+      print(len(numbers))
+    see: |
+      15
+      3
+    next: "That's the two numbers an average needs: the total, and how many numbers there are. Put the first one in `total`. Then think about how to combine the two to get the average, `5`."
   logic: |
     add up all the numbers   → total
     count how many numbers there are

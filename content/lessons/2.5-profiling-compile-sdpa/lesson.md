@@ -189,6 +189,13 @@ alternatives:
   - roofline/alternatives/if_else.py
   - roofline/alternatives/ternary_flip.py
 hints:
+  start:
+    try: |
+      bytes_moved = 8e9 * 2
+      print(round(bytes_moved / (rtx3090["bandwidth_gbs"] * 1e9) * 1e3, 2))
+    see: |
+      17.09
+    next: "Just reading 8 billion fp16 weights from memory takes about 17 ms on this card, however many tokens share the read. Do the same for the maths: the FLOPs for one token, divided by the peak speed. The step ends when the slower of the two does, so compare the two times at batch 1, then at batch 256."
   logic: |
     flops = one multiply and one add per weight,
       for every sequence in the batch
@@ -259,6 +266,14 @@ alternatives:
   - sdpa_match/alternatives/triu_mask.py
   - sdpa_match/alternatives/where_softmax.py
 hints:
+  start:
+    try: |
+      print(q.shape)
+      print((q[0, 0] @ k[0, 0].transpose(0, 1)).shape)
+    see: |
+      torch.Size([2, 4, 16, 8])
+      torch.Size([16, 16])
+    next: "`q` holds 2 sequences times 4 heads, each with 16 tokens of 8 numbers. For one head, a query-times-key product is a 16 by 16 grid: row t is query t against all 16 keys. `attention` needs that grid for every sequence and head at once, scaled by the square root of `D`, before the mask and softmax."
   logic: |
     scores = every query against every key, ÷ √D   [B, H, T, T]
     for each query t and key s:

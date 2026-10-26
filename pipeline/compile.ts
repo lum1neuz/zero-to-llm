@@ -438,8 +438,10 @@ function compileStep(
   // line, even in prose maths (× ÷ − ²). Very short lines ("return q") are skipped: they can appear
   // in prose without giving anything away.
   const maths = (s: string) => s.replace(/×/g, "*").replace(/÷/g, "/").replace(/[−–]/g, "-").replace(/²/g, "**2").replace(/'/g, '"').replace(/\s+/g, "");
-  for (const k of ["logic", "tools", "example"] as const) {
-    const flat = maths(c.hints[k]);
+  const { start } = c.hints;
+  if (/\bEllipsis\b/.test(start.see)) at("hints.start.see prints Ellipsis: the snippet calls a function the learner hasn't written yet");
+  for (const k of ["start", "logic", "tools", "example"] as const) {
+    const flat = maths(k === "start" ? `${start.try}\n${start.next}` : c.hints[k]);
     for (const [n, line] of answer) if (n.length >= 12 && flat.includes(maths(n))) at(`hints.${k} gives away the answer line "${line}"`);
   }
   for (const alt of c.alternatives) read(alt);
@@ -455,16 +457,25 @@ function compileStep(
 
 /** For check-challenges: the raw challenge blocks with their file paths. */
 export function challengeSources(files: Record<string, string>) {
-  const out: { lesson: string; dir: string; id: string; file: string; tests: string; solution: string; alternatives: string[]; mistakes: { file: string; fails: string; says: string }[] }[] = [];
+  const out: { lesson: string; dir: string; id: string; file: string; tests: string; solution: string; alternatives: string[]; mistakes: { file: string; fails: string; says: string }[];
+    editor: string; start: { try: string; see: string } }[] = [];
   for (const file of Object.keys(files)) {
     const m = /^lessons\/([^/]+)\/lesson\.md$/.exec(file);
     if (!m) continue;
     const split = splitFrontmatter(files[file]);
     if (!split) continue;
     const { fences } = extractFences(split.body.split("\n"), split.bodyLine);
-    for (const f of fences.filter((x) => x.info === "challenge")) {
-      const c = ChallengeSrc.safeParse(parseYaml(f.body));
-      if (c.success) out.push({ lesson: m[1], dir: `lessons/${m[1]}/`, id: c.data.id, file: c.data.file, tests: c.data.tests, solution: c.data.solution, alternatives: c.data.alternatives, mistakes: c.data.mistakes });
+    const dir = `lessons/${m[1]}/`;
+    const parsed = fences.filter((x) => x.info === "challenge").map((f) => ChallengeSrc.safeParse(parseYaml(f.body)));
+    for (const c of parsed) {
+      if (!c.success) continue;
+      // What the editor holds when the learner's turn starts, as Workspace builds it (a chained
+      // step starts from the previous step's reference solution).
+      const prev = "from" in c.data.start ? parsed.find((p) => p.success && p.data.id === (c.data.start as { from: string }).from) : undefined;
+      const editor = ("code" in c.data.start ? c.data.start.code : prev?.success ? files[dir + prev.data.solution] ?? "" : "")
+        + c.data.setup.map((s) => (s.type_file !== undefined ? files[dir + s.type_file] ?? "" : s.type ?? "")).join("");
+      out.push({ lesson: m[1], dir, id: c.data.id, file: c.data.file, tests: c.data.tests, solution: c.data.solution, alternatives: c.data.alternatives, mistakes: c.data.mistakes,
+        editor, start: c.data.hints.start });
     }
   }
   return out;

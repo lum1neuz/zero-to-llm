@@ -205,6 +205,16 @@ alternatives:
   - loss_mask/alternatives/default_ignore.py
   - loss_mask/alternatives/manual_mean.py
 hints:
+  start:
+    try: |
+      for i in (0, 5, 21, 25):
+          print(i, pieces[i][0], roles[i])
+    see: |
+      0 <|begin_of_text|> None
+      5 монгол system
+      21 assistant None
+      25 нийслэл assistant
+    next: "Position 0 and 21 are template pieces with no speaker, 5 is a word of the system prompt, and 25 is a word the assistant said. Only the assistant's positions keep their id in the labels. Start with one True/False per position, \"not said by the assistant\", then use it to overwrite a copy of `ids`."
   logic: |
     build_labels:
       start from a separate copy of ids
@@ -287,6 +297,15 @@ alternatives:
   - eval_scoring/alternatives/regex.py
   - eval_scoring/alternatives/zip_max.py
 hints:
+  start:
+    try: |
+      s = " Орхон  ГОЛ!, "
+      print(repr(s.lower()))
+      print("!".isalnum(), "О".isalnum(), " ".isspace())
+    see: |
+      ' орхон  гол!, '
+      False True True
+    next: "Lowercasing handled the Cyrillic, but the `!`, the `,` and the doubled space are still there. `isalnum` is False for punctuation and True for a letter, and `isspace` is True for a space, so together they say which characters to keep. Filter first, then fix the spaces. `pick_option` comes after."
   logic: |
     normalize_answer:
       lowercase everything

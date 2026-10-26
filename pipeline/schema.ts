@@ -134,7 +134,12 @@ export const ChallengeSrc = z.strictObject({
   tests: z.string(),
   solution: z.string(),
   alternatives: z.array(z.string()).default([]),
-  hints: z.strictObject({ logic: Md, tools: Md, nudge: Md, concept: Md, example: Md, skeleton: z.string(), solution: z.string() }),
+  hints: z.strictObject({
+    // Start here: lines to run first (`try`), what they print (`see`, checked by check:challenges),
+    // and the next small step (`next`). The concrete foothold before any abstract hint.
+    start: z.strictObject({ try: Md, see: Md, next: Md }),
+    logic: Md, tools: Md, nudge: Md, concept: Md, example: Md, skeleton: z.string(), solution: z.string(),
+  }),
   on_solve: Md,
   mistakes: z.array(z.strictObject({ file: z.string(), fails: Slug, says: z.string() })).default([]),
 });
@@ -208,7 +213,7 @@ export const StepOut = z.discriminatedUnion("kind", [
     start: z.union([z.object({ code: z.string() }), z.object({ from: z.string() })]),
     setup: z.array(z.object({ say: z.string(), type: z.string(), pause: z.number() })),
     tests: z.string(), testNames: z.array(z.object({ id: z.string(), name: z.string() })), solution: z.string(),
-    hints: z.object({ logic: z.string(), tools: z.string(), nudge: z.string(), concept: z.string(), example: z.string(), skeleton: z.string(), solution: z.string() }),
+    hints: z.object({ start: z.object({ try: z.string(), see: z.string(), next: z.string() }), logic: z.string(), tools: z.string(), nudge: z.string(), concept: z.string(), example: z.string(), skeleton: z.string(), solution: z.string() }),
     onSolve: z.string(),
   }),
   z.object({

@@ -252,6 +252,14 @@ alternatives:
   - top_k/alternatives/sort.py
   - top_k/alternatives/where.py
 hints:
+  start:
+    try: |
+      print(row)
+      print(row.sort(descending=True).values)
+    see: |
+      tensor([2.0000, -1.0000, 0.5000, 3.0000, 0.2000, 1.0000])
+      tensor([3.0000, 2.0000, 1.0000, 0.5000, 0.2000, -1.0000])
+    next: "Sorted from the top, the 3rd value is the cutoff for `k = 3`: it and everything above it stays, the rest is cut. `top_k` needs that cutoff for any `k`, then the cut itself. Look for a tensor method that returns the `k` largest values."
   logic: |
     find the k largest logits
       → kth = the smallest of those   (the cutoff)
@@ -315,6 +323,16 @@ alternatives:
   - top_p/alternatives/shifted.py
   - top_p/alternatives/torch_cumsum.py
 hints:
+  start:
+    try: |
+      probs = F.softmax(row, dim=-1)
+      sorted_probs, order = probs.sort(descending=True)
+      print(sorted_probs)
+      print(sorted_probs[:2].sum())
+    see: |
+      tensor([0.6008, 0.2210, 0.0813, 0.0493, 0.0365, 0.0110])
+      tensor(0.8218)
+    next: "That's the chances biggest first, and the total of the top two. `top_p` walks down this list adding as it goes, and cuts a token once the tokens above it already cover `p`. Try the running total by hand for a few entries, then ask which tensor method gives it for all of them."
   logic: |
     sorted_probs = probabilities, largest first
       → cum = running total of sorted_probs
@@ -379,6 +397,13 @@ alternatives:
   - distinct/alternatives/comprehension.py
   - distinct/alternatives/set_first.py
 hints:
+  start:
+    try: |
+      ids = [4, 4, 7, 4, 4, 7, 9]
+      print(ids, ids[1:])
+    see: |
+      [4, 4, 7, 4, 4, 7, 9] [4, 7, 4, 4, 7, 9]
+    next: "Read the two lists side by side: each id sits next to the one after it, so the pairs are (4, 4), (4, 7), (7, 4) and so on. 7 ids make 6 pairs. `distinct_2` needs those pairs as tuples, then the fraction of them that are different."
   logic: |
     pairs = each id together with the id right after it
       (n ids give n − 1 pairs)
